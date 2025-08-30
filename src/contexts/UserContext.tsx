@@ -45,10 +45,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       let errorMessage = 'Unable to sign in. Please try again.';
       
-      switch (error.code) {
+      const firebaseError = error as { code?: string; message?: string };
+      switch (firebaseError.code) {
         case 'auth/user-not-found':
           errorMessage = 'No account found with this email address. Please check your email or create an account.';
           break;
@@ -78,7 +79,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           break;
         default:
           // Handle generic Firebase errors
-          if (error.message.includes('Firebase')) {
+          if (firebaseError.message && firebaseError.message.includes('Firebase')) {
             errorMessage = 'Authentication service temporarily unavailable. Please try again later.';
           } else {
             errorMessage = 'Something went wrong during sign in. Please try again.';

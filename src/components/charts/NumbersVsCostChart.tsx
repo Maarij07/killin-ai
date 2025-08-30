@@ -16,7 +16,12 @@ const data = [
 
 interface CustomTooltipProps {
   active?: boolean;
-  payload?: any[];
+  payload?: {
+    name: string;
+    value: number;
+    color: string;
+    dataKey: string;
+  }[];
   label?: string;
 }
 

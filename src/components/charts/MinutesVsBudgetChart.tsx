@@ -1,6 +1,6 @@
 'use client';
 
-import { Bar, Line, ComposedChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts';
+import { Bar, Line, ComposedChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { useTheme } from '../../contexts/ThemeContext';
 import colors from '../../../colors.json';
 
@@ -16,7 +16,11 @@ const data = [
 
 interface CustomTooltipProps {
   active?: boolean;
-  payload?: any[];
+  payload?: {
+    name: string;
+    value: number;
+    color: string;
+  }[];
   label?: string;
 }
 

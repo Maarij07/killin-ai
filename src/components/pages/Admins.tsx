@@ -8,13 +8,22 @@ import {
   Cog6ToothIcon,
   PencilIcon,
   TrashIcon,
-  UserCircleIcon,
   PlusIcon,
   ExclamationTriangleIcon,
   ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 import colors from '../../../colors.json';
 import Modal from '../Modal';
+
+interface Admin {
+  id: string;
+  name: string;
+  email: string;
+  status: string;
+  role: string;
+  lastLogin: string;
+  permissions: string;
+}
 
 // Custom styles for dropdown hover effects
 const dropdownStyles = `
@@ -111,11 +120,11 @@ export default function Admins() {
   const { isDark } = useTheme();
   const { showSuccess, showError } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
-  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; admin: any | null }>({ 
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; admin: Admin | null }>({ 
     isOpen: false, 
     admin: null 
   });
-  const [manageModal, setManageModal] = useState<{ isOpen: boolean; admin: any | null }>({ 
+  const [manageModal, setManageModal] = useState<{ isOpen: boolean; admin: Admin | null }>({ 
     isOpen: false, 
     admin: null 
   });
@@ -312,8 +321,7 @@ export default function Admins() {
             onClick={handleAddAdmin}
             className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white transition-all duration-200 rounded-lg shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-orange-500/20 w-full sm:w-auto"
             style={{ 
-              backgroundColor: colors.colors.primary,
-              '&:hover': { backgroundColor: '#dc2626' }
+              backgroundColor: colors.colors.primary
             }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#dc2626'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.colors.primary}

@@ -152,8 +152,7 @@ export default function Modal({
               className="flex-1 px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2"
               style={{ 
                 backgroundColor: buttonStyles.backgroundColor,
-                color: buttonStyles.color,
-                focusRingColor: buttonStyles.backgroundColor
+                color: buttonStyles.color
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = buttonStyles.hoverBackgroundColor;

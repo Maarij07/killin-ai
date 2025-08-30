@@ -96,8 +96,7 @@ export default function Settings() {
             onClick={handleChangePassword}
             className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium text-white rounded-lg transition-all duration-200 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2"
             style={{ 
-              backgroundColor: colors.colors.primary,
-              focusRingColor: colors.colors.primary
+              backgroundColor: colors.colors.primary
             }}
           >
             <LockClosedIcon className="h-4 w-4" />

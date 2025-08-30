@@ -108,10 +108,7 @@ export default function ManageAssistants() {
             style={{
               backgroundColor: isDark ? colors.colors.grey[700] : colors.colors.white,
               borderColor: isDark ? colors.colors.grey[600] : colors.colors.grey[300],
-              color: isDark ? colors.colors.white : colors.colors.grey[900],
-              ':focus': {
-                borderColor: colors.colors.primary
-              }
+              color: isDark ? colors.colors.white : colors.colors.grey[900]
             }}
             onFocus={(e) => {
               e.currentTarget.style.borderColor = colors.colors.primary;
@@ -154,10 +151,7 @@ export default function ManageAssistants() {
             style={{
               backgroundColor: isDark ? colors.colors.grey[700] : colors.colors.white,
               borderColor: isDark ? colors.colors.grey[600] : colors.colors.grey[300],
-              color: isDark ? colors.colors.white : colors.colors.grey[900],
-              ':focus': {
-                borderColor: colors.colors.primary
-              }
+              color: isDark ? colors.colors.white : colors.colors.grey[900]
             }}
             onFocus={(e) => {
               e.currentTarget.style.borderColor = colors.colors.primary;

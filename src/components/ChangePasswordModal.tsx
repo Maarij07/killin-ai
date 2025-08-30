@@ -101,11 +101,12 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
       
       showSuccess('Password changed successfully! You are still signed in.');
       handleClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Password change error:', error);
       
       // Handle different Firebase error types
-      switch (error.code) {
+      const firebaseError = error as { code?: string };
+      switch (firebaseError.code) {
         case 'auth/wrong-password':
           showError('Current password is incorrect. Please try again.');
           break;

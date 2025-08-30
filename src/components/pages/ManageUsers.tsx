@@ -9,11 +9,20 @@ import {
   PencilIcon,
   TrashIcon,
   UserCircleIcon,
-  CalendarDaysIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import colors from '../../../colors.json';
 import Modal from '../Modal';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  status: string;
+  plan: string;
+  minutes: string;
+  joinDate: string;
+}
 
 // Custom styles for dropdown hover effects
 const dropdownStyles = `
@@ -119,11 +128,11 @@ export default function ManageUsers() {
   const { isDark } = useTheme();
   const { showSuccess, showError } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
-  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; user: any | null }>({ 
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; user: User | null }>({ 
     isOpen: false, 
     user: null 
   });
-  const [manageModal, setManageModal] = useState<{ isOpen: boolean; user: any | null }>({ 
+  const [manageModal, setManageModal] = useState<{ isOpen: boolean; user: User | null }>({ 
     isOpen: false, 
     user: null 
   });
@@ -533,7 +542,7 @@ export default function ManageUsers() {
                       Restaurant Description
                     </label>
                     <p className={`text-sm leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                      A place where fresh ingredients, bold flavors, and comforting recipes come together. From sizzling appetizers to hearty mains and indulgent desserts, every dish is crafted to satisfy. Whether you're dropping by for a quick bite or enjoying a meal with friends, the cozy ambiance and friendly service make every visit memorable.
+                      A place where fresh ingredients, bold flavors, and comforting recipes come together. From sizzling appetizers to hearty mains and indulgent desserts, every dish is crafted to satisfy. Whether you&apos;re dropping by for a quick bite or enjoying a meal with friends, the cozy ambiance and friendly service make every visit memorable.
                     </p>
                   </div>
                 </div>
