@@ -15,7 +15,7 @@ export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [emailError, setEmailError] = useState('');
-  const { login } = useUser();
+  const { loginAdmin } = useUser();
   const { showError, showSuccess } = useToast();
   const { isDark, toggleTheme } = useTheme();
 
@@ -55,7 +55,7 @@ export default function SignIn() {
     }
 
     try {
-      const result = await login(email, password);
+      const result = await loginAdmin(email, password);
       if (result.success) {
         showSuccess('Welcome back! You have been signed in successfully.');
       } else {

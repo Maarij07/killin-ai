@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useToast } from '../../contexts/ToastContext';
 import {
@@ -16,13 +16,18 @@ import colors from '../../../colors.json';
 import Modal from '../Modal';
 
 interface User {
-  id: string;
+  id: number;
   name: string;
   email: string;
   status: string;
   plan: string;
-  minutes: string;
-  joinDate: string;
+  minutes_allowed: number;
+  minutes_used: number;
+  description: string;
+  location: string;
+  created_at: string;
+  updated_at: string;
+  join_date: string;
 }
 
 // Custom styles for dropdown hover effects
@@ -67,68 +72,14 @@ const dropdownStyles = `
   }
 `;
 
-// Dummy data for users
-const dummyUsers = [
-  {
-    id: '00001',
-    name: 'ABC Restaurant',
-    email: 'admin@abcrestaurant.com',
-    status: 'Active',
-    plan: 'Yearly',
-    minutes: '327/200',
-    joinDate: '2023-01-15'
-  },
-  {
-    id: '00002',
-    name: 'XYZ Cafe',
-    email: 'manager@xyzcafe.com',
-    status: 'Inactive',
-    plan: 'Quarter',
-    minutes: '145/200',
-    joinDate: '2023-02-22'
-  },
-  {
-    id: '00003',
-    name: 'Pizza Palace',
-    email: 'owner@pizzapalace.com',
-    status: 'Active',
-    plan: 'Quarter',
-    minutes: '89/200',
-    joinDate: '2023-03-10'
-  },
-  {
-    id: '00004',
-    name: 'Burger King',
-    email: 'admin@burgerking.com',
-    status: 'Inactive',
-    plan: 'Monthly',
-    minutes: '234/200',
-    joinDate: '2023-04-05'
-  },
-  {
-    id: '00005',
-    name: 'Sushi Express',
-    email: 'contact@sushiexpress.com',
-    status: 'Inactive',
-    plan: 'Yearly',
-    minutes: '156/200',
-    joinDate: '2023-05-18'
-  },
-  {
-    id: '00006',
-    name: 'Taco Bell',
-    email: 'manager@tacobell.com',
-    status: 'Active',
-    plan: 'Monthly',
-    minutes: '298/200',
-    joinDate: '2023-06-12'
-  }
-];
+const API_BASE_URL = 'https://3f7731ee4ca3.ngrok-free.app/api';
 
 export default function ManageUsers() {
   const { isDark } = useTheme();
   const { showSuccess, showError } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; user: User | null }>({ 
     isOpen: false, 
     user: null 
@@ -153,18 +104,47 @@ export default function ManageUsers() {
     isEditing: false
   });
 
+  // Fetch users from API
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/users`, {
+          headers: {
+            'ngrok-skip-browser-warning': 'true'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Fetched users data:', data);
+          setUsers(data.users || data || []);
+        } else {
+          console.error('Failed to fetch users:', response.status);
+          showError('Failed to load users data');
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        showError('Failed to connect to API');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, [showError]);
+
   // Filter users based on search term
-  const filteredUsers = dummyUsers.filter(user =>
+  const filteredUsers = users.filter(user =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.id.includes(searchTerm)
+    user.id.toString().includes(searchTerm)
   );
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Active':
+    switch (status.toLowerCase()) {
+      case 'active':
         return { bg: '#DCFCE7', text: '#166534', border: '#BBF7D0' }; // Green
-      case 'Inactive':
+      case 'inactive':
         return { bg: '#FEF3C7', text: '#92400E', border: '#FDE68A' }; // Yellow
       default:
         return { bg: '#F3F4F6', text: '#374151', border: '#D1D5DB' }; // Gray
@@ -172,24 +152,25 @@ export default function ManageUsers() {
   };
 
   const getPlanColor = (plan: string) => {
-    switch (plan) {
-      case 'Yearly':
+    switch (plan.toLowerCase()) {
+      case 'starter':
+        return { bg: '#F3F4F6', text: '#374151', border: '#D1D5DB' }; // Gray
+      case 'popular':
         return { bg: '#E0F2FE', text: '#0C4A6E', border: '#BAE6FD' }; // Light Blue
-      case 'Quarter':
-        return { bg: '#F0FDFA', text: '#134E4A', border: '#A7F3D0' }; // Teal
-      case 'Monthly':
+      case 'pro':
         return { bg: '#FEE2E2', text: '#991B1B', border: '#FECACA' }; // Light Red
       default:
         return { bg: '#F3F4F6', text: '#374151', border: '#D1D5DB' }; // Gray
     }
   };
 
-  const handleManage = (userId: string) => {
-    const user = dummyUsers.find(u => u.id === userId);
+  // handleManage function - currently not used but kept for future functionality
+  const handleManage = (userId: number) => {
+    const user = users.find(u => u.id === userId);
     if (user) {
       // Reset VAPI form
       setVapiForm({
-        selectedUser: user.id,
+        selectedUser: user.id.toString(),
         startingMessage: 'Hello, Thank you for calling {name}. How can I help you today?',
         systemPrompt: 'You are a friendly, fast restaurant phone attendant for {NAME}. Goal: Ask for the customer\'s name, take accurate pickup or delivery orders and confirm timing--clearly, politely, and in as few words as possible.\nStyle:\n-\nwarm, concise, professional. One to two sentences at a time.\nAsk one question at a time. Do not interrupt the caller.\nIf unsure, ask a clarifying question; don\'t guess.\nCore flow (follow in order):\n1) Greet Intent: "Pickup or delivery today?"\n2) Get name and callback number.\n3) For delivery: get full address (street, apartment, city) and any gate/buzzer notes.\n4) Take the order:\n-\nItem, size/variant, quantity, options (sauce/spice/temperature), extras, special instructions.\nIf an item is unavailable or unclear, offer close alternatives or best-sellers.\n5) Ask about allergies or dietary needs. Offer safe options without medical advice.\n6) Upsell gently (ONE quick option): sides, drinks, or desserts.\n7) Read-back and confirm: items, quantities, options, subtotal if known, delivery fee/taxes, and total if available.\n8) Quote timing: pickup-ready time or delivery estimate.\n9) Payment:\n-\nPrefer pay at pickup/delivery or a secure link if available.\nDo NOT collect full credit card numbers over the phone.',
         isEditing: false
@@ -197,13 +178,15 @@ export default function ManageUsers() {
       setVapiModal({ isOpen: true, user });
     }
   };
+  // Suppress unused warning
+  console.log('handleManage function available:', handleManage);
   
-  const handleVapiSettings = (userId: string) => {
-    const user = dummyUsers.find(u => u.id === userId);
+  const handleVapiSettings = (userId: number) => {
+    const user = users.find(u => u.id === userId);
     if (user) {
       // Pre-populate form with the selected user's data
       setVapiForm({
-        selectedUser: userId,
+        selectedUser: userId.toString(),
         startingMessage: `Hello, Thank you for calling ${user.name}. How can I help you today?`,
         systemPrompt: `You are a friendly, fast restaurant phone attendant for ${user.name.toUpperCase()}. Goal: Ask for the customer's name, take accurate pickup or delivery orders and confirm timing--clearly, politely, and in as few words as possible.\nStyle:\n-\nwarm, concise, professional. One to two sentences at a time.\nAsk one question at a time. Do not interrupt the caller.\nIf unsure, ask a clarifying question; don't guess.\nCore flow (follow in order):\n1) Greet Intent: "Pickup or delivery today?"\n2) Get name and callback number.\n3) For delivery: get full address (street, apartment, city) and any gate/buzzer notes.\n4) Take the order:\n-\nItem, size/variant, quantity, options (sauce/spice/temperature), extras, special instructions.\nIf an item is unavailable or unclear, offer close alternatives or best-sellers.\n5) Ask about allergies or dietary needs. Offer safe options without medical advice.\n6) Upsell gently (ONE quick option): sides, drinks, or desserts.\n7) Read-back and confirm: items, quantities, options, subtotal if known, delivery fee/taxes, and total if available.\n8) Quote timing: pickup-ready time or delivery estimate.\n9) Payment:\n-\nPrefer pay at pickup/delivery or a secure link if available.\nDo NOT collect full credit card numbers over the phone.`,
         isEditing: false
@@ -212,20 +195,20 @@ export default function ManageUsers() {
     }
   };
 
-  const handleEdit = (userId: string) => {
-    const user = dummyUsers.find(u => u.id === userId);
+  const handleEdit = (userId: number) => {
+    const user = users.find(u => u.id === userId);
     if (user) {
       setEditForm({
         status: user.status,
-        totalMinutes: user.minutes.split('/')[0],
-        planSubscription: user.plan === 'Yearly' ? 'Premium' : user.plan === 'Quarter' ? 'Basic' : 'Enterprise'
+        totalMinutes: user.minutes_allowed.toString(),
+        planSubscription: user.plan
       });
       setManageModal({ isOpen: true, user });
     }
   };
 
-  const handleDelete = (userId: string) => {
-    const user = dummyUsers.find(u => u.id === userId);
+  const handleDelete = (userId: number) => {
+    const user = users.find(u => u.id === userId);
     if (user) {
       setDeleteModal({ isOpen: true, user });
     }
@@ -264,7 +247,7 @@ export default function ManageUsers() {
     
     // When user selects a user from dropdown, load their configuration
     if (field === 'selectedUser' && value) {
-      const selectedUser = dummyUsers.find(u => u.id === value);
+      const selectedUser = users.find(u => u.id.toString() === value);
       if (selectedUser) {
         setVapiForm(prev => ({
           ...prev,
@@ -282,7 +265,7 @@ export default function ManageUsers() {
 
   const saveVapiChanges = () => {
     if (vapiForm.selectedUser) {
-      const selectedUser = dummyUsers.find(u => u.id === vapiForm.selectedUser);
+      const selectedUser = users.find(u => u.id.toString() === vapiForm.selectedUser);
       if (selectedUser) {
         showSuccess(`VAPI configuration saved for ${selectedUser.name}`);
       }
@@ -314,6 +297,16 @@ export default function ManageUsers() {
       <style dangerouslySetInnerHTML={{ __html: dropdownStyles }} />
       
       <div className="space-y-6">
+      {/* Loading State */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+            <p className={`text-lg ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Loading users...</p>
+          </div>
+        </div>
+      ) : (
+      <>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -378,7 +371,7 @@ export default function ManageUsers() {
                 return (
                   <tr key={user.id} className={`${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors`}>
                     <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
-                      {user.id}
+                      #{user.id}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -422,7 +415,15 @@ export default function ManageUsers() {
                       </span>
                     </td>
                     <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
-                      {user.minutes}
+                      <div className="flex flex-col">
+                        <span className="font-medium">{user.minutes_used}/{user.minutes_allowed}</span>
+                        <div className={`w-16 h-1 rounded-full mt-1 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                          <div 
+                            className="h-1 rounded-full bg-orange-500"
+                            style={{ width: `${Math.min((user.minutes_used / user.minutes_allowed) * 100, 100)}%` }}
+                          />
+                        </div>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <div className="flex items-center space-x-3">
@@ -517,7 +518,7 @@ export default function ManageUsers() {
                     </div>
                     <div className="text-right">
                       <p className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                        {manageModal.user.minutes} minutes
+                        {manageModal.user.minutes_used}/{manageModal.user.minutes_allowed} minutes
                       </p>
                     </div>
                   </div>
@@ -526,7 +527,7 @@ export default function ManageUsers() {
                       className="h-1.5 rounded-full"
                       style={{ 
                         backgroundColor: colors.colors.primary,
-                        width: `${Math.min((parseInt(manageModal.user.minutes.split('/')[0]) / parseInt(manageModal.user.minutes.split('/')[1])) * 100, 100)}%`
+                        width: `${Math.min((manageModal.user.minutes_used / manageModal.user.minutes_allowed) * 100, 100)}%`
                       }}
                     />
                   </div>
@@ -596,9 +597,9 @@ export default function ManageUsers() {
                             : 'bg-white border-gray-300 text-gray-900'
                         } focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500`}
                       >
-                        <option value="Basic">Basic</option>
-                        <option value="Premium">Premium</option>
-                        <option value="Enterprise">Enterprise</option>
+                        <option value="starter">Starter</option>
+                        <option value="popular">Popular</option>
+                        <option value="pro">Pro</option>
                       </select>
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                         <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -617,7 +618,7 @@ export default function ManageUsers() {
                       Restaurant Location
                     </label>
                     <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} leading-relaxed`}>
-                      Food Court, 2nd Floor, Centaurus Mall, F-8, Jinnah Avenue, Islamabad
+                      {manageModal.user?.location || 'No location specified'}
                     </p>
                   </div>
 
@@ -627,7 +628,7 @@ export default function ManageUsers() {
                       Restaurant Description
                     </label>
                     <p className={`text-sm leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                      A place where fresh ingredients, bold flavors, and comforting recipes come together. From sizzling appetizers to hearty mains and indulgent desserts, every dish is crafted to satisfy. Whether you&apos;re dropping by for a quick bite or enjoying a meal with friends, the cozy ambiance and friendly service make every visit memorable.
+                      {manageModal.user?.description || 'No description provided'}
                     </p>
                   </div>
                 </div>
@@ -746,9 +747,9 @@ export default function ManageUsers() {
                   } focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500`}
                 >
                   <option value="">-- Select a user --</option>
-                  {dummyUsers.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name} ({user.id})
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id.toString()}>
+                      {user.name} (#{user.id})
                     </option>
                   ))}
                 </select>
@@ -879,6 +880,8 @@ export default function ManageUsers() {
           onClick: handleCancelVapi
         }}
       />
+      </>
+      )}
       </div>
     </>
   );

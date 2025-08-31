@@ -33,6 +33,14 @@ interface CallsByAssistantResult {
   countId: string;
 }
 
+interface DurationResult {
+  sumDuration: number;
+}
+
+interface TotalCostResult {
+  sumCost: number;
+}
+
 interface AnalyticsResponse {
   name: string;
   timeRange: {
@@ -40,7 +48,7 @@ interface AnalyticsResponse {
     end: string;
     timezone: string;
   };
-  result: CostBreakdownResult[] | CallsByTypeResult[] | CallsByAssistantResult[];
+  result: CostBreakdownResult[] | CallsByTypeResult[] | CallsByAssistantResult[] | DurationResult[] | TotalCostResult[];
 }
 
 export interface DashboardAnalytics {
@@ -154,8 +162,8 @@ export async function fetchVAPIAnalytics(): Promise<DashboardAnalytics> {
     const costResult = costBreakdownQuery?.result[0] as CostBreakdownResult;
     const typeResults = callsByTypeQuery?.result as CallsByTypeResult[];
     const assistantResults = callsByAssistantQuery?.result as CallsByAssistantResult[];
-    const durationResult = durationQuery?.result[0] as { sumDuration: number };
-    const totalCostResult = totalCostQuery?.result[0] as { sumCost: number };
+    const durationResult = durationQuery?.result[0] as DurationResult;
+    const totalCostResult = totalCostQuery?.result[0] as TotalCostResult;
 
     // Transform data for dashboard consumption
     const costBreakdown = {

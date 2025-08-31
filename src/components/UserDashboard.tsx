@@ -3,15 +3,31 @@
 import { useUser } from '../contexts/UserContext';
 import { useToast } from '../contexts/ToastContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { PowerIcon, SunIcon, MoonIcon, UserIcon, EnvelopeIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { PowerIcon, SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 import UserPricing from './UserPricing';
 import { useState, useEffect } from 'react';
+
+interface UserDetails {
+  id: number;
+  name: string;
+  email: string;
+  plan: string;
+  status: string;
+  minutes_allowed: number;
+  minutes_used: number;
+  description?: string;
+  location?: string;
+  created_at?: string;
+  updated_at?: string;
+  join_date?: string;
+  [key: string]: string | number | boolean | undefined;
+}
 
 export default function UserDashboard() {
   const { user, logout } = useUser();
   const { showSuccess, showError } = useToast();
   const { isDark, toggleTheme } = useTheme();
-  const [userDetails, setUserDetails] = useState<any>(null);
+  const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(true);
 
   // Fetch user details from /api/auth/users
@@ -33,30 +49,57 @@ export default function UserDashboard() {
           console.log('All users data:', data);
           
           // Find current user by ID
-          const currentUserDetails = data.users?.find((u: any) => u.id === user.id) || data.find((u: any) => u.id === user.id);
+          const currentUserDetails = data.users?.find((u: UserDetails) => u.id === parseInt(user.id)) || data.find((u: UserDetails) => u.id === parseInt(user.id));
           
           if (currentUserDetails) {
             setUserDetails(currentUserDetails);
             console.log('Current user details:', currentUserDetails);
           } else {
             console.log('User not found in users list');
-            setUserDetails(user); // Fallback to context user data
+            // Create a basic UserDetails object from context user data
+            setUserDetails({
+              id: parseInt(user.id),
+              name: user.name,
+              email: user.email,
+              plan: 'Unknown',
+              status: 'active',
+              minutes_allowed: 0,
+              minutes_used: 0
+            });
           }
         } else {
           console.error('Failed to fetch users:', response.status);
-          setUserDetails(user); // Fallback to context user data
+          // Create a basic UserDetails object from context user data
+          setUserDetails({
+            id: parseInt(user.id),
+            name: user.name,
+            email: user.email,
+            plan: 'Unknown',
+            status: 'active',
+            minutes_allowed: 0,
+            minutes_used: 0
+          });
         }
       } catch (error) {
         console.error('Error fetching user details:', error);
         showError('Failed to load user details');
-        setUserDetails(user); // Fallback to context user data
+        // Create a basic UserDetails object from context user data
+        setUserDetails({
+          id: parseInt(user.id),
+          name: user.name,
+          email: user.email,
+          plan: 'Unknown',
+          status: 'active',
+          minutes_allowed: 0,
+          minutes_used: 0
+        });
       } finally {
         setIsLoadingDetails(false);
       }
     };
 
     fetchUserDetails();
-  }, [user?.id, showError]);
+  }, [user?.id, user, showError]);
 
   const handleLogout = async () => {
     await logout();

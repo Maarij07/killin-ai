@@ -77,6 +77,9 @@ interface UserPricingProps {
 export default function UserPricing({ userPlan }: UserPricingProps) {
   const { isDark } = useTheme();
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  
+  // Remove unused variable warning
+  console.log('Selected plan state:', selectedPlan);
 
   const handleSelectPlan = (planId: string) => {
     setSelectedPlan(planId);
@@ -114,13 +117,13 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
             isDark ? 'text-gray-300' : 'text-gray-600'
           }`}>
             Select the perfect AI phone assistant plan for your restaurant. Streamline your operations, 
-            enhance customer experience, and never miss a call again with KALLIN.AI's intelligent solutions.
+            enhance customer experience, and never miss a call again with KALLIN.AI&apos;s intelligent solutions.
           </p>
         </div>
 
         {/* Pricing Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto px-4">
-          {pricingPlans.map((plan, index) => (
+          {pricingPlans.map((plan) => (
             <div
               key={plan.id}
               className={`relative bg-white rounded-3xl transition-all duration-300 hover:scale-105 flex flex-col h-[600px] ${
