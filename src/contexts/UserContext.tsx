@@ -5,43 +5,155 @@ import { auth } from '../lib/firebase';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 
 interface User {
-  uid: string;
+  id: string;
   email: string;
   name: string;
+  role?: string;
+  authType: 'firebase' | 'api'; // Track which auth system is used
 }
 
 interface UserContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  loginUser: (usernameOrEmail: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  loginAdmin: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
+const API_BASE_URL = 'https://3f7731ee4ca3.ngrok-free.app/api';
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
-      if (firebaseUser) {
-        const userData: User = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email || '',
-          name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-        };
-        setUser(userData);
-      } else {
-        setUser(null);
-      }
-      setIsLoading(false);
-    });
-
-    return () => unsubscribe();
+    // Check for existing session on mount
+    checkAuthStatus();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const checkAuthStatus = () => {
+    // Check Firebase auth first
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        // Firebase user found (admin)
+        const userData: User = {
+          id: firebaseUser.uid,
+          email: firebaseUser.email || '',
+          name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Admin',
+          role: 'admin',
+          authType: 'firebase'
+        };
+        setUser(userData);
+        setIsLoading(false);
+        return; // Exit early for Firebase users
+      } 
+      
+      // No Firebase user, check API token
+      try {
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+          // Validate token with API
+          const response = await fetch(`${API_BASE_URL}/auth/me`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'ngrok-skip-browser-warning': 'true'
+            }
+          });
+          
+          if (response.ok) {
+            const userData = await response.json();
+            setUser({
+              id: userData.id,
+              email: userData.email,
+              name: userData.name || userData.email?.split('@')[0] || 'User',
+              role: userData.role || 'user',
+              authType: 'api'
+            });
+          } else {
+            // Token invalid, remove it
+            localStorage.removeItem('auth_token');
+            setUser(null);
+          }
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('API auth check failed:', error);
+        localStorage.removeItem('auth_token');
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
+    });
+
+    // Return unsubscribe function
+    return unsubscribe;
+  };
+
+  const loginUser = async (usernameOrEmail: string, password: string) => {
+    // User login via API
+    console.log('UserContext - loginUser called with:', usernameOrEmail);
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
+        body: JSON.stringify({ username: usernameOrEmail, password }) // Send username field as API expects
+      });
+      
+      const data = await response.json();
+      console.log('UserContext - API response:', data);
+      
+      if (response.ok && data.success && data.data && data.data.access_token) {
+        // Store token
+        localStorage.setItem('auth_token', data.data.access_token);
+        
+        // Set user data
+        const userData: User = {
+          id: data.data.user.id,
+          email: data.data.user.email,
+          name: data.data.user.name || data.data.user.email?.split('@')[0] || data.data.user.username || 'User',
+          role: data.data.user.role || 'user',
+          authType: 'api'
+        };
+        console.log('UserContext - Setting user data:', userData);
+        setUser(userData);
+        
+        return { success: true };
+      } else {
+        // Handle API errors
+        let errorMessage = 'Unable to sign in. Please try again.';
+        
+        if (data.message) {
+          errorMessage = data.message;
+        } else if (response.status === 401) {
+          errorMessage = 'Invalid username/email or password. Please check your credentials and try again.';
+        } else if (response.status === 404) {
+          errorMessage = 'No account found with this username/email.';
+        } else if (response.status >= 500) {
+          errorMessage = 'Server error. Please try again later.';
+        }
+        
+        return { success: false, error: errorMessage };
+      }
+    } catch (error: unknown) {
+      let errorMessage = 'Network error. Please check your connection and try again.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('fetch')) {
+          errorMessage = 'Unable to connect to the server. Please check your internet connection.';
+        }
+      }
+      
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  const loginAdmin = async (email: string, password: string) => {
+    // Admin login via Firebase
     try {
       await signInWithEmailAndPassword(auth, email, password);
       return { success: true };
@@ -92,14 +204,36 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      await signOut(auth);
+      if (user?.authType === 'firebase') {
+        // Firebase logout
+        await signOut(auth);
+      } else {
+        // API logout
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+          // Call logout endpoint to invalidate token on server
+          fetch(`${API_BASE_URL}/auth/logout`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'ngrok-skip-browser-warning': 'true'
+            }
+          }).catch(() => {}); // Ignore errors for logout
+        }
+        
+        // Remove token from storage
+        localStorage.removeItem('auth_token');
+        
+        // Clear user state
+        setUser(null);
+      }
     } catch (error) {
       console.error('Logout error:', error);
     }
   };
 
   return (
-    <UserContext.Provider value={{ user, isLoading, login, logout }}>
+    <UserContext.Provider value={{ user, isLoading, loginUser, loginAdmin, logout }}>
       {children}
     </UserContext.Provider>
   );

@@ -34,7 +34,7 @@ export default function UserDataTable({ onViewMore }: UserDataTableProps) {
       case 'yearly':
         return 'bg-green-100 text-green-800 border-green-200';
       case 'quarter':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
+        return 'bg-teal-100 text-teal-800 border-teal-200';
       case 'monthly':
         return 'bg-blue-100 text-blue-800 border-blue-200';
       default:
@@ -47,7 +47,7 @@ export default function UserDataTable({ onViewMore }: UserDataTableProps) {
       case 'yearly':
         return 'bg-green-900/50 text-green-300 border-green-700';
       case 'quarter':
-        return 'bg-purple-900/50 text-purple-300 border-purple-700';
+        return 'bg-teal-900/50 text-teal-300 border-teal-700';
       case 'monthly':
         return 'bg-blue-900/50 text-blue-300 border-blue-700';
       default:

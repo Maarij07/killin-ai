@@ -9,41 +9,21 @@ import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 import { IconButton } from '@mui/material';
 import colors from '../../colors.json';
 
-export default function SignIn() {
-  const [email, setEmail] = useState('');
+export default function UserLanding() {
+  const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [emailError, setEmailError] = useState('');
-  const { login } = useUser();
+  const { loginUser } = useUser();
   const { showError, showSuccess } = useToast();
   const { isDark, toggleTheme } = useTheme();
-
-  // Email validation function
-  const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setEmail(value);
-    
-    if (value && !validateEmail(value)) {
-      setEmailError('Please enter a valid email address');
-    } else {
-      setEmailError('');
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setEmailError('');
 
-    // Validate email before submission
-    if (!validateEmail(email)) {
-      setEmailError('Please enter a valid email address');
+    if (!usernameOrEmail.trim()) {
+      showError('Username or email is required');
       setIsSubmitting(false);
       return;
     }
@@ -55,9 +35,10 @@ export default function SignIn() {
     }
 
     try {
-      const result = await login(email, password);
+      const result = await loginUser(usernameOrEmail, password);
       if (result.success) {
         showSuccess('Welcome back! You have been signed in successfully.');
+        // User will be redirected by the layout logic
       } else {
         showError(result.error || 'Sign in failed. Please try again.');
       }
@@ -129,40 +110,35 @@ export default function SignIn() {
         {/* Left side - Sign in form */}
         <div className="flex-1 flex items-center justify-center px-4 sm:px-6 md:px-8 lg:px-12 py-12 lg:py-6">
           <div className="max-w-md sm:max-w-lg w-full">
-            {/* Welcome text */}
+            {/* Welcome text - USER VERSION */}
             <div className="text-center mb-8 sm:mb-10 pt-8 sm:pt-12 lg:pt-0 lg:text-left">
               <h2 className={`text-3xl sm:text-4xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'} mb-3 sm:mb-4`}>Welcome back!</h2>
-              <p className={`text-base sm:text-lg ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Access your Admin Panel to manage data</p>
+              <p className={`text-base sm:text-lg ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Access your user data and manage your account</p>
             </div>
 
             {/* Sign in form */}
             <form className="space-y-6 sm:space-y-8" onSubmit={handleSubmit}>
               <div className="space-y-5 sm:space-y-6">
-                {/* Email field */}
+                {/* Username or Email field */}
                 <div>
-                  <label htmlFor="email" className={`block text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'} mb-2 sm:mb-3`}>
-                    Email Address
+                  <label htmlFor="usernameOrEmail" className={`block text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'} mb-2 sm:mb-3`}>
+                    Username or Email
                   </label>
                   <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
+                    id="usernameOrEmail"
+                    name="usernameOrEmail"
+                    type="text"
+                    autoComplete="username"
                     required
                     className={`appearance-none relative block w-full px-3 sm:px-4 py-3 sm:py-4 border rounded-lg focus:outline-none focus:ring-2 focus:z-10 text-sm sm:text-base ${
-                      emailError 
-                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                        : isDark
-                          ? 'border-gray-600 focus:ring-orange-500 focus:border-orange-500 bg-gray-800 text-white placeholder-gray-400'
-                          : 'border-gray-300 focus:ring-orange-500 focus:border-orange-500 bg-white text-gray-900 placeholder-gray-500'
+                      isDark
+                        ? 'border-gray-600 focus:ring-orange-500 focus:border-orange-500 bg-gray-800 text-white placeholder-gray-400'
+                        : 'border-gray-300 focus:ring-orange-500 focus:border-orange-500 bg-white text-gray-900 placeholder-gray-500'
                     }`}
-                    placeholder="Enter your email address"
-                    value={email}
-                    onChange={handleEmailChange}
+                    placeholder="Enter your username or email"
+                    value={usernameOrEmail}
+                    onChange={(e) => setUsernameOrEmail(e.target.value)}
                   />
-                  {emailError && (
-                    <p className="mt-1 text-sm text-red-600">{emailError}</p>
-                  )}
                 </div>
 
                 {/* Password field */}
@@ -226,6 +202,18 @@ export default function SignIn() {
                 </button>
               </div>
             </form>
+
+            {/* Admin link */}
+            <div className="mt-6 text-center">
+              <a
+                href="/admin/login"
+                className={`text-sm transition-colors hover:underline ${
+                  isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-700'
+                }`}
+              >
+                Are you an administrator? Sign in here
+              </a>
+            </div>
           </div>
         </div>
 
@@ -234,7 +222,7 @@ export default function SignIn() {
           <div className="w-full h-4/5 max-h-[80vh]">
             <img
               src="/login-image.png"
-              alt="KALLIN.AI Admin Panel"
+              alt="KALLIN.AI User Portal"
               className={`h-full w-full object-contain transition-all duration-300 ${isDark ? 'brightness-90 contrast-110' : ''}`}
             />
           </div>

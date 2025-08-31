@@ -1,34 +1,48 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useTheme } from '../contexts/ThemeContext';
-import TotalUsersChart from '../components/charts/TotalUsersChart';
-import MinutesVsBudgetChart from '../components/charts/MinutesVsBudgetChart';
-import NumbersVsCostChart from '../components/charts/NumbersVsCostChart';
-import UserDataTable from '../components/UserDataTable';
+import { useUser } from '../contexts/UserContext';
+import UserLanding from '../components/UserLanding';
+import UserDashboard from '../components/UserDashboard';
+import colors from '../../colors.json';
 
-export default function Dashboard() {
-  const { isDark } = useTheme();
+export default function LandingPage() {
   const router = useRouter();
+  const { user, isLoading } = useUser();
 
-  const handleViewMoreUsers = () => {
-    router.push('/manage-users');
-  };
+  // Debug logging
+  useEffect(() => {
+    console.log('LandingPage - User:', user);
+    console.log('LandingPage - IsLoading:', isLoading);
+  }, [user, isLoading]);
 
-  return (
-    <div className="space-y-6">
+  // Redirect admin users to admin dashboard
+  useEffect(() => {
+    if (!isLoading && user && user.authType === 'firebase') {
+      console.log('Redirecting Firebase user to admin dashboard');
+      router.push('/admin');
+    }
+  }, [user, isLoading, router]);
 
-      {/* Top row: Total Users chart */}
-      <TotalUsersChart />
-
-      {/* Bottom row: Two comparison charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <MinutesVsBudgetChart />
-        <NumbersVsCostChart />
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-4" style={{ borderColor: colors.colors.primary }}></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
       </div>
+    );
+  }
 
-      {/* User Data Table */}
-      <UserDataTable onViewMore={handleViewMoreUsers} />
-    </div>
-  );
+  // Show user dashboard for authenticated API users
+  if (user && user.authType === 'api') {
+    console.log('Showing UserDashboard for API user');
+    return <UserDashboard />;
+  }
+
+  // Show user landing for unauthenticated users
+  console.log('Showing UserLanding for unauthenticated user');
+  return <UserLanding />;
 }

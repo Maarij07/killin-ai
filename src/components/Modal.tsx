@@ -11,7 +11,7 @@ interface ModalProps {
   title: string;
   description?: string;
   customContent?: React.ReactNode;
-  primaryButton: {
+  primaryButton?: {
     text: string;
     onClick: () => void;
     variant?: 'danger' | 'primary';
@@ -58,7 +58,7 @@ export default function Modal({
   };
 
   const getPrimaryButtonStyles = () => {
-    if (primaryButton.variant === 'danger') {
+    if (primaryButton?.variant === 'danger') {
       return {
         backgroundColor: '#DC2626',
         color: 'white',
@@ -72,7 +72,7 @@ export default function Modal({
     };
   };
 
-  const buttonStyles = getPrimaryButtonStyles();
+  const buttonStyles = primaryButton ? getPrimaryButtonStyles() : null;
 
   return (
     <div 
@@ -133,11 +133,11 @@ export default function Modal({
           )}
           
           {/* Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+          <div className={`flex flex-col sm:flex-row gap-3 sm:gap-4 ${!primaryButton ? 'justify-center' : ''}`}>
             {/* Secondary Button */}
             <button
               onClick={secondaryButton.onClick}
-              className={`flex-1 px-6 py-3 text-sm font-medium rounded-lg border transition-colors ${
+              className={`${primaryButton ? 'flex-1' : ''} px-6 py-3 text-sm font-medium rounded-lg border transition-colors ${
                 isDark 
                   ? 'border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white' 
                   : 'border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -146,23 +146,25 @@ export default function Modal({
               {secondaryButton.text}
             </button>
             
-            {/* Primary Button */}
-            <button
-              onClick={primaryButton.onClick}
-              className="flex-1 px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2"
-              style={{ 
-                backgroundColor: buttonStyles.backgroundColor,
-                color: buttonStyles.color
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = buttonStyles.hoverBackgroundColor;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = buttonStyles.backgroundColor;
-              }}
-            >
-              {primaryButton.text}
-            </button>
+            {/* Primary Button - Only render if primaryButton exists */}
+            {primaryButton && buttonStyles && (
+              <button
+                onClick={primaryButton.onClick}
+                className="flex-1 px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2"
+                style={{ 
+                  backgroundColor: buttonStyles.backgroundColor,
+                  color: buttonStyles.color
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = buttonStyles.hoverBackgroundColor;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = buttonStyles.backgroundColor;
+                }}
+              >
+                {primaryButton.text}
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -165,7 +165,7 @@ export default function Admins() {
       case 'Admin':
         return { bg: '#E0F2FE', text: '#0C4A6E', border: '#BAE6FD' }; // Blue
       case 'Moderator':
-        return { bg: '#F3E8FF', text: '#6B21A8', border: '#DDD6FE' }; // Purple
+        return { bg: '#F1F5F9', text: '#475569', border: '#CBD5E1' }; // Slate
       default:
         return { bg: '#F3F4F6', text: '#374151', border: '#D1D5DB' }; // Gray
     }

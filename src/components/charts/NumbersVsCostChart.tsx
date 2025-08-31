@@ -1,18 +1,10 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Area, Line, ComposedChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { useTheme } from '../../contexts/ThemeContext';
+import { fetchVAPIAnalytics, generateTimeSeriesData } from '../../lib/analytics';
 import colors from '../../../colors.json';
-
-const data = [
-  { month: 'Apr', numbers: 400, cost: 80 },
-  { month: 'May', numbers: 500, cost: 120 },
-  { month: 'Jun', numbers: 650, cost: 100 },
-  { month: 'Jul', numbers: 320, cost: 160 },
-  { month: 'Aug', numbers: 600, cost: 200 },
-  { month: 'Sep', numbers: 550, cost: 180 },
-  { month: 'Oct', numbers: 620, cost: 170 }
-];
 
 interface CustomTooltipProps {
   active?: boolean;
@@ -36,7 +28,7 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
         </p>
         {payload.map((item, index) => (
           <p key={index} className={`${isDark ? 'text-white' : 'text-gray-900'} font-semibold text-sm`}>
-            <span style={{ color: item.color }}>●</span> {item.name}: {item.dataKey === 'cost' ? `$${item.value}` : item.value.toLocaleString()}
+            <span style={{ color: item.color }}>●</span> {item.name}: {item.value.toLocaleString()}
           </p>
         ))}
       </div>
@@ -53,11 +45,11 @@ const CustomLegend = () => {
     <div className="flex items-center justify-center gap-6 mt-4">
       <div className="flex items-center gap-2">
         <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.colors.primary }}></div>
-        <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Numbers</span>
+        <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Inbound Calls</span>
       </div>
       <div className="flex items-center gap-2">
         <div className={`w-3 h-3 rounded-full ${isDark ? 'bg-gray-400' : 'bg-gray-500'}`}></div>
-        <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Cost</span>
+        <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Web Calls</span>
       </div>
     </div>
   );
@@ -65,11 +57,59 @@ const CustomLegend = () => {
 
 export default function NumbersVsCostChart() {
   const { isDark } = useTheme();
+  const [data, setData] = useState([
+    { month: 'Apr', numbers: 0, cost: 0 },
+    { month: 'May', numbers: 0, cost: 0 },
+    { month: 'Jun', numbers: 0, cost: 0 },
+    { month: 'Jul', numbers: 0, cost: 0 },
+    { month: 'Aug', numbers: 0, cost: 0 },
+    { month: 'Sep', numbers: 0, cost: 0 },
+    { month: 'Oct', numbers: 0, cost: 0 }
+  ]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadAnalytics = async () => {
+      try {
+        const analytics = await fetchVAPIAnalytics();
+        const inboundCalls = analytics.callsByType.inbound;
+        const webCalls = analytics.callsByType.web;
+        
+        const inboundTimeSeries = generateTimeSeriesData(inboundCalls, 7);
+        const webTimeSeries = generateTimeSeriesData(webCalls, 7);
+        
+        const formattedData = inboundTimeSeries.map((item, index) => ({
+          month: item.month,
+          numbers: item.value,
+          cost: webTimeSeries[index]?.value || 0
+        }));
+        
+        setData(formattedData);
+      } catch (error) {
+        console.error('Failed to load analytics:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Initial load
+    loadAnalytics();
+
+    // Set up auto-refresh every 30 seconds
+    const refreshInterval = setInterval(() => {
+      loadAnalytics();
+    }, 20000);
+
+    // Cleanup interval on component unmount
+    return () => {
+      clearInterval(refreshInterval);
+    };
+  }, []);
 
   return (
     <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border p-4 sm:p-6`}>
       <h3 className={`text-base sm:text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'} mb-4`}>
-        Numbers Vs Cost
+        Calls by Type
       </h3>
       
       <div className="w-full h-56 sm:h-64">
@@ -114,6 +154,7 @@ export default function NumbersVsCostChart() {
               strokeWidth={2}
               fillOpacity={1}
               fill="url(#colorNumbers)"
+              name="Inbound Calls"
             />
             <Line 
               yAxisId="right"
@@ -122,6 +163,7 @@ export default function NumbersVsCostChart() {
               stroke={isDark ? '#9CA3AF' : '#6B7280'} 
               strokeWidth={2}
               dot={{ r: 4, fill: isDark ? '#9CA3AF' : '#6B7280' }}
+              name="Web Calls"
             />
           </ComposedChart>
         </ResponsiveContainer>

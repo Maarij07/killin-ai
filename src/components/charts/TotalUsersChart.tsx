@@ -1,23 +1,10 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { useTheme } from '../../contexts/ThemeContext';
+import { fetchVAPIAnalytics, generateTimeSeriesData } from '../../lib/analytics';
 import colors from '../../../colors.json';
-
-const data = [
-  { month: 'Jan', users: 450 },
-  { month: 'Feb', users: 520 },
-  { month: 'Mar', users: 480 },
-  { month: 'Apr', users: 650 },
-  { month: 'May', users: 750 },
-  { month: 'Jun', users: 850 },
-  { month: 'Jul', users: 900 },
-  { month: 'Aug', users: 600 },
-  { month: 'Sep', users: 720 },
-  { month: 'Oct', users: 650 },
-  { month: 'Nov', users: 580 },
-  { month: 'Dec', users: 780 }
-];
 
 interface CustomTooltipProps {
   active?: boolean;
@@ -37,7 +24,7 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
           {`${label} 2025`}
         </p>
         <p className={`${isDark ? 'text-white' : 'text-gray-900'} font-semibold`}>
-          <span className="text-orange-500">●</span> Users: {payload[0].value.toLocaleString()}
+          <span className="text-orange-500">●</span> Calls: {payload[0].value.toLocaleString()}
         </p>
       </div>
     );
@@ -48,13 +35,86 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
 
 export default function TotalUsersChart() {
   const { isDark } = useTheme();
+  const [data, setData] = useState([
+    { month: 'Jan', users: 0 },
+    { month: 'Feb', users: 0 },
+    { month: 'Mar', users: 0 },
+    { month: 'Apr', users: 0 },
+    { month: 'May', users: 0 },
+    { month: 'Jun', users: 0 },
+    { month: 'Jul', users: 0 },
+    { month: 'Aug', users: 0 },
+    { month: 'Sep', users: 0 },
+    { month: 'Oct', users: 0 },
+    { month: 'Nov', users: 0 },
+    { month: 'Dec', users: 0 }
+  ]);
+  const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  useEffect(() => {
+    const loadAnalytics = async (isInitialLoad = false) => {
+      if (!isInitialLoad) {
+        setIsRefreshing(true);
+      }
+      
+      try {
+        const analytics = await fetchVAPIAnalytics();
+        const totalCalls = analytics.callsByAssistant.reduce((sum, assistant) => sum + assistant.callCount, 0);
+        const timeSeriesData = generateTimeSeriesData(totalCalls, 12);
+        
+        const formattedData = timeSeriesData.map(item => ({
+          month: item.month,
+          users: item.value
+        }));
+        
+        setData(formattedData);
+        setLastUpdated(analytics.lastUpdated);
+      } catch (error) {
+        console.error('Failed to load analytics:', error);
+      } finally {
+        setLoading(false);
+        setIsRefreshing(false);
+      }
+    };
+
+    // Initial load
+    loadAnalytics(true);
+
+    // Set up auto-refresh every 30 seconds
+    const refreshInterval = setInterval(() => {
+      loadAnalytics(false);
+    }, 20000);
+
+    // Cleanup interval on component unmount
+    return () => {
+      clearInterval(refreshInterval);
+    };
+  }, []);
 
   return (
     <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border p-4 sm:p-6`}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
-        <h3 className={`text-base sm:text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Total Users
-        </h3>
+        <div>
+          <h3 className={`text-base sm:text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            Calls by Assistant
+          </h3>
+          {lastUpdated && (
+            <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
+              Last updated: {lastUpdated.toLocaleTimeString()}
+              {isRefreshing && (
+                <span className="ml-2 inline-flex items-center">
+                  <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span className="ml-1">Updating...</span>
+                </span>
+              )}
+            </p>
+          )}
+        </div>
         <select className={`text-sm border rounded px-2 py-1 w-fit ${isDark ? 'bg-gray-700 border-gray-600 text-gray-300' : 'bg-white border-gray-300 text-gray-700'}`}>
           <option>2025</option>
           <option>2024</option>

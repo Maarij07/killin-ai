@@ -3,7 +3,6 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useUser } from '../contexts/UserContext';
 import AdminLayout from '../components/AdminLayout';
-import SignIn from '../components/SignIn';
 import colors from '../../colors.json';
 
 interface AdminLayoutWrapperProps {
@@ -17,24 +16,20 @@ export default function AdminLayoutWrapper({ children }: AdminLayoutWrapperProps
 
   // Get current page from pathname
   const getCurrentPage = () => {
-    if (pathname === '/') return 'dashboard';
-    if (pathname === '/manage-users') return 'manage-users';
-    if (pathname === '/manage-assistants') return 'manage-assistants';
-    if (pathname === '/admins') return 'admins';
-    if (pathname === '/logs') return 'logs';
-    if (pathname === '/settings') return 'settings';
+    if (pathname === '/admin' || pathname === '/admin/') return 'dashboard';
+    if (pathname === '/admin/user-management') return 'user-management';
+    if (pathname === '/admin/assistant-management') return 'assistant-management';
+    if (pathname === '/admin/admins') return 'admins';
+    if (pathname === '/admin/logs') return 'logs';
+    if (pathname === '/admin/settings') return 'settings';
     return 'dashboard';
   };
 
   const handleNavigate = (page: string) => {
     if (page === 'dashboard') {
-      router.push('/');
-    } else if (page === 'manage-users') {
-      router.push('/manage-users');
-    } else if (page === 'manage-assistants') {
-      router.push('/manage-assistants');
+      router.push('/admin');
     } else {
-      router.push(`/${page}`);
+      router.push(`/admin/${page}`);
     }
   };
 
@@ -49,13 +44,26 @@ export default function AdminLayoutWrapper({ children }: AdminLayoutWrapperProps
     );
   }
 
-  if (!user) {
-    return <SignIn />;
+  // Special cases - login pages and root page don't need authentication check here
+  if (pathname === '/' || pathname === '/admin/login') {
+    return <>{children}</>;
   }
 
-  return (
-    <AdminLayout currentPage={getCurrentPage()} onNavigate={handleNavigate}>
-      {children}
-    </AdminLayout>
-  );
+  // Admin routes that need authentication and sidebar
+  if (pathname.startsWith('/admin')) {
+    if (!user) {
+      // Redirect to admin login if trying to access admin pages without auth
+      router.push('/admin/login');
+      return null;
+    }
+    
+    return (
+      <AdminLayout currentPage={getCurrentPage()} onNavigate={handleNavigate}>
+        {children}
+      </AdminLayout>
+    );
+  }
+
+  // Default fallback
+  return <>{children}</>;
 }

@@ -1,23 +1,25 @@
 'use client';
 
 import { useState } from 'react';
-import { useUser } from '../contexts/UserContext';
-import { useToast } from '../contexts/ToastContext';
-import { useTheme } from '../contexts/ThemeContext';
+import { useUser } from '../../../contexts/UserContext';
+import { useToast } from '../../../contexts/ToastContext';
+import { useTheme } from '../../../contexts/ThemeContext';
+import { useRouter } from 'next/navigation';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 import { IconButton } from '@mui/material';
-import colors from '../../colors.json';
+import colors from '../../../../colors.json';
 
-export default function SignIn() {
+export default function AdminLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [emailError, setEmailError] = useState('');
-  const { login } = useUser();
+  const { loginAdmin } = useUser();
   const { showError, showSuccess } = useToast();
   const { isDark, toggleTheme } = useTheme();
+  const router = useRouter();
 
   // Email validation function
   const validateEmail = (email: string): boolean => {
@@ -55,9 +57,10 @@ export default function SignIn() {
     }
 
     try {
-      const result = await login(email, password);
+      const result = await loginAdmin(email, password);
       if (result.success) {
         showSuccess('Welcome back! You have been signed in successfully.');
+        router.push('/admin');
       } else {
         showError(result.error || 'Sign in failed. Please try again.');
       }

@@ -28,8 +28,8 @@ interface AdminLayoutProps {
 
 const navigation = [
   { name: 'Dashboard', href: 'dashboard', icon: HomeIcon, current: true },
-  { name: 'Manage Users', href: 'manage-users', icon: UsersIcon, current: false },
-  { name: 'Manage Assistants', href: 'manage-assistants', icon: CpuChipIcon, current: false },
+  { name: 'User Management', href: 'user-management', icon: UsersIcon, current: false },
+  { name: 'Assistant Management', href: 'assistant-management', icon: CpuChipIcon, current: false },
   { name: 'Admins', href: 'admins', icon: ShieldCheckIcon, current: false },
   { name: 'Logs', href: 'logs', icon: ClipboardDocumentListIcon, current: false },
 ];
@@ -79,9 +79,11 @@ export default function AdminLayout({ children, currentPage = 'dashboard', onNav
 
             <div className={`flex grow flex-col gap-y-5 overflow-y-auto px-6 pb-2 ${isDark ? 'bg-gray-800' : 'bg-white'} ring-1 ring-white/10`}>
               <div className="flex h-16 shrink-0 items-center">
-                <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  KALLIN<span style={{ color: colors.colors.primary }}>.AI</span>
-                </h1>
+                <img
+                  src={isDark ? '/logo-dark.png' : '/logo.png'}
+                  alt="KALLIN.AI"
+                  className="h-20 sm:h-28 w-auto transition-opacity duration-300"
+                />
               </div>
               <nav className="flex flex-1 flex-col">
                 <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -209,9 +211,11 @@ export default function AdminLayout({ children, currentPage = 'dashboard', onNav
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
         <div className={`flex grow flex-col gap-y-5 overflow-y-auto border-r ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} px-6`}>
           <div className="flex h-16 shrink-0 items-center">
-            <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              KALLIN<span style={{ color: colors.colors.primary }}>.AI</span>
-            </h1>
+            <img
+              src={isDark ? '/logo-dark.png' : '/logo.png'}
+              alt="KALLIN.AI"
+              className="h-20 sm:h-28 w-auto transition-opacity duration-300"
+            />
           </div>
           <nav className="flex flex-1 flex-col">
             <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -333,16 +337,21 @@ export default function AdminLayout({ children, currentPage = 'dashboard', onNav
         <div className={`sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8`}>
           {/* Logo for mobile */}
           <div className="flex lg:hidden">
-            <h1 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              KALLIN<span style={{ color: colors.colors.primary }}>.AI</span>
-            </h1>
+            <img
+              src={isDark ? '/logo-dark.png' : '/logo.png'}
+              alt="KALLIN.AI"
+              className="h-20 sm:h-28 w-auto transition-opacity duration-300"
+            />
           </div>
 
           <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
             <div className="flex items-center gap-x-4 lg:gap-x-6">
               {/* Page title - hidden on mobile */}
               <h1 className={`hidden lg:block text-xl font-semibold capitalize ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                {currentPage === 'dashboard' ? 'Dashboard' : currentPage}
+                {currentPage === 'dashboard' ? 'Dashboard' : 
+                 currentPage === 'user-management' ? 'User Management' :
+                 currentPage === 'assistant-management' ? 'Assistant Management' :
+                 currentPage}
               </h1>
             </div>
             
