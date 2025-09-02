@@ -1,7 +1,9 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { logger } from '../../lib/logger';
 import TotalUsersChart from '../../components/charts/TotalUsersChart';
 import MinutesVsBudgetChart from '../../components/charts/MinutesVsBudgetChart';
 import NumbersVsCostChart from '../../components/charts/NumbersVsCostChart';
@@ -11,7 +13,22 @@ export default function AdminDashboard() {
   const { isDark } = useTheme();
   const router = useRouter();
 
+  useEffect(() => {
+    // Log dashboard access
+    logger.logSystemAction(
+      'DASHBOARD_ACCESSED', 
+      'Admin accessed the main dashboard', 
+      'LOW'
+    );
+  }, []);
+
   const handleViewMoreUsers = () => {
+    // Log navigation to user management
+    logger.logSystemAction(
+      'NAVIGATE_USER_MANAGEMENT',
+      'Admin navigated to user management from dashboard',
+      'LOW'
+    );
     router.push('/admin/user-management');
   };
 

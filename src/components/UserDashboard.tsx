@@ -37,7 +37,7 @@ export default function UserDashboard() {
       
       try {
         const token = localStorage.getItem('auth_token');
-        const response = await fetch('https://3f7731ee4ca3.ngrok-free.app/api/auth/users', {
+        const response = await fetch('https://3758a6b3509d.ngrok-free.app/api/auth/users', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'ngrok-skip-browser-warning': 'true'

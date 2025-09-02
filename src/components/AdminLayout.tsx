@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useUser } from '../contexts/UserContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useToast } from '../contexts/ToastContext';
+import { logger } from '../lib/logger';
 import {
   HomeIcon,
   UsersIcon,
@@ -100,6 +101,12 @@ export default function AdminLayout({ children, currentPage = 'dashboard', onNav
                             )}
                             <button
                               onClick={() => {
+                                // Log navigation action
+                                logger.logSystemAction(
+                                  'ADMIN_NAVIGATION',
+                                  `Admin navigated to: ${item.name}`,
+                                  'LOW'
+                                );
                                 onNavigate?.(item.href);
                                 setSidebarOpen(false);
                               }}
@@ -152,6 +159,12 @@ export default function AdminLayout({ children, currentPage = 'dashboard', onNav
                             )}
                             <button
                               onClick={() => {
+                                // Log navigation action
+                                logger.logSystemAction(
+                                  'ADMIN_NAVIGATION',
+                                  `Admin navigated to: ${item.name}`,
+                                  'LOW'
+                                );
                                 onNavigate?.(item.href);
                                 setSidebarOpen(false);
                               }}
@@ -231,7 +244,15 @@ export default function AdminLayout({ children, currentPage = 'dashboard', onNav
                           />
                         )}
                         <button
-                          onClick={() => onNavigate?.(item.href)}
+                          onClick={() => {
+                            // Log navigation action
+                            logger.logSystemAction(
+                              'ADMIN_NAVIGATION',
+                              `Admin navigated to: ${item.name}`,
+                              'LOW'
+                            );
+                            onNavigate?.(item.href);
+                          }}
                           className={classNames(
                             currentPage === item.href
                               ? 'text-white font-medium relative ml-2'
@@ -279,8 +300,16 @@ export default function AdminLayout({ children, currentPage = 'dashboard', onNav
                             style={{ backgroundColor: colors.colors.primary }}
                           />
                         )}
-                        <button
-                          onClick={() => onNavigate?.(item.href)}
+                          <button
+                            onClick={() => {
+                              // Log navigation action
+                              logger.logSystemAction(
+                                'ADMIN_NAVIGATION',
+                                `Admin navigated to: ${item.name}`,
+                                'LOW'
+                              );
+                              onNavigate?.(item.href);
+                            }}
                           className={classNames(
                             currentPage === item.href
                               ? 'text-white font-medium relative ml-2'

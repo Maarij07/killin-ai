@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth } from '../lib/firebase';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { logger } from '../lib/logger';
 
 interface User {
   id: string;
@@ -21,7 +22,7 @@ interface UserContextType {
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
-const API_BASE_URL = 'https://3f7731ee4ca3.ngrok-free.app/api';
+const API_BASE_URL = 'https://3758a6b3509d.ngrok-free.app/api';
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -156,6 +157,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     // Admin login via Firebase
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      
+      // Log successful admin login
+      await logger.logAdminLogin(email);
+      
       return { success: true };
     } catch (error: unknown) {
       let errorMessage = 'Unable to sign in. Please try again.';
@@ -204,6 +209,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
+      // Log logout before signing out
+      if (user?.email) {
+        if (user.authType === 'firebase') {
+          await logger.logAdminLogout(user.email);
+        }
+      }
+      
       if (user?.authType === 'firebase') {
         // Firebase logout
         await signOut(auth);

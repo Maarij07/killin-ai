@@ -1,8 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useToast } from '../../contexts/ToastContext';
+import { auth } from '../../lib/firebase';
+import { createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { logger } from '../../lib/logger';
+import { getFirestore, collection, addDoc, getDocs, query, where, orderBy } from 'firebase/firestore';
 import {
   MagnifyingGlassIcon,
   Cog6ToothIcon,
@@ -67,59 +71,12 @@ const dropdownStyles = `
   }
 `;
 
-// Dummy data for admins
-const dummyAdmins = [
-  {
-    id: 'ADM001',
-    name: 'John Smith',
-    email: 'john.smith@kallin.ai',
-    status: 'Active',
-    role: 'Super Admin',
-    lastLogin: '2024-01-15T10:30:00Z',
-    permissions: 'Full Access'
-  },
-  {
-    id: 'ADM002',
-    name: 'Sarah Johnson',
-    email: 'sarah.johnson@kallin.ai',
-    status: 'Active',
-    role: 'Admin',
-    lastLogin: '2024-01-14T16:45:00Z',
-    permissions: 'User Management'
-  },
-  {
-    id: 'ADM003',
-    name: 'Mike Chen',
-    email: 'mike.chen@kallin.ai',
-    status: 'Inactive',
-    role: 'Moderator',
-    lastLogin: '2024-01-10T09:15:00Z',
-    permissions: 'Content Review'
-  },
-  {
-    id: 'ADM004',
-    name: 'Emily Davis',
-    email: 'emily.davis@kallin.ai',
-    status: 'Active',
-    role: 'Admin',
-    lastLogin: '2024-01-15T14:20:00Z',
-    permissions: 'System Settings'
-  },
-  {
-    id: 'ADM005',
-    name: 'Robert Wilson',
-    email: 'robert.wilson@kallin.ai',
-    status: 'Inactive',
-    role: 'Moderator',
-    lastLogin: '2024-01-08T11:00:00Z',
-    permissions: 'User Support'
-  }
-];
-
 export default function Admins() {
   const { isDark } = useTheme();
   const { showSuccess, showError } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
+  const [admins, setAdmins] = useState<Admin[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; admin: Admin | null }>({ 
     isOpen: false, 
     admin: null 
@@ -139,9 +96,50 @@ export default function Admins() {
     email: '',
     role: 'Admin'
   });
+  const [hasShownLoadError, setHasShownLoadError] = useState(false);
+
+  // Load admins from Firestore
+  useEffect(() => {
+    const fetchAdmins = async () => {
+      try {
+        const db = getFirestore();
+        const adminsCollection = collection(db, 'admins');
+        const adminQuery = query(adminsCollection, orderBy('createdAt', 'desc'));
+        const querySnapshot = await getDocs(adminQuery);
+        
+        const adminsList: Admin[] = [];
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          adminsList.push({
+            id: doc.id,
+            name: data.name,
+            email: data.email,
+            status: data.status || 'Active',
+            role: data.role || 'Admin',
+            lastLogin: data.lastLogin || data.createdAt,
+            permissions: data.permissions || 'User Management'
+          });
+        });
+        
+        setAdmins(adminsList);
+        console.log('Loaded admins from Firestore:', adminsList);
+      } catch (error) {
+        console.error('Error fetching admins:', error);
+        // Only show error toast once
+        if (!hasShownLoadError) {
+          showError('Failed to load administrators');
+          setHasShownLoadError(true);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAdmins();
+  }, [showError]);
 
   // Filter admins based on search term
-  const filteredAdmins = dummyAdmins.filter(admin =>
+  const filteredAdmins = admins.filter(admin =>
     admin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     admin.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     admin.id.includes(searchTerm)
@@ -164,8 +162,6 @@ export default function Admins() {
         return { bg: '#FEE2E2', text: '#991B1B', border: '#FECACA' }; // Red
       case 'Admin':
         return { bg: '#E0F2FE', text: '#0C4A6E', border: '#BAE6FD' }; // Blue
-      case 'Moderator':
-        return { bg: '#F1F5F9', text: '#475569', border: '#CBD5E1' }; // Slate
       default:
         return { bg: '#F3F4F6', text: '#374151', border: '#D1D5DB' }; // Gray
     }
@@ -183,7 +179,7 @@ export default function Admins() {
   };
 
   const handleManage = (adminId: string) => {
-    const admin = dummyAdmins.find(a => a.id === adminId);
+    const admin = admins.find(a => a.id === adminId);
     if (admin) {
       setEditForm({
         status: admin.status,
@@ -199,7 +195,7 @@ export default function Admins() {
   };
 
   const handleDelete = (adminId: string) => {
-    const admin = dummyAdmins.find(a => a.id === adminId);
+    const admin = admins.find(a => a.id === adminId);
     if (admin) {
       setDeleteModal({ isOpen: true, admin });
     }
@@ -209,8 +205,11 @@ export default function Admins() {
     setAddModal(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deleteModal.admin) {
+      // Log admin deletion
+      await logger.logAdminDeleted(deleteModal.admin.email);
+      
       showSuccess(`Admin ${deleteModal.admin.name} has been deleted successfully`);
       setDeleteModal({ isOpen: false, admin: null });
     }
@@ -220,8 +219,21 @@ export default function Admins() {
     setDeleteModal({ isOpen: false, admin: null });
   };
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     if (manageModal.admin) {
+      // Log admin update with changes
+      const changes = {
+        status: editForm.status !== manageModal.admin.status ? { old: manageModal.admin.status, new: editForm.status } : undefined,
+        role: editForm.role !== manageModal.admin.role ? { old: manageModal.admin.role, new: editForm.role } : undefined,
+        permissions: editForm.permissions !== manageModal.admin.permissions ? { old: manageModal.admin.permissions, new: editForm.permissions } : undefined
+      };
+      
+      // Only log if there are actual changes
+      const hasChanges = Object.values(changes).some(change => change !== undefined);
+      if (hasChanges) {
+        await logger.logAdminUpdated(manageModal.admin.email, changes);
+      }
+      
       showSuccess(`Changes saved for ${manageModal.admin.name}`);
       setManageModal({ isOpen: false, admin: null });
     }
@@ -237,7 +249,7 @@ export default function Admins() {
     return emailRegex.test(email);
   };
 
-  const handleAddNewAdmin = () => {
+  const handleAddNewAdmin = async () => {
     // Validate form fields
     if (!addForm.name.trim()) {
       showError('Please enter a full name');
@@ -254,7 +266,80 @@ export default function Admins() {
       return;
     }
 
-    showSuccess(`New admin ${addForm.name} has been added successfully`);
+    // Check if email is the super admin email
+    if (addForm.email.toLowerCase() === 'admin@gmail.com') {
+      showError('Cannot add admin@gmail.com as it is reserved for the super admin');
+      return;
+    }
+
+    try {
+      // Create Firebase user with temporary password
+      const tempPassword = 'TempAdmin123!' + Math.random().toString(36).substring(7);
+      
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        addForm.email.trim().toLowerCase(),
+        tempPassword
+      );
+
+      const user = userCredential.user;
+      console.log('Admin user created:', user.uid);
+
+      // Store admin data in Firestore
+      const db = getFirestore();
+      const adminData = {
+        uid: user.uid,
+        name: addForm.name.trim(),
+        email: addForm.email.trim().toLowerCase(),
+        status: 'Active',
+        role: 'Admin',
+        permissions: 'User Management',
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString()
+      };
+      
+      const docRef = await addDoc(collection(db, 'admins'), adminData);
+      console.log('Admin data stored in Firestore:', docRef.id);
+
+      // Send password reset email so they can set their own password
+      await sendPasswordResetEmail(auth, addForm.email.trim().toLowerCase());
+
+      // Add admin to local state for immediate UI update
+      const newAdmin: Admin = {
+        id: docRef.id,
+        name: adminData.name,
+        email: adminData.email,
+        status: adminData.status,
+        role: adminData.role,
+        lastLogin: adminData.lastLogin,
+        permissions: adminData.permissions
+      };
+      
+      setAdmins(prev => [...prev, newAdmin]);
+
+      // Log admin creation
+      await logger.logAdminCreated(adminData.email, auth.currentUser?.email || 'Unknown');
+
+      showSuccess(`Admin ${addForm.name} created successfully! A password reset email has been sent to ${addForm.email}`);
+    } catch (error: any) {
+      console.error('Error creating admin:', error);
+      
+      // Handle specific Firebase errors
+      if (error.code === 'auth/email-already-in-use') {
+        showError('An account with this email already exists');
+      } else if (error.code === 'auth/weak-password') {
+        showError('Password should be at least 6 characters long');
+      } else if (error.code === 'auth/invalid-email') {
+        showError('Please enter a valid email address');
+      } else if (error.code === 'auth/network-request-failed') {
+        showError('Network error. Please check your internet connection');
+      } else {
+        showError('Failed to create admin account. Please try again.');
+      }
+      return;
+    }
+
+    // Close modal and reset form only on success
     setAddModal(false);
     setAddForm({
       name: '',
@@ -332,8 +417,16 @@ export default function Admins() {
         </div>
       </div>
 
-      {/* Admins Table */}
-      <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border overflow-hidden`}>
+      {/* Loading State */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+            <p className={`text-lg ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Loading administrators...</p>
+          </div>
+        </div>
+      ) : (
+        <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border overflow-hidden`}>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className={isDark ? 'bg-gray-700' : 'bg-gray-50'}>
@@ -475,11 +568,12 @@ export default function Admins() {
               No administrators found
             </h3>
             <p className={`mt-1 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-              Try adjusting your search terms.
+              {searchTerm ? 'Try adjusting your search terms.' : 'Click "Add Admin" to create your first administrator.'}
             </p>
           </div>
         )}
       </div>
+      )}
 
       {/* Add Admin Modal */}
       <Modal
@@ -645,7 +739,6 @@ export default function Admins() {
                     >
                       <option value="Super Admin">Super Admin</option>
                       <option value="Admin">Admin</option>
-                      <option value="Moderator">Moderator</option>
                     </select>
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                       <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

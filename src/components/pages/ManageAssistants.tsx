@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useToast } from '../../contexts/ToastContext';
+import { logger } from '../../lib/logger';
 import { PencilIcon, UsersIcon } from '@heroicons/react/24/outline';
 import colors from '../../../colors.json';
 
@@ -115,6 +116,15 @@ export default function ManageAssistants() {
   const [greetingMessage, setGreetingMessage] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
 
+  useEffect(() => {
+    // Log assistant management page access
+    logger.logSystemAction(
+      'ASSISTANT_MANAGEMENT_ACCESSED',
+      'Admin accessed assistant management page',
+      'LOW'
+    );
+  }, []);
+
 
   const handleUserChange = (userId: string) => {
     setSelectedUser(userId);
@@ -122,6 +132,13 @@ export default function ManageAssistants() {
     if (userId) {
       const selectedUserData = dummyUsers.find(u => u.id === userId);
       if (selectedUserData) {
+        // Log assistant configuration selection
+        logger.logSystemAction(
+          'ASSISTANT_USER_SELECTED',
+          `Admin selected user for assistant configuration: ${selectedUserData.name} (ID: ${userId})`,
+          'LOW'
+        );
+        
         setGreetingMessage(`Hello, Thank you for calling ${selectedUserData.name}. How can I help you today?`);
         setSystemPrompt(`You are a friendly, fast restaurant phone attendant for ${selectedUserData.name.toUpperCase()}. Goal: Ask for the customer's name, take accurate pickup or delivery orders and confirm timing--clearly, politely, and in as few words as possible.\nStyle:\n-\nwarm, concise, professional. One to two sentences at a time.\nAsk one question at a time. Do not interrupt the caller.\nIf unsure, ask a clarifying question; don't guess.\nCore flow (follow in order):\n1) Greet Intent: "Pickup or delivery today?"\n2) Get name and callback number.\n3) For delivery: get full address (street, apartment, city) and any gate/buzzer notes.\n4) Take the order:\n-\nItem, size/variant, quantity, options (sauce/spice/temperature), extras, special instructions.\nIf an item is unavailable or unclear, offer close alternatives or best-sellers.\n5) Ask about allergies or dietary needs. Offer safe options without medical advice.\n6) Upsell gently (ONE quick option): sides, drinks, or desserts.\n7) Read-back and confirm: items, quantities, options, subtotal if known, delivery fee/taxes, and total if available.\n8) Quote timing: pickup-ready time or delivery estimate.\n9) Payment:\n-\nPrefer pay at pickup/delivery or a secure link if available.\nDo NOT collect full credit card numbers over the phone.`);
       }
@@ -132,6 +149,17 @@ export default function ManageAssistants() {
   };
 
   const startEdit = () => {
+    if (selectedUser) {
+      const selectedUserData = dummyUsers.find(u => u.id === selectedUser);
+      if (selectedUserData) {
+        // Log assistant edit start
+        logger.logSystemAction(
+          'ASSISTANT_EDIT_STARTED',
+          `Admin started editing assistant configuration for: ${selectedUserData.name} (ID: ${selectedUser})`,
+          'LOW'
+        );
+      }
+    }
     setIsEditing(true);
   };
 
@@ -139,6 +167,13 @@ export default function ManageAssistants() {
     if (selectedUser) {
       const selectedUserData = dummyUsers.find(u => u.id === selectedUser);
       if (selectedUserData) {
+        // Log assistant configuration save
+        logger.logSystemAction(
+          'ASSISTANT_CONFIGURATION_SAVED',
+          `Admin saved assistant configuration for: ${selectedUserData.name} (ID: ${selectedUser})`,
+          'MEDIUM'
+        );
+        
         showSuccess(`Changes saved for ${selectedUserData.name}`);
       }
     } else {

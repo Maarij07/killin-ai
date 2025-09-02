@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useUser } from '../../contexts/UserContext';
 import { useToast } from '../../contexts/ToastContext';
+import { logger } from '../../lib/logger';
 import {
   UserCircleIcon,
   CalendarDaysIcon,
@@ -18,6 +19,15 @@ export default function Settings() {
   const { showSuccess, showError } = useToast();
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   
+  useEffect(() => {
+    // Log settings page access
+    logger.logSystemAction(
+      'SETTINGS_ACCESSED',
+      'Admin accessed settings page',
+      'LOW'
+    );
+  }, []);
+  
   // Mock account creation date - in real app this would come from user metadata
   const accountCreated = new Date('2023-01-15').toLocaleDateString('en-US', {
     year: 'numeric',
@@ -26,6 +36,13 @@ export default function Settings() {
   });
 
   const handleChangePassword = () => {
+    // Log password change initiation
+    logger.logSystemAction(
+      'PASSWORD_CHANGE_INITIATED',
+      'Admin initiated password change process',
+      'MEDIUM'
+    );
+    
     setShowChangePasswordModal(true);
   };
 

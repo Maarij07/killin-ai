@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useToast } from '../../contexts/ToastContext';
+import { logger } from '../../lib/logger';
 import {
   MagnifyingGlassIcon,
   Cog6ToothIcon,
@@ -72,7 +73,7 @@ const dropdownStyles = `
   }
 `;
 
-const API_BASE_URL = 'https://3f7731ee4ca3.ngrok-free.app/api';
+const API_BASE_URL = 'https://3758a6b3509d.ngrok-free.app/api';
 
 export default function ManageUsers() {
   const { isDark } = useTheme();
@@ -108,6 +109,13 @@ export default function ManageUsers() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
+        // Log user management page access
+        logger.logSystemAction(
+          'USER_MANAGEMENT_ACCESSED',
+          'Admin accessed user management page',
+          'LOW'
+        );
+        
         const response = await fetch(`${API_BASE_URL}/auth/users`, {
           headers: {
             'ngrok-skip-browser-warning': 'true'
@@ -118,13 +126,34 @@ export default function ManageUsers() {
           const data = await response.json();
           console.log('Fetched users data:', data);
           setUsers(data.users || data || []);
+          
+          // Log successful data fetch
+          logger.logSystemAction(
+            'USER_DATA_FETCHED',
+            `Successfully fetched ${(data.users || data || []).length} users`,
+            'LOW'
+          );
         } else {
           console.error('Failed to fetch users:', response.status);
           showError('Failed to load users data');
+          
+          // Log fetch failure
+          logger.logSystemAction(
+            'USER_DATA_FETCH_FAILED',
+            `Failed to fetch users: HTTP ${response.status}`,
+            'MEDIUM'
+          );
         }
       } catch (error) {
         console.error('Error fetching users:', error);
         showError('Failed to connect to API');
+        
+        // Log API connection error
+        logger.logSystemAction(
+          'USER_API_CONNECTION_FAILED',
+          `Failed to connect to user API: ${error}`,
+          'HIGH'
+        );
       } finally {
         setIsLoading(false);
       }
@@ -184,6 +213,13 @@ export default function ManageUsers() {
   const handleVapiSettings = (userId: number) => {
     const user = users.find(u => u.id === userId);
     if (user) {
+      // Log VAPI settings access
+      logger.logUserAction(
+        'USER_VAPI_SETTINGS_ACCESSED',
+        user.email,
+        `Admin accessed VAPI settings for user: ${user.name} (ID: ${userId})`
+      );
+      
       // Pre-populate form with the selected user's data
       setVapiForm({
         selectedUser: userId.toString(),
@@ -198,6 +234,13 @@ export default function ManageUsers() {
   const handleEdit = (userId: number) => {
     const user = users.find(u => u.id === userId);
     if (user) {
+      // Log user edit action
+      logger.logUserAction(
+        'USER_EDIT_OPENED',
+        user.email,
+        `Admin opened edit dialog for user: ${user.name} (ID: ${userId})`
+      );
+      
       setEditForm({
         status: user.status,
         totalMinutes: user.minutes_allowed.toString(),
@@ -210,12 +253,26 @@ export default function ManageUsers() {
   const handleDelete = (userId: number) => {
     const user = users.find(u => u.id === userId);
     if (user) {
+      // Log delete attempt
+      logger.logUserAction(
+        'USER_DELETE_INITIATED',
+        user.email,
+        `Admin initiated delete for user: ${user.name} (ID: ${userId})`
+      );
+      
       setDeleteModal({ isOpen: true, user });
     }
   };
 
   const confirmDelete = () => {
     if (deleteModal.user) {
+      // Log user deletion
+      logger.logUserAction(
+        'USER_DELETED',
+        deleteModal.user.email,
+        `Admin deleted user: ${deleteModal.user.name} (ID: ${deleteModal.user.id})`
+      );
+      
       // Here you would implement the actual delete logic
       showSuccess(`User ${deleteModal.user.name} has been deleted successfully`);
       setDeleteModal({ isOpen: false, user: null });
@@ -228,6 +285,22 @@ export default function ManageUsers() {
 
   const handleSaveChanges = () => {
     if (manageModal.user) {
+      // Log user update with details of changes
+      const changes = {
+        oldStatus: manageModal.user.status,
+        newStatus: editForm.status,
+        oldMinutes: manageModal.user.minutes_allowed.toString(),
+        newMinutes: editForm.totalMinutes,
+        oldPlan: manageModal.user.plan,
+        newPlan: editForm.planSubscription
+      };
+      
+      logger.logUserAction(
+        'USER_UPDATED',
+        manageModal.user.email,
+        `Admin updated user: ${manageModal.user.name} (ID: ${manageModal.user.id}). Changes: Status(${changes.oldStatus}→${changes.newStatus}), Minutes(${changes.oldMinutes}→${changes.newMinutes}), Plan(${changes.oldPlan}→${changes.newPlan})`
+      );
+      
       showSuccess(`Changes saved for ${manageModal.user.name}`);
       setManageModal({ isOpen: false, user: null });
     }
@@ -267,6 +340,13 @@ export default function ManageUsers() {
     if (vapiForm.selectedUser) {
       const selectedUser = users.find(u => u.id.toString() === vapiForm.selectedUser);
       if (selectedUser) {
+        // Log VAPI configuration save
+        logger.logUserAction(
+          'USER_VAPI_SETTINGS_UPDATED',
+          selectedUser.email,
+          `Admin updated VAPI configuration for user: ${selectedUser.name} (ID: ${selectedUser.id})`
+        );
+        
         showSuccess(`VAPI configuration saved for ${selectedUser.name}`);
       }
     }

@@ -1,21 +1,12 @@
 'use client';
 
-import { useTheme } from '../../contexts/ThemeContext';
-import ActivityLogsTable from '../admin/ActivityLogsTable';
-import { useEffect } from 'react';
-import { logger } from '../../lib/logger';
+import { useState } from 'react';
+import { useTheme } from '@/contexts/ThemeContext';
+import ActivityLogsTable from '@/components/admin/ActivityLogsTable';
+import { ChartBarIcon } from '@heroicons/react/24/outline';
 
-export default function Logs() {
+export default function ActivityLogsPage() {
   const { isDark } = useTheme();
-
-  useEffect(() => {
-    // Log access to logs page
-    logger.logSystemAction(
-      'LOGS_ACCESSED',
-      'Admin accessed activity logs page',
-      'LOW'
-    );
-  }, []);
 
   return (
     <div className="space-y-6">
@@ -31,7 +22,7 @@ export default function Logs() {
         </div>
       </div>
       
-      {/* Real Activity Logs Table */}
+      {/* Logs Table */}
       <ActivityLogsTable className="mt-6" />
     </div>
   );
