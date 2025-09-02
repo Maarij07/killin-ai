@@ -49,7 +49,7 @@ export default function TotalUsersChart() {
     { month: 'Nov', users: 0 },
     { month: 'Dec', users: 0 }
   ]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 

@@ -15,10 +15,11 @@ export interface LogEntry {
   metadata?: {
     targetUser?: string;
     targetEmail?: string;
-    oldValue?: any;
-    newValue?: any;
+    oldValue?: unknown;
+    newValue?: unknown;
     ipAddress?: string;
     userAgent?: string;
+    createdBy?: string;
   };
   severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 }
@@ -177,10 +178,11 @@ class Logger {
     await this.logActivity(
       'ADMIN_CREATED',
       'ADMIN_MANAGEMENT',
-      `New admin account created: ${createdAdminEmail}`,
+      `New admin account created: ${createdAdminEmail} by ${createdByEmail}`,
       'HIGH',
       {
-        targetEmail: createdAdminEmail
+        targetEmail: createdAdminEmail,
+        createdBy: createdByEmail
       }
     );
   }
@@ -197,7 +199,7 @@ class Logger {
     );
   }
 
-  async logAdminUpdated(updatedAdminEmail: string, changes: Record<string, any>) {
+  async logAdminUpdated(updatedAdminEmail: string, changes: Record<string, unknown>) {
     await this.logActivity(
       'ADMIN_UPDATED',
       'ADMIN_MANAGEMENT',

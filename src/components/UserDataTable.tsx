@@ -91,7 +91,7 @@ export default function UserDataTable({ onViewMore }: UserDataTableProps) {
             </tr>
           </thead>
           <tbody className={`${isDark ? 'bg-gray-800' : 'bg-white'} divide-y divide-gray-200 dark:divide-gray-700`}>
-            {userData.map((user, index) => (
+            {userData.map((user) => (
               <tr key={user.sr} className={`${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors duration-150`}>
                 <td className={`px-3 sm:px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
                   {user.sr}

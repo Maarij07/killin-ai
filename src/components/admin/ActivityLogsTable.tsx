@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { LogEntry, getRecentLogs, getLogsByAdmin, getLogsByCategory } from '@/lib/logger';
+import React, { useState, useEffect, useCallback } from 'react';
+import { LogEntry, getRecentLogs, getLogsByCategory } from '@/lib/logger';
 import { useTheme } from '../../contexts/ThemeContext';
 import {
   MagnifyingGlassIcon,
   FunnelIcon,
-  CalendarDaysIcon,
   UserCircleIcon,
   ExclamationTriangleIcon,
   InformationCircleIcon,
@@ -29,11 +28,7 @@ const ActivityLogsTable: React.FC<ActivityLogsTableProps> = ({ className = '' })
   const [currentPage, setCurrentPage] = useState(1);
   const [logsPerPage] = useState(20);
 
-  useEffect(() => {
-    loadLogs();
-  }, [selectedCategory]);
-
-  const loadLogs = async () => {
+  const loadLogs = useCallback(async () => {
     setLoading(true);
     try {
       let fetchedLogs: LogEntry[] = [];
@@ -50,7 +45,11 @@ const ActivityLogsTable: React.FC<ActivityLogsTableProps> = ({ className = '' })
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    loadLogs();
+  }, [selectedCategory, loadLogs]);
 
   // Filter logs based on search term and severity
   const filteredLogs = logs.filter(log => {

@@ -66,7 +66,7 @@ export default function NumbersVsCostChart() {
     { month: 'Sep', numbers: 0, cost: 0 },
     { month: 'Oct', numbers: 0, cost: 0 }
   ]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
   useEffect(() => {
     const loadAnalytics = async () => {

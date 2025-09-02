@@ -6,7 +6,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { auth } from '../../lib/firebase';
 import { createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { logger } from '../../lib/logger';
-import { getFirestore, collection, addDoc, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, getDocs, query, orderBy } from 'firebase/firestore';
 import {
   MagnifyingGlassIcon,
   Cog6ToothIcon,
@@ -136,7 +136,7 @@ export default function Admins() {
     };
 
     fetchAdmins();
-  }, [showError]);
+  }, [showError, hasShownLoadError]);
 
   // Filter admins based on search term
   const filteredAdmins = admins.filter(admin =>
@@ -321,17 +321,18 @@ export default function Admins() {
       await logger.logAdminCreated(adminData.email, auth.currentUser?.email || 'Unknown');
 
       showSuccess(`Admin ${addForm.name} created successfully! A password reset email has been sent to ${addForm.email}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating admin:', error);
       
       // Handle specific Firebase errors
-      if (error.code === 'auth/email-already-in-use') {
+      const firebaseError = error as { code?: string };
+      if (firebaseError.code === 'auth/email-already-in-use') {
         showError('An account with this email already exists');
-      } else if (error.code === 'auth/weak-password') {
+      } else if (firebaseError.code === 'auth/weak-password') {
         showError('Password should be at least 6 characters long');
-      } else if (error.code === 'auth/invalid-email') {
+      } else if (firebaseError.code === 'auth/invalid-email') {
         showError('Please enter a valid email address');
-      } else if (error.code === 'auth/network-request-failed') {
+      } else if (firebaseError.code === 'auth/network-request-failed') {
         showError('Network error. Please check your internet connection');
       } else {
         showError('Failed to create admin account. Please try again.');

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useUser } from '../contexts/UserContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useToast } from '../contexts/ToastContext';
@@ -46,7 +47,7 @@ function classNames(...classes: string[]) {
 export default function AdminLayout({ children, currentPage = 'dashboard', onNavigate }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const { user, logout } = useUser();
+  const { logout } = useUser();
   const { isDark, toggleTheme } = useTheme();
   const { showSuccess } = useToast();
 
@@ -80,9 +81,11 @@ export default function AdminLayout({ children, currentPage = 'dashboard', onNav
 
             <div className={`flex grow flex-col gap-y-5 overflow-y-auto px-6 pb-2 ${isDark ? 'bg-gray-800' : 'bg-white'} ring-1 ring-white/10`}>
               <div className="flex h-16 shrink-0 items-center">
-                <img
+                <Image
                   src={isDark ? '/logo-dark.png' : '/logo.png'}
                   alt="KALLIN.AI"
+                  width={112}
+                  height={112}
                   className="h-20 sm:h-28 w-auto transition-opacity duration-300"
                 />
               </div>
@@ -224,9 +227,11 @@ export default function AdminLayout({ children, currentPage = 'dashboard', onNav
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
         <div className={`flex grow flex-col gap-y-5 overflow-y-auto border-r ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} px-6`}>
           <div className="flex h-16 shrink-0 items-center">
-            <img
+            <Image
               src={isDark ? '/logo-dark.png' : '/logo.png'}
               alt="KALLIN.AI"
+              width={112}
+              height={112}
               className="h-20 sm:h-28 w-auto transition-opacity duration-300"
             />
           </div>
@@ -366,9 +371,11 @@ export default function AdminLayout({ children, currentPage = 'dashboard', onNav
         <div className={`sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8`}>
           {/* Logo for mobile */}
           <div className="flex lg:hidden">
-            <img
+            <Image
               src={isDark ? '/logo-dark.png' : '/logo.png'}
               alt="KALLIN.AI"
+              width={112}
+              height={112}
               className="h-20 sm:h-28 w-auto transition-opacity duration-300"
             />
           </div>

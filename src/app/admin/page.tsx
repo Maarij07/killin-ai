@@ -10,7 +10,7 @@ import NumbersVsCostChart from '../../components/charts/NumbersVsCostChart';
 import UserDataTable from '../../components/UserDataTable';
 
 export default function AdminDashboard() {
-  const { isDark } = useTheme();
+  const { } = useTheme();
   const router = useRouter();
 
   useEffect(() => {

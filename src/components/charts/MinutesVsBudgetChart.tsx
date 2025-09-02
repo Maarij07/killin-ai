@@ -65,7 +65,7 @@ export default function MinutesVsBudgetChart() {
     { month: 'Sep', minutes: 0, budget: 0 },
     { month: 'Oct', minutes: 0, budget: 0 }
   ]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
   useEffect(() => {
     const loadAnalytics = async () => {

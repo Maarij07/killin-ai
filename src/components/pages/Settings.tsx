@@ -16,7 +16,7 @@ import colors from '../../../colors.json';
 export default function Settings() {
   const { isDark } = useTheme();
   const { user } = useUser();
-  const { showSuccess, showError } = useToast();
+  const { } = useToast();
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   
   useEffect(() => {

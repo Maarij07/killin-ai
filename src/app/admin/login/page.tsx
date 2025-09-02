@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useUser } from '../../../contexts/UserContext';
 import { useToast } from '../../../contexts/ToastContext';
 import { useTheme } from '../../../contexts/ThemeContext';
@@ -64,7 +65,7 @@ export default function AdminLogin() {
       } else {
         showError(result.error || 'Sign in failed. Please try again.');
       }
-    } catch (err) {
+    } catch {
       showError('An unexpected error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -75,9 +76,11 @@ export default function AdminLogin() {
     <div className={`min-h-screen ${isDark ? 'dark bg-gray-900' : 'bg-white'} flex flex-col transition-colors`}>
       {/* Top left logo */}
       <div className="absolute left-4 sm:left-6 top-[-1vh] sm:top-[-3vh] z-10">
-        <img
+        <Image
           src={isDark ? '/logo-dark.png' : '/logo.png'}
           alt="KALLIN.AI"
+          width={112}
+          height={112}
           className="h-20 sm:h-28 w-auto transition-opacity duration-300"
         />
       </div>
@@ -235,9 +238,11 @@ export default function AdminLogin() {
         {/* Right side - Login illustration */}
         <div className="hidden lg:flex relative flex-1 min-h-0 items-center justify-center">
           <div className="w-full h-4/5 max-h-[80vh]">
-            <img
+            <Image
               src="/login-image.png"
               alt="KALLIN.AI Admin Panel"
+              width={800}
+              height={600}
               className={`h-full w-full object-contain transition-all duration-300 ${isDark ? 'brightness-90 contrast-110' : ''}`}
             />
           </div>

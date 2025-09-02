@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useUser } from '../contexts/UserContext';
 import { useToast } from '../contexts/ToastContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -128,9 +129,11 @@ export default function UserDashboard() {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex-shrink-0">
-              <img
+              <Image
                 src={isDark ? '/logo-dark.png' : '/logo.png'}
                 alt="KALLIN.AI"
+                width={32}
+                height={32}
                 className="h-8 w-auto"
               />
             </div>

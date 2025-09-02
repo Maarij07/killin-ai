@@ -1,9 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import ActivityLogsTable from '@/components/admin/ActivityLogsTable';
-import { ChartBarIcon } from '@heroicons/react/24/outline';
 
 export default function ActivityLogsPage() {
   const { isDark } = useTheme();
