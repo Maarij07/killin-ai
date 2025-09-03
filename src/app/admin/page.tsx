@@ -1,17 +1,38 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useToast } from '../../contexts/ToastContext';
 import { logger } from '../../lib/logger';
 import TotalUsersChart from '../../components/charts/TotalUsersChart';
 import MinutesVsBudgetChart from '../../components/charts/MinutesVsBudgetChart';
 import NumbersVsCostChart from '../../components/charts/NumbersVsCostChart';
 import UserDataTable from '../../components/UserDataTable';
 
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  status: string;
+  plan: string;
+  minutes_allowed: number;
+  minutes_used: number;
+  description: string;
+  location: string;
+  created_at: string;
+  updated_at: string;
+  join_date: string;
+}
+
+const API_BASE_URL = 'https://3758a6b3509d.ngrok-free.app/api';
+
 export default function AdminDashboard() {
   const { } = useTheme();
+  const { showError } = useToast();
   const router = useRouter();
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
 
   useEffect(() => {
     // Log dashboard access
@@ -21,6 +42,54 @@ export default function AdminDashboard() {
       'LOW'
     );
   }, []);
+
+  // Fetch users for the dashboard table
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/users`, {
+          headers: {
+            'ngrok-skip-browser-warning': 'true'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Fetched users data for dashboard:', data);
+          setUsers(data.users || data || []);
+          
+          // Log successful data fetch
+          logger.logSystemAction(
+            'DASHBOARD_USER_DATA_FETCHED',
+            `Successfully fetched ${(data.users || data || []).length} users for dashboard`,
+            'LOW'
+          );
+        } else {
+          console.error('Failed to fetch users for dashboard:', response.status);
+          
+          // Log fetch failure
+          logger.logSystemAction(
+            'DASHBOARD_USER_DATA_FETCH_FAILED',
+            `Failed to fetch users for dashboard: HTTP ${response.status}`,
+            'MEDIUM'
+          );
+        }
+      } catch (error) {
+        console.error('Error fetching users for dashboard:', error);
+        
+        // Log API connection error
+        logger.logSystemAction(
+          'DASHBOARD_USER_API_CONNECTION_FAILED',
+          `Failed to connect to user API for dashboard: ${error}`,
+          'HIGH'
+        );
+      } finally {
+        setIsLoadingUsers(false);
+      }
+    };
+
+    fetchUsers();
+  }, [showError]);
 
   const handleViewMoreUsers = () => {
     // Log navigation to user management
@@ -45,7 +114,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* User Data Table */}
-      <UserDataTable onViewMore={handleViewMoreUsers} />
+      <UserDataTable users={users} onViewMore={handleViewMoreUsers} />
     </div>
   );
 }

@@ -7,64 +7,20 @@ import { logger } from '../../lib/logger';
 import { PencilIcon, UsersIcon } from '@heroicons/react/24/outline';
 import colors from '../../../colors.json';
 
-
-// User data from ManageUsers - keep in sync
-const dummyUsers = [
-  {
-    id: '00001',
-    name: 'ABC Restaurant',
-    email: 'admin@abcrestaurant.com',
-    status: 'Active',
-    plan: 'Yearly',
-    minutes: '327/200',
-    joinDate: '2023-01-15'
-  },
-  {
-    id: '00002',
-    name: 'XYZ Cafe',
-    email: 'manager@xyzcafe.com',
-    status: 'Inactive',
-    plan: 'Quarter',
-    minutes: '145/200',
-    joinDate: '2023-02-22'
-  },
-  {
-    id: '00003',
-    name: 'Pizza Palace',
-    email: 'owner@pizzapalace.com',
-    status: 'Active',
-    plan: 'Quarter',
-    minutes: '89/200',
-    joinDate: '2023-03-10'
-  },
-  {
-    id: '00004',
-    name: 'Burger King',
-    email: 'admin@burgerking.com',
-    status: 'Inactive',
-    plan: 'Monthly',
-    minutes: '234/200',
-    joinDate: '2023-04-05'
-  },
-  {
-    id: '00005',
-    name: 'Sushi Express',
-    email: 'contact@sushiexpress.com',
-    status: 'Inactive',
-    plan: 'Yearly',
-    minutes: '156/200',
-    joinDate: '2023-05-18'
-  },
-  {
-    id: '00006',
-    name: 'Taco Bell',
-    email: 'manager@tacobell.com',
-    status: 'Active',
-    plan: 'Monthly',
-    minutes: '298/200',
-    joinDate: '2023-06-12'
-  }
-];
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  status: string;
+  plan: string;
+  minutes_allowed: number;
+  minutes_used: number;
+  description: string;
+  location: string;
+  created_at: string;
+  updated_at: string;
+  join_date: string;
+}
 
 // Custom styles for dropdown hover effects
 const dropdownStyles = `
@@ -108,29 +64,81 @@ const dropdownStyles = `
   }
 `;
 
+const API_BASE_URL = 'https://3758a6b3509d.ngrok-free.app/api';
+
 export default function ManageAssistants() {
   const { isDark } = useTheme();
-  const { showSuccess } = useToast();
+  const { showSuccess, showError } = useToast();
   const [selectedUser, setSelectedUser] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [greetingMessage, setGreetingMessage] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Fetch users from API
   useEffect(() => {
-    // Log assistant management page access
-    logger.logSystemAction(
-      'ASSISTANT_MANAGEMENT_ACCESSED',
-      'Admin accessed assistant management page',
-      'LOW'
-    );
-  }, []);
+    const fetchUsers = async () => {
+      try {
+        // Log assistant management page access
+        logger.logSystemAction(
+          'ASSISTANT_MANAGEMENT_ACCESSED',
+          'Admin accessed assistant management page',
+          'LOW'
+        );
+        
+        const response = await fetch(`${API_BASE_URL}/auth/users`, {
+          headers: {
+            'ngrok-skip-browser-warning': 'true'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Fetched users data for assistant management:', data);
+          setUsers(data.users || data || []);
+          
+          // Log successful data fetch
+          logger.logSystemAction(
+            'ASSISTANT_USER_DATA_FETCHED',
+            `Successfully fetched ${(data.users || data || []).length} users for assistant management`,
+            'LOW'
+          );
+        } else {
+          console.error('Failed to fetch users:', response.status);
+          showError('Failed to load users data');
+          
+          // Log fetch failure
+          logger.logSystemAction(
+            'ASSISTANT_USER_DATA_FETCH_FAILED',
+            `Failed to fetch users: HTTP ${response.status}`,
+            'MEDIUM'
+          );
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        showError('Failed to connect to API');
+        
+        // Log API connection error
+        logger.logSystemAction(
+          'ASSISTANT_USER_API_CONNECTION_FAILED',
+          `Failed to connect to user API: ${error}`,
+          'HIGH'
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, [showError]);
 
 
   const handleUserChange = (userId: string) => {
     setSelectedUser(userId);
     
     if (userId) {
-      const selectedUserData = dummyUsers.find(u => u.id === userId);
+      const selectedUserData = users.find(u => u.id.toString() === userId);
       if (selectedUserData) {
         // Log assistant configuration selection
         logger.logSystemAction(
@@ -150,7 +158,7 @@ export default function ManageAssistants() {
 
   const startEdit = () => {
     if (selectedUser) {
-      const selectedUserData = dummyUsers.find(u => u.id === selectedUser);
+      const selectedUserData = users.find(u => u.id.toString() === selectedUser);
       if (selectedUserData) {
         // Log assistant edit start
         logger.logSystemAction(
@@ -165,7 +173,7 @@ export default function ManageAssistants() {
 
   const saveChanges = () => {
     if (selectedUser) {
-      const selectedUserData = dummyUsers.find(u => u.id === selectedUser);
+      const selectedUserData = users.find(u => u.id.toString() === selectedUser);
       if (selectedUserData) {
         // Log assistant configuration save
         logger.logSystemAction(
@@ -220,9 +228,9 @@ export default function ManageAssistants() {
               } focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500`}
             >
               <option value="">-- Select a user --</option>
-              {dummyUsers.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name} ({user.id})
+              {users.map((user) => (
+                <option key={user.id} value={user.id.toString()}>
+                  {user.name} (#{user.id})
                 </option>
               ))}
             </select>

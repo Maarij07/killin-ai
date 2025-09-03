@@ -3,34 +3,44 @@
 import { useTheme } from '../contexts/ThemeContext';
 import colors from '../../colors.json';
 
-const userData = [
-  {
-    sr: '00001',
-    name: 'ABC Restaurant',
-    location: 'Food Court, Centaurus Mall',
-    assistantId: '370105',
-    contact: '0322 9283802',
-    plan: 'Yearly'
-  },
-  {
-    sr: '00002',
-    name: 'ABC Restaurant',
-    location: 'Food Court, Centaurus Mall',
-    assistantId: '370105',
-    contact: '0322 9283802',
-    plan: 'Quarter'
-  }
-];
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  status: string;
+  plan: string;
+  minutes_allowed: number;
+  minutes_used: number;
+  description: string;
+  location: string;
+  created_at: string;
+  updated_at: string;
+  join_date: string;
+}
 
 interface UserDataTableProps {
+  users: User[];
   onViewMore: () => void;
 }
 
-export default function UserDataTable({ onViewMore }: UserDataTableProps) {
+export default function UserDataTable({ users, onViewMore }: UserDataTableProps) {
   const { isDark } = useTheme();
+  
+  // Show only first 2 users for dashboard
+  const displayUsers = users.slice(0, 2);
 
   const getPlanBadgeColor = (plan: string) => {
-    switch (plan.toLowerCase()) {
+    const normalizedPlan = (plan || '').toLowerCase();
+    switch (normalizedPlan) {
+      case 'free':
+      case '':
+        return 'bg-gray-100 text-gray-700 border-gray-300';
+      case 'starter':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'popular':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'pro':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'yearly':
         return 'bg-green-100 text-green-800 border-green-200';
       case 'quarter':
@@ -43,7 +53,17 @@ export default function UserDataTable({ onViewMore }: UserDataTableProps) {
   };
 
   const getDarkPlanBadgeColor = (plan: string) => {
-    switch (plan.toLowerCase()) {
+    const normalizedPlan = (plan || '').toLowerCase();
+    switch (normalizedPlan) {
+      case 'free':
+      case '':
+        return 'bg-gray-900/50 text-gray-400 border-gray-600';
+      case 'starter':
+        return 'bg-blue-900/50 text-blue-300 border-blue-700';
+      case 'popular':
+        return 'bg-green-900/50 text-green-300 border-green-700';
+      case 'pro':
+        return 'bg-purple-900/50 text-purple-300 border-purple-700';
       case 'yearly':
         return 'bg-green-900/50 text-green-300 border-green-700';
       case 'quarter':
@@ -53,6 +73,14 @@ export default function UserDataTable({ onViewMore }: UserDataTableProps) {
       default:
         return 'bg-gray-900/50 text-gray-300 border-gray-700';
     }
+  };
+
+  // Helper function to get display name for plan
+  const getPlanDisplayName = (plan: string) => {
+    if (!plan || plan.trim() === '') {
+      return 'Free';
+    }
+    return plan.charAt(0).toUpperCase() + plan.slice(1).toLowerCase();
   };
 
   return (
@@ -70,20 +98,20 @@ export default function UserDataTable({ onViewMore }: UserDataTableProps) {
           <thead className={`${isDark ? 'bg-gray-750' : 'bg-gray-50'}`}>
             <tr>
               <th scope="col" className={`px-3 sm:px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                Sr.
+                ID
               </th>
               <th scope="col" className={`px-3 sm:px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                 Name
               </th>
               <th scope="col" className={`hidden sm:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                Location
+                Email
               </th>
               <th scope="col" className={`px-3 sm:px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                <span className="hidden sm:inline">Assistant ID</span>
-                <span className="sm:hidden">ID</span>
+                <span className="hidden sm:inline">Status</span>
+                <span className="sm:hidden">Status</span>
               </th>
               <th scope="col" className={`hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                Contact
+                Minutes
               </th>
               <th scope="col" className={`px-3 sm:px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                 Plan
@@ -91,31 +119,37 @@ export default function UserDataTable({ onViewMore }: UserDataTableProps) {
             </tr>
           </thead>
           <tbody className={`${isDark ? 'bg-gray-800' : 'bg-white'} divide-y divide-gray-200 dark:divide-gray-700`}>
-            {userData.map((user) => (
-              <tr key={user.sr} className={`${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors duration-150`}>
+            {displayUsers.map((user) => (
+              <tr key={user.id} className={`${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors duration-150`}>
                 <td className={`px-3 sm:px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
-                  {user.sr}
+                  #{user.id}
                 </td>
                 <td className={`px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   <div>
                     {user.name}
                     <div className={`sm:hidden text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
-                      {user.location}
+                      {user.email}
                     </div>
                   </div>
                 </td>
                 <td className={`hidden sm:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>
-                  {user.location}
+                  {user.email}
                 </td>
                 <td className={`px-3 sm:px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
-                  {user.assistantId}
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${
+                    user.status.toLowerCase() === 'active' 
+                      ? (isDark ? 'bg-green-900/50 text-green-300 border-green-700' : 'bg-green-100 text-green-800 border-green-200')
+                      : (isDark ? 'bg-yellow-900/50 text-yellow-300 border-yellow-700' : 'bg-yellow-100 text-yellow-800 border-yellow-200')
+                  }`}>
+                    {user.status}
+                  </span>
                 </td>
                 <td className={`hidden md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>
-                  {user.contact}
+                  {user.minutes_used}/{user.minutes_allowed}
                 </td>
                 <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                   <span className={`inline-flex items-center px-2 sm:px-2.5 py-0.5 rounded-full text-xs font-medium border ${isDark ? getDarkPlanBadgeColor(user.plan) : getPlanBadgeColor(user.plan)}`}>
-                    {user.plan}
+                    {getPlanDisplayName(user.plan)}
                   </span>
                 </td>
               </tr>

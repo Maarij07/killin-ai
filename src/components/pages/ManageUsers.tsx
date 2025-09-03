@@ -181,16 +181,28 @@ export default function ManageUsers() {
   };
 
   const getPlanColor = (plan: string) => {
-    switch (plan.toLowerCase()) {
+    const normalizedPlan = (plan || '').toLowerCase();
+    switch (normalizedPlan) {
+      case 'free':
+      case '':
+        return { bg: '#F3F4F6', text: '#6B7280', border: '#D1D5DB' }; // Gray
       case 'starter':
-        return { bg: '#F3F4F6', text: '#374151', border: '#D1D5DB' }; // Gray
+        return { bg: '#DBEAFE', text: '#1D4ED8', border: '#93C5FD' }; // Blue
       case 'popular':
-        return { bg: '#E0F2FE', text: '#0C4A6E', border: '#BAE6FD' }; // Light Blue
+        return { bg: '#D1FAE5', text: '#065F46', border: '#A7F3D0' }; // Green
       case 'pro':
-        return { bg: '#FEE2E2', text: '#991B1B', border: '#FECACA' }; // Light Red
+        return { bg: '#E9D5FF', text: '#7C3AED', border: '#C4B5FD' }; // Purple
       default:
         return { bg: '#F3F4F6', text: '#374151', border: '#D1D5DB' }; // Gray
     }
+  };
+
+  // Helper function to get display name for plan
+  const getPlanDisplayName = (plan: string) => {
+    if (!plan || plan.trim() === '') {
+      return 'Free';
+    }
+    return plan.charAt(0).toUpperCase() + plan.slice(1).toLowerCase();
   };
 
   // handleManage function - currently not used but kept for future functionality
@@ -244,7 +256,7 @@ export default function ManageUsers() {
       setEditForm({
         status: user.status,
         totalMinutes: user.minutes_allowed.toString(),
-        planSubscription: user.plan
+        planSubscription: user.plan || 'free' // Default to 'free' if plan is null or empty
       });
       setManageModal({ isOpen: true, user });
     }
@@ -491,7 +503,7 @@ export default function ManageUsers() {
                           borderColor: planColors.border
                         }}
                       >
-                        {user.plan}
+                        {getPlanDisplayName(user.plan)}
                       </span>
                     </td>
                     <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
@@ -677,6 +689,7 @@ export default function ManageUsers() {
                             : 'bg-white border-gray-300 text-gray-900'
                         } focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500`}
                       >
+                        <option value="free">Free</option>
                         <option value="starter">Starter</option>
                         <option value="popular">Popular</option>
                         <option value="pro">Pro</option>

@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth } from '../lib/firebase';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 import { logger } from '../lib/logger';
 
 interface User {
@@ -30,30 +31,23 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Check for existing session on mount
-    checkAuthStatus();
+    const unsubscribe = checkAuthStatus();
+    
+    // Clean up listener on unmount
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, []);
 
   const checkAuthStatus = () => {
-    // Check Firebase auth first
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-      if (firebaseUser) {
-        // Firebase user found (admin)
-        const userData: User = {
-          id: firebaseUser.uid,
-          email: firebaseUser.email || '',
-          name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Admin',
-          role: 'admin',
-          authType: 'firebase'
-        };
-        setUser(userData);
-        setIsLoading(false);
-        return; // Exit early for Firebase users
-      } 
-      
-      // No Firebase user, check API token
+    // First, check for API token immediately (synchronous)
+    const checkAPIToken = async () => {
       try {
         const token = localStorage.getItem('auth_token');
         if (token) {
+          console.log('Found API token, validating...');
           // Validate token with API
           const response = await fetch(`${API_BASE_URL}/auth/me`, {
             headers: {
@@ -64,32 +58,118 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           
           if (response.ok) {
             const userData = await response.json();
+            console.log('API token valid, setting user:', userData);
             setUser({
-              id: userData.id,
+              id: userData.id.toString(),
               email: userData.email,
               name: userData.name || userData.email?.split('@')[0] || 'User',
               role: userData.role || 'user',
               authType: 'api'
             });
+            setIsLoading(false);
+            return true; // API user found
           } else {
+            console.log('API token invalid, removing...');
             // Token invalid, remove it
             localStorage.removeItem('auth_token');
-            setUser(null);
           }
-        } else {
-          setUser(null);
         }
       } catch (error) {
         console.error('API auth check failed:', error);
         localStorage.removeItem('auth_token');
-        setUser(null);
-      } finally {
-        setIsLoading(false);
       }
+      return false; // No valid API user
+    };
+    
+    let firebaseUnsubscribe: (() => void) | null = null;
+    
+    // Check API token first
+    checkAPIToken().then(hasAPIUser => {
+      if (hasAPIUser) {
+        return; // API user found, no need to check Firebase
+      }
+      
+      // No API user, set up Firebase listener
+      firebaseUnsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+        if (firebaseUser) {
+          console.log('Firebase user found:', firebaseUser.email);
+          // Firebase user found (admin) - check if disabled
+          try {
+            const db = getFirestore();
+            const adminsCollection = collection(db, 'admins');
+            const adminQuery = query(adminsCollection, where('email', '==', (firebaseUser.email || '').toLowerCase()));
+            const querySnapshot = await getDocs(adminQuery);
+            
+            if (!querySnapshot.empty) {
+              const adminDoc = querySnapshot.docs[0];
+              const adminData = adminDoc.data();
+              
+              // Check if admin is disabled
+              if (adminData.disabled === true) {
+                // Sign out disabled admin automatically
+                await signOut(auth);
+                
+                // Log automatic signout of disabled admin
+                await logger.logSystemAction(
+                  'DISABLED_ADMIN_AUTO_SIGNOUT',
+                  `Disabled admin was automatically signed out: ${firebaseUser.email}`,
+                  'HIGH'
+                );
+                
+                setUser(null);
+                setIsLoading(false);
+                return;
+              }
+            }
+            
+            // Admin is not disabled or not found in Firestore (allow access for backwards compatibility)
+            const userData: User = {
+              id: firebaseUser.uid,
+              email: firebaseUser.email || '',
+              name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Admin',
+              role: 'admin',
+              authType: 'firebase'
+            };
+            setUser(userData);
+            setIsLoading(false);
+            return;
+          } catch (firestoreError) {
+            console.error('Error checking admin disabled status on auth change:', firestoreError);
+            
+            // If Firestore check fails, still allow access but log the issue
+            console.warn('Could not verify admin status on auth change, allowing access');
+            await logger.logSystemAction(
+              'ADMIN_STATUS_CHECK_FAILED_ON_AUTH',
+              `Could not verify admin status on auth change: ${firebaseUser.email}. Error: ${firestoreError}`,
+              'MEDIUM'
+            );
+            
+            const userData: User = {
+              id: firebaseUser.uid,
+              email: firebaseUser.email || '',
+              name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Admin',
+              role: 'admin',
+              authType: 'firebase'
+            };
+            setUser(userData);
+            setIsLoading(false);
+            return;
+          }
+        } else {
+          // No Firebase user and no API user
+          console.log('No Firebase user found, no session to restore');
+          setUser(null);
+          setIsLoading(false);
+        }
+      });
     });
-
-    // Return unsubscribe function
-    return unsubscribe;
+    
+    // Return cleanup function
+    return () => {
+      if (firebaseUnsubscribe) {
+        firebaseUnsubscribe();
+      }
+    };
   };
 
   const loginUser = async (usernameOrEmail: string, password: string) => {
@@ -156,12 +236,59 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const loginAdmin = async (email: string, password: string) => {
     // Admin login via Firebase
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
-      // Log successful admin login
-      await logger.logAdminLogin(email);
-      
-      return { success: true };
+      // Check if admin is disabled in Firestore
+      try {
+        const db = getFirestore();
+        const adminsCollection = collection(db, 'admins');
+        const adminQuery = query(adminsCollection, where('email', '==', email.toLowerCase()));
+        const querySnapshot = await getDocs(adminQuery);
+        
+        if (!querySnapshot.empty) {
+          const adminDoc = querySnapshot.docs[0];
+          const adminData = adminDoc.data();
+          
+          // Check if admin is disabled
+          if (adminData.disabled === true) {
+            // Sign out the user immediately
+            await signOut(auth);
+            
+            // Log attempted login by disabled admin
+            await logger.logSystemAction(
+              'DISABLED_ADMIN_LOGIN_ATTEMPT',
+              `Disabled admin attempted to login: ${email}`,
+              'HIGH'
+            );
+            
+            return { 
+              success: false, 
+              error: 'Your account has been disabled. Please contact a system administrator for assistance.' 
+            };
+          }
+        }
+        
+        // Admin is not disabled or not found in Firestore (allow login for backwards compatibility)
+        // Log successful admin login
+        await logger.logAdminLogin(email);
+        
+        return { success: true };
+      } catch (firestoreError) {
+        console.error('Error checking admin disabled status:', firestoreError);
+        
+        // If Firestore check fails, still allow login but log the issue
+        console.warn('Could not verify admin status, allowing login');
+        await logger.logSystemAction(
+          'ADMIN_STATUS_CHECK_FAILED',
+          `Could not verify admin status for login: ${email}. Error: ${firestoreError}`,
+          'MEDIUM'
+        );
+        
+        // Log successful admin login
+        await logger.logAdminLogin(email);
+        
+        return { success: true };
+      }
     } catch (error: unknown) {
       let errorMessage = 'Unable to sign in. Please try again.';
       

@@ -6,7 +6,8 @@ import { useToast } from '../../contexts/ToastContext';
 import { auth } from '../../lib/firebase';
 import { createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { logger } from '../../lib/logger';
-import { getFirestore, collection, addDoc, getDocs, query, orderBy } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, deleteDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import {
   MagnifyingGlassIcon,
   Cog6ToothIcon,
@@ -14,7 +15,9 @@ import {
   TrashIcon,
   PlusIcon,
   ExclamationTriangleIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  NoSymbolIcon,
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
 import colors from '../../../colors.json';
 import Modal from '../Modal';
@@ -27,6 +30,7 @@ interface Admin {
   role: string;
   lastLogin: string;
   permissions: string;
+  disabled?: boolean;
 }
 
 // Custom styles for dropdown hover effects
@@ -117,7 +121,8 @@ export default function Admins() {
             status: data.status || 'Active',
             role: data.role || 'Admin',
             lastLogin: data.lastLogin || data.createdAt,
-            permissions: data.permissions || 'User Management'
+            permissions: data.permissions || 'User Management',
+            disabled: data.disabled || false
           });
         });
         
@@ -145,7 +150,10 @@ export default function Admins() {
     admin.id.includes(searchTerm)
   );
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string, disabled?: boolean) => {
+    if (disabled) {
+      return { bg: '#F3F4F6', text: '#6B7280', border: '#D1D5DB' }; // Gray for disabled
+    }
     switch (status) {
       case 'Active':
         return { bg: '#DCFCE7', text: '#166534', border: '#BBF7D0' }; // Green
@@ -205,12 +213,186 @@ export default function Admins() {
     setAddModal(true);
   };
 
+  const handleToggleDisable = async (adminId: string) => {
+    const admin = admins.find(a => a.id === adminId);
+    if (!admin) return;
+    
+    const newDisabledState = !admin.disabled;
+    const action = newDisabledState ? 'disable' : 'enable';
+    
+    try {
+      const db = getFirestore();
+      const adminDocRef = doc(db, 'admins', adminId);
+      const adminDocSnap = await getDoc(adminDocRef);
+      
+      if (adminDocSnap.exists()) {
+        const adminData = adminDocSnap.data();
+        const firebaseUID = adminData.uid;
+        
+        if (firebaseUID) {
+          try {
+            // Use Firebase Cloud Function to toggle admin status
+            const functions = getFunctions();
+            const toggleAdminStatus = httpsCallable(functions, 'toggleAdminStatus');
+            
+            const result = await toggleAdminStatus({
+              uid: firebaseUID,
+              adminDocId: adminId,
+              disabled: newDisabledState
+            });
+            
+            console.log('Cloud Function result:', result);
+            
+            // Update local state for immediate UI update
+            setAdmins(prev => prev.map(a => 
+              a.id === adminId ? { ...a, disabled: newDisabledState } : a
+            ));
+            
+            // Log admin status change
+            await logger.logAdminUpdated(admin.email, {
+              disabled: { old: admin.disabled, new: newDisabledState }
+            });
+            
+            showSuccess(`Admin ${admin.name} has been ${newDisabledState ? 'disabled' : 'enabled'} successfully`);
+            
+          } catch (cloudFunctionError) {
+            console.error('Cloud Function error:', cloudFunctionError);
+            
+            // Fallback: Update only Firestore if Cloud Function fails
+            console.log('Cloud Function failed, falling back to Firestore-only update');
+            await updateDoc(adminDocRef, {
+              disabled: newDisabledState,
+              updatedAt: new Date().toISOString()
+            });
+            
+            // Update local state
+            setAdmins(prev => prev.map(a => 
+              a.id === adminId ? { ...a, disabled: newDisabledState } : a
+            ));
+            
+            // Log admin status change (partial)
+            await logger.logAdminUpdated(admin.email, {
+              disabled: { old: admin.disabled, new: newDisabledState }
+            });
+            
+            showError(`Admin ${admin.name} was ${action}d in the system, but the Firebase account status could not be updated. This may require manual sync.`);
+          }
+        } else {
+          // No Firebase UID found, just update Firestore
+          await updateDoc(adminDocRef, {
+            disabled: newDisabledState,
+            updatedAt: new Date().toISOString()
+          });
+          
+          // Update local state
+          setAdmins(prev => prev.map(a => 
+            a.id === adminId ? { ...a, disabled: newDisabledState } : a
+          ));
+          
+          // Log admin status change
+          await logger.logAdminUpdated(admin.email, {
+            disabled: { old: admin.disabled, new: newDisabledState }
+          });
+          
+          showSuccess(`Admin ${admin.name} has been ${action}d successfully (no Firebase account found)`);
+        }
+      } else {
+        showError('Admin not found in database');
+      }
+      
+    } catch (error) {
+      console.error(`Error ${action}ing admin:`, error);
+      showError(`Failed to ${action} admin. Please try again.`);
+      
+      // Log status change failure
+      await logger.logSystemAction(
+        'ADMIN_STATUS_CHANGE_FAILED',
+        `Failed to ${action} admin: ${admin.email}. Error: ${error}`,
+        'HIGH'
+      );
+    }
+  };
+
   const confirmDelete = async () => {
     if (deleteModal.admin) {
-      // Log admin deletion
-      await logger.logAdminDeleted(deleteModal.admin.email);
+      try {
+        const db = getFirestore();
+        const adminId = deleteModal.admin.id;
+        const adminName = deleteModal.admin.name;
+        const adminEmail = deleteModal.admin.email;
+        
+        // First, get the admin document to get the Firebase UID
+        const adminDocRef = doc(db, 'admins', adminId);
+        const adminDocSnap = await getDoc(adminDocRef);
+        
+        if (adminDocSnap.exists()) {
+          const adminData = adminDocSnap.data();
+          const firebaseUID = adminData.uid;
+          
+          if (firebaseUID) {
+            try {
+              // Use Firebase Cloud Function to delete both Auth user and Firestore document
+              const functions = getFunctions();
+              const deleteAdminComplete = httpsCallable(functions, 'deleteAdminComplete');
+              
+              const result = await deleteAdminComplete({
+                uid: firebaseUID,
+                adminDocId: adminId
+              });
+              
+              console.log('Cloud Function result:', result);
+              
+              // Remove from local state for immediate UI update
+              setAdmins(prev => prev.filter(admin => admin.id !== adminId));
+              
+              // Log admin deletion
+              await logger.logAdminDeleted(adminEmail);
+              
+              showSuccess(`Admin ${adminName} and their Firebase account have been completely deleted`);
+              
+            } catch (cloudFunctionError) {
+              console.error('Cloud Function error:', cloudFunctionError);
+              
+              // Fallback: Delete only from Firestore if Cloud Function fails
+              console.log('Cloud Function failed, falling back to Firestore-only deletion');
+              await deleteDoc(adminDocRef);
+              
+              // Remove from local state
+              setAdmins(prev => prev.filter(admin => admin.id !== adminId));
+              
+              // Log admin deletion (partial)
+              await logger.logAdminDeleted(adminEmail);
+              
+              showError(`Admin ${adminName} was removed from the system, but the Firebase account could not be deleted. This may require manual cleanup.`);
+            }
+          } else {
+            // No Firebase UID found, just delete from Firestore
+            await deleteDoc(adminDocRef);
+            
+            // Remove from local state
+            setAdmins(prev => prev.filter(admin => admin.id !== adminId));
+            
+            // Log admin deletion
+            await logger.logAdminDeleted(adminEmail);
+            
+            showSuccess(`Admin ${adminName} has been deleted successfully (no Firebase account found)`);
+          }
+        } else {
+          showError('Admin not found in database');
+        }
+        
+      } catch (error) {
+        console.error('Error deleting admin:', error);
+        showError('Failed to delete admin. Please try again.');
+        
+        // Log deletion failure
+        await logger.logSystemAction(
+          'ADMIN_DELETE_FAILED',
+          `Failed to delete admin: ${deleteModal.admin.email}. Error: ${error}`,
+          'HIGH'
+        );
+      }
       
-      showSuccess(`Admin ${deleteModal.admin.name} has been deleted successfully`);
       setDeleteModal({ isOpen: false, admin: null });
     }
   };
@@ -312,7 +494,8 @@ export default function Admins() {
         status: adminData.status,
         role: adminData.role,
         lastLogin: adminData.lastLogin,
-        permissions: adminData.permissions
+        permissions: adminData.permissions,
+        disabled: false
       };
       
       setAdmins(prev => [...prev, newAdmin]);
@@ -454,29 +637,34 @@ export default function Admins() {
             </thead>
             <tbody className={`divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-200'}`}>
               {filteredAdmins.map((admin) => {
-                const statusColors = getStatusColor(admin.status);
+                const statusColors = getStatusColor(admin.status, admin.disabled);
                 const roleColors = getRoleColor(admin.role);
                 
                 return (
-                  <tr key={admin.id} className={`${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors`}>
+                  <tr key={admin.id} className={`${admin.disabled ? 'opacity-50 bg-gray-50 dark:bg-gray-800' : ''} ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-all duration-200`}>
                     <td className={`hidden sm:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
                       {admin.id}
                     </td>
                     <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-8 w-8">
-                          <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: colors.colors.primary + '20' }}>
-                            <ShieldCheckIcon className="h-5 w-5" style={{ color: colors.colors.primary }} />
+                          <div className={`h-8 w-8 rounded-full flex items-center justify-center ${admin.disabled ? 'opacity-50' : ''}`} style={{ backgroundColor: colors.colors.primary + '20' }}>
+                            <ShieldCheckIcon className="h-5 w-5" style={{ color: admin.disabled ? '#9CA3AF' : colors.colors.primary }} />
                           </div>
                         </div>
                         <div className="ml-3">
-                          <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                          <div className={`text-sm font-medium ${admin.disabled ? 'line-through' : ''} ${isDark ? 'text-white' : 'text-gray-900'} ${admin.disabled ? 'text-gray-500' : ''}`}>
                             {admin.name}
+                            {admin.disabled && (
+                              <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                                Disabled
+                              </span>
+                            )}
                             <span className={`sm:hidden block text-xs font-normal ${isDark ? 'text-gray-400' : 'text-gray-500'} mt-0.5`}>
                               {admin.id}
                             </span>
                           </div>
-                          <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                          <div className={`text-sm ${admin.disabled ? 'line-through' : ''} ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                             {admin.email}
                           </div>
                         </div>
@@ -540,17 +728,25 @@ export default function Admins() {
                           <PencilIcon className="h-4 w-4" />
                         </button>
                         
-                        {/* Delete Button */}
+                        {/* Disable/Enable Toggle Button */}
                         <button
-                          onClick={() => handleDelete(admin.id)}
+                          onClick={() => handleToggleDisable(admin.id)}
                           className={`p-1.5 rounded-md transition-colors ${
-                            isDark 
-                              ? 'text-gray-400 hover:text-red-400 hover:bg-gray-600' 
-                              : 'text-gray-500 hover:text-red-600 hover:bg-gray-100'
+                            admin.disabled
+                              ? isDark 
+                                ? 'text-green-400 hover:text-green-300 hover:bg-gray-600' 
+                                : 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                              : isDark 
+                                ? 'text-orange-400 hover:text-orange-300 hover:bg-gray-600' 
+                                : 'text-orange-600 hover:text-orange-700 hover:bg-orange-50'
                           }`}
-                          title="Delete Admin"
+                          title={admin.disabled ? 'Enable Admin' : 'Disable Admin'}
                         >
-                          <TrashIcon className="h-4 w-4" />
+                          {admin.disabled ? (
+                            <CheckCircleIcon className="h-4 w-4" />
+                          ) : (
+                            <NoSymbolIcon className="h-4 w-4" />
+                          )}
                         </button>
                       </div>
                     </td>
