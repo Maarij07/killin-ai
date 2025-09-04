@@ -104,12 +104,6 @@ export default function AdminLayout({ children, currentPage = 'dashboard', onNav
                             )}
                             <button
                               onClick={() => {
-                                // Log navigation action
-                                logger.logSystemAction(
-                                  'ADMIN_NAVIGATION',
-                                  `Admin navigated to: ${item.name}`,
-                                  'LOW'
-                                );
                                 onNavigate?.(item.href);
                                 setSidebarOpen(false);
                               }}
@@ -162,12 +156,6 @@ export default function AdminLayout({ children, currentPage = 'dashboard', onNav
                             )}
                             <button
                               onClick={() => {
-                                // Log navigation action
-                                logger.logSystemAction(
-                                  'ADMIN_NAVIGATION',
-                                  `Admin navigated to: ${item.name}`,
-                                  'LOW'
-                                );
                                 onNavigate?.(item.href);
                                 setSidebarOpen(false);
                               }}
@@ -250,12 +238,6 @@ export default function AdminLayout({ children, currentPage = 'dashboard', onNav
                         )}
                         <button
                           onClick={() => {
-                            // Log navigation action
-                            logger.logSystemAction(
-                              'ADMIN_NAVIGATION',
-                              `Admin navigated to: ${item.name}`,
-                              'LOW'
-                            );
                             onNavigate?.(item.href);
                           }}
                           className={classNames(
@@ -307,12 +289,6 @@ export default function AdminLayout({ children, currentPage = 'dashboard', onNav
                         )}
                           <button
                             onClick={() => {
-                              // Log navigation action
-                              logger.logSystemAction(
-                                'ADMIN_NAVIGATION',
-                                `Admin navigated to: ${item.name}`,
-                                'LOW'
-                              );
                               onNavigate?.(item.href);
                             }}
                           className={classNames(

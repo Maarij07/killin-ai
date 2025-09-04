@@ -29,6 +29,8 @@ interface User {
   created_at: string;
   updated_at: string;
   join_date: string;
+  agent_id: string | null;
+  prompt: string | null;
 }
 
 // Custom styles for dropdown hover effects
@@ -74,6 +76,8 @@ const dropdownStyles = `
 `;
 
 const API_BASE_URL = 'https://3758a6b3509d.ngrok-free.app/api';
+const VAPI_API_KEY = '4214a0ea-b594-435d-9abb-599c1f3a81ea';
+const VAPI_BASE_URL = 'https://api.vapi.ai';
 
 export default function ManageUsers() {
   const { isDark } = useTheme();
@@ -109,12 +113,6 @@ export default function ManageUsers() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        // Log user management page access
-        logger.logSystemAction(
-          'USER_MANAGEMENT_ACCESSED',
-          'Admin accessed user management page',
-          'LOW'
-        );
         
         const response = await fetch(`${API_BASE_URL}/auth/users`, {
           headers: {
@@ -124,15 +122,8 @@ export default function ManageUsers() {
         
         if (response.ok) {
           const data = await response.json();
-          console.log('Fetched users data:', data);
           setUsers(data.users || data || []);
           
-          // Log successful data fetch
-          logger.logSystemAction(
-            'USER_DATA_FETCHED',
-            `Successfully fetched ${(data.users || data || []).length} users`,
-            'LOW'
-          );
         } else {
           console.error('Failed to fetch users:', response.status);
           showError('Failed to load users data');
@@ -183,8 +174,15 @@ export default function ManageUsers() {
   const getPlanColor = (plan: string) => {
     const normalizedPlan = (plan || '').toLowerCase();
     switch (normalizedPlan) {
-      case 'free':
+      case 'basic':
       case '':
+        return { bg: '#DBEAFE', text: '#1D4ED8', border: '#93C5FD' }; // Blue
+      case 'premium':
+        return { bg: '#D1FAE5', text: '#065F46', border: '#A7F3D0' }; // Green
+      case 'enterprise':
+        return { bg: '#E9D5FF', text: '#7C3AED', border: '#C4B5FD' }; // Purple
+      // Legacy plan names for backward compatibility
+      case 'free':
         return { bg: '#F3F4F6', text: '#6B7280', border: '#D1D5DB' }; // Gray
       case 'starter':
         return { bg: '#DBEAFE', text: '#1D4ED8', border: '#93C5FD' }; // Blue
@@ -225,18 +223,31 @@ export default function ManageUsers() {
   const handleVapiSettings = (userId: number) => {
     const user = users.find(u => u.id === userId);
     if (user) {
-      // Log VAPI settings access
-      logger.logUserAction(
-        'USER_VAPI_SETTINGS_ACCESSED',
-        user.email,
-        `Admin accessed VAPI settings for user: ${user.name} (ID: ${userId})`
-      );
       
-      // Pre-populate form with the selected user's data
+      // Extract greeting from the prompt or use default
+      let extractedGreeting = `Hello, Thank you for calling ${user.name}. How can I help you today?`;
+      let extractedSystemPrompt = user.prompt || '';
+      
+      // If there's a prompt, try to extract a greeting from it
+      if (user.prompt) {
+        // Look for common greeting patterns in the prompt
+        const greetingMatch = user.prompt.match(/(?:Hello|Hi|Thank you for calling)[^.!?]*[.!?]/i);
+        if (greetingMatch) {
+          extractedGreeting = greetingMatch[0].trim();
+        }
+        
+        // Use the full prompt as system prompt
+        extractedSystemPrompt = user.prompt;
+      } else {
+        // Generate default system prompt if none exists
+        extractedSystemPrompt = `You are a friendly, fast restaurant phone attendant for ${user.name.toUpperCase()}. Goal: Ask for the customer's name, take accurate pickup or delivery orders and confirm timing--clearly, politely, and in as few words as possible.\nStyle:\n-\nwarm, concise, professional. One to two sentences at a time.\nAsk one question at a time. Do not interrupt the caller.\nIf unsure, ask a clarifying question; don't guess.\nCore flow (follow in order):\n1) Greet Intent: "Pickup or delivery today?"\n2) Get name and callback number.\n3) For delivery: get full address (street, apartment, city) and any gate/buzzer notes.\n4) Take the order:\n-\nItem, size/variant, quantity, options (sauce/spice/temperature), extras, special instructions.\nIf an item is unavailable or unclear, offer close alternatives or best-sellers.\n5) Ask about allergies or dietary needs. Offer safe options without medical advice.\n6) Upsell gently (ONE quick option): sides, drinks, or desserts.\n7) Read-back and confirm: items, quantities, options, subtotal if known, delivery fee/taxes, and total if available.\n8) Quote timing: pickup-ready time or delivery estimate.\n9) Payment:\n-\nPrefer pay at pickup/delivery or a secure link if available.\nDo NOT collect full credit card numbers over the phone.`;
+      }
+      
+      // Pre-populate form with the selected user's real data
       setVapiForm({
         selectedUser: userId.toString(),
-        startingMessage: `Hello, Thank you for calling ${user.name}. How can I help you today?`,
-        systemPrompt: `You are a friendly, fast restaurant phone attendant for ${user.name.toUpperCase()}. Goal: Ask for the customer's name, take accurate pickup or delivery orders and confirm timing--clearly, politely, and in as few words as possible.\nStyle:\n-\nwarm, concise, professional. One to two sentences at a time.\nAsk one question at a time. Do not interrupt the caller.\nIf unsure, ask a clarifying question; don't guess.\nCore flow (follow in order):\n1) Greet Intent: "Pickup or delivery today?"\n2) Get name and callback number.\n3) For delivery: get full address (street, apartment, city) and any gate/buzzer notes.\n4) Take the order:\n-\nItem, size/variant, quantity, options (sauce/spice/temperature), extras, special instructions.\nIf an item is unavailable or unclear, offer close alternatives or best-sellers.\n5) Ask about allergies or dietary needs. Offer safe options without medical advice.\n6) Upsell gently (ONE quick option): sides, drinks, or desserts.\n7) Read-back and confirm: items, quantities, options, subtotal if known, delivery fee/taxes, and total if available.\n8) Quote timing: pickup-ready time or delivery estimate.\n9) Payment:\n-\nPrefer pay at pickup/delivery or a secure link if available.\nDo NOT collect full credit card numbers over the phone.`,
+        startingMessage: extractedGreeting,
+        systemPrompt: extractedSystemPrompt,
         isEditing: false
       });
       setVapiModal({ isOpen: true, user });
@@ -246,17 +257,11 @@ export default function ManageUsers() {
   const handleEdit = (userId: number) => {
     const user = users.find(u => u.id === userId);
     if (user) {
-      // Log user edit action
-      logger.logUserAction(
-        'USER_EDIT_OPENED',
-        user.email,
-        `Admin opened edit dialog for user: ${user.name} (ID: ${userId})`
-      );
       
       setEditForm({
         status: user.status,
         totalMinutes: user.minutes_allowed.toString(),
-        planSubscription: user.plan || 'free' // Default to 'free' if plan is null or empty
+        planSubscription: user.plan || 'basic' // Default to 'basic' if plan is null or empty
       });
       setManageModal({ isOpen: true, user });
     }
@@ -265,12 +270,6 @@ export default function ManageUsers() {
   const handleDelete = (userId: number) => {
     const user = users.find(u => u.id === userId);
     if (user) {
-      // Log delete attempt
-      logger.logUserAction(
-        'USER_DELETE_INITIATED',
-        user.email,
-        `Admin initiated delete for user: ${user.name} (ID: ${userId})`
-      );
       
       setDeleteModal({ isOpen: true, user });
     }
@@ -295,7 +294,7 @@ export default function ManageUsers() {
     setDeleteModal({ isOpen: false, user: null });
   };
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     if (manageModal.user) {
       // Log user update with details of changes
       const changes = {
@@ -303,7 +302,7 @@ export default function ManageUsers() {
         newStatus: editForm.status,
         oldMinutes: manageModal.user.minutes_allowed.toString(),
         newMinutes: editForm.totalMinutes,
-        oldPlan: manageModal.user.plan,
+        oldPlan: manageModal.user.plan || 'basic',
         newPlan: editForm.planSubscription
       };
       
@@ -313,7 +312,110 @@ export default function ManageUsers() {
         `Admin updated user: ${manageModal.user.name} (ID: ${manageModal.user.id}). Changes: Status(${changes.oldStatus}→${changes.newStatus}), Minutes(${changes.oldMinutes}→${changes.newMinutes}), Plan(${changes.oldPlan}→${changes.newPlan})`
       );
       
-      showSuccess(`Changes saved for ${manageModal.user.name}`);
+      try {
+        // Determine plan type based on changes
+        let planType = "custom";
+        let planChanged = false;
+        
+        // Map current plan names to API expected names
+        const planMapping = {
+          'basic': 'basic',
+          'premium': 'premium',
+          'enterprise': 'enterprise'
+        };
+        
+        // Check if plan actually changed
+        if (changes.oldPlan !== changes.newPlan) {
+          planChanged = true;
+          planType = planMapping[changes.newPlan] || 'basic';
+        } else {
+          // If only minutes changed (same plan), set plan_type as "custom"
+          planType = "custom";
+        }
+        
+        // Prepare API payload with admin flag
+        const payload = {
+          user_id: manageModal.user.id,
+          plan_type: planType,
+          amount_paid: 0,
+          transaction_id: "",
+          payment_intent_id: "",
+          minutes: parseInt(editForm.totalMinutes),
+          is_admin: true
+        };
+        
+        console.log('Sending payment confirmation API call:', payload);
+        
+        // Make API call to confirm payment/update user
+        const response = await fetch(`${API_BASE_URL}/stripe/confirm-payment`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true'
+          },
+          body: JSON.stringify(payload)
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log('Payment confirmation API response:', result);
+          
+          // Log successful API call
+          logger.logUserAction(
+            'USER_PAYMENT_CONFIRMED',
+            manageModal.user.email,
+            `Admin updated user via payment API: ${manageModal.user.name} (ID: ${manageModal.user.id}). Plan: ${planType}, Minutes: ${editForm.totalMinutes}`
+          );
+          
+          showSuccess(`Changes saved for ${manageModal.user.name}`);
+          
+          // Refresh users data to reflect changes
+          const fetchUsers = async () => {
+            try {
+              const response = await fetch(`${API_BASE_URL}/auth/users`, {
+                headers: {
+                  'ngrok-skip-browser-warning': 'true'
+                }
+              });
+              
+              if (response.ok) {
+                const data = await response.json();
+                setUsers(data.users || data || []);
+              }
+            } catch (error) {
+              console.error('Error refreshing users:', error);
+            }
+          };
+          fetchUsers();
+          
+        } else {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          console.error('Payment confirmation API failed:', response.status, errorData);
+          
+          // Log API failure
+          logger.logUserAction(
+            'USER_PAYMENT_CONFIRMATION_FAILED',
+            manageModal.user.email,
+            `Admin failed to update user via payment API: ${manageModal.user.name} (ID: ${manageModal.user.id}). Error: ${response.status} - ${JSON.stringify(errorData)}`
+          );
+          
+          showError(`Failed to save changes: ${errorData.message || errorData.error || 'API request failed'}`);
+          return; // Don't close modal if API fails
+        }
+      } catch (error) {
+        console.error('Error calling payment confirmation API:', error);
+        
+        // Log connection error
+        logger.logUserAction(
+          'USER_PAYMENT_API_ERROR',
+          manageModal.user.email,
+          `Admin encountered error calling payment API for user: ${manageModal.user.name} (ID: ${manageModal.user.id}). Error: ${error}`
+        );
+        
+        showError(`Failed to connect to API: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        return; // Don't close modal if API fails
+      }
+      
       setManageModal({ isOpen: false, user: null });
     }
   };
@@ -334,35 +436,257 @@ export default function ManageUsers() {
     if (field === 'selectedUser' && value) {
       const selectedUser = users.find(u => u.id.toString() === value);
       if (selectedUser) {
+        
+        // Extract greeting from the prompt or use default
+        let extractedGreeting = `Hello, Thank you for calling ${selectedUser.name}. How can I help you today?`;
+        let extractedSystemPrompt = selectedUser.prompt || '';
+        
+        // If there's a prompt, try to extract a greeting from it
+        if (selectedUser.prompt) {
+          // Look for common greeting patterns in the prompt
+          const greetingMatch = selectedUser.prompt.match(/(?:Hello|Hi|Thank you for calling)[^.!?]*[.!?]/i);
+          if (greetingMatch) {
+            extractedGreeting = greetingMatch[0].trim();
+          }
+          
+          // Use the full prompt as system prompt
+          extractedSystemPrompt = selectedUser.prompt;
+        } else {
+          // Generate default system prompt if none exists
+          extractedSystemPrompt = `You are a friendly, fast restaurant phone attendant for ${selectedUser.name.toUpperCase()}. Goal: Ask for the customer's name, take accurate pickup or delivery orders and confirm timing--clearly, politely, and in as few words as possible.\nStyle:\n-\nwarm, concise, professional. One to two sentences at a time.\nAsk one question at a time. Do not interrupt the caller.\nIf unsure, ask a clarifying question; don't guess.\nCore flow (follow in order):\n1) Greet Intent: "Pickup or delivery today?"\n2) Get name and callback number.\n3) For delivery: get full address (street, apartment, city) and any gate/buzzer notes.\n4) Take the order:\n-\nItem, size/variant, quantity, options (sauce/spice/temperature), extras, special instructions.\nIf an item is unavailable or unclear, offer close alternatives or best-sellers.\n5) Ask about allergies or dietary needs. Offer safe options without medical advice.\n6) Upsell gently (ONE quick option): sides, drinks, or desserts.\n7) Read-back and confirm: items, quantities, options, subtotal if known, delivery fee/taxes, and total if available.\n8) Quote timing: pickup-ready time or delivery estimate.\n9) Payment:\n-\nPrefer pay at pickup/delivery or a secure link if available.\nDo NOT collect full credit card numbers over the phone.`;
+        }
+        
         setVapiForm(prev => ({
           ...prev,
           selectedUser: value,
-          startingMessage: `Hello, Thank you for calling ${selectedUser.name}. How can I help you today?`,
-          systemPrompt: `You are a friendly, fast restaurant phone attendant for ${selectedUser.name.toUpperCase()}. Goal: Ask for the customer's name, take accurate pickup or delivery orders and confirm timing--clearly, politely, and in as few words as possible.\nStyle:\n-\nwarm, concise, professional. One to two sentences at a time.\nAsk one question at a time. Do not interrupt the caller.\nIf unsure, ask a clarifying question; don't guess.\nCore flow (follow in order):\n1) Greet Intent: "Pickup or delivery today?"\n2) Get name and callback number.\n3) For delivery: get full address (street, apartment, city) and any gate/buzzer notes.\n4) Take the order:\n-\nItem, size/variant, quantity, options (sauce/spice/temperature), extras, special instructions.\nIf an item is unavailable or unclear, offer close alternatives or best-sellers.\n5) Ask about allergies or dietary needs. Offer safe options without medical advice.\n6) Upsell gently (ONE quick option): sides, drinks, or desserts.\n7) Read-back and confirm: items, quantities, options, subtotal if known, delivery fee/taxes, and total if available.\n8) Quote timing: pickup-ready time or delivery estimate.\n9) Payment:\n-\nPrefer pay at pickup/delivery or a secure link if available.\nDo NOT collect full credit card numbers over the phone.`
+          startingMessage: extractedGreeting,
+          systemPrompt: extractedSystemPrompt
         }));
       }
     }
   };
 
   const startVapiEdit = () => {
+    console.log('🔧 Starting VAPI edit mode');
     setVapiForm(prev => ({ ...prev, isEditing: true }));
   };
 
-  const saveVapiChanges = () => {
+  const saveVapiChanges = async () => {
+    console.log('💾 saveVapiChanges function called!');
+    console.log('Current vapiForm state:', vapiForm);
+    
     if (vapiForm.selectedUser) {
       const selectedUser = users.find(u => u.id.toString() === vapiForm.selectedUser);
+      console.log('Selected user data:', selectedUser);
+      
       if (selectedUser) {
-        // Log VAPI configuration save
-        logger.logUserAction(
-          'USER_VAPI_SETTINGS_UPDATED',
-          selectedUser.email,
-          `Admin updated VAPI configuration for user: ${selectedUser.name} (ID: ${selectedUser.id})`
-        );
+        console.log('Agent ID found:', selectedUser.agent_id);
         
-        showSuccess(`VAPI configuration saved for ${selectedUser.name}`);
+        // Check if user has an agent_id (assistant_id)
+        if (!selectedUser.agent_id) {
+          showError(`No agent ID found for ${selectedUser.name}. Cannot update VAPI assistant.`);
+          logger.logUserAction(
+            'USER_VAPI_UPDATE_FAILED',
+            selectedUser.email,
+            `Admin attempted to update VAPI configuration but no agent_id found for user: ${selectedUser.name} (ID: ${selectedUser.id})`
+          );
+          return;
+        }
+
+        try {
+
+          // First, try to GET the assistant to see if it exists
+          console.log('Testing assistant existence with GET request...');
+          const testResponse = await fetch(`https://api.vapi.ai/assistant/${selectedUser.agent_id}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': 'Bearer 4214a0ea-b594-435d-9abb-599c1f3a81ea',
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          console.log('GET Response Status:', testResponse.status);
+          if (testResponse.ok) {
+            const assistantData = await testResponse.json();
+            console.log('Assistant exists:', assistantData);
+          } else {
+            const errorData = await testResponse.json().catch(() => ({ error: 'Unknown error' }));
+            console.error('Assistant GET failed:', testResponse.status, errorData);
+          }
+
+          // Log the request details for debugging
+          const requestUrl = `https://api.vapi.ai/assistant/${selectedUser.agent_id}`;
+          const requestBody = {
+            firstMessage: vapiForm.startingMessage,
+            backgroundSound: "office",
+            model: {
+              provider: "openai",
+              model: "gpt-4o",
+              messages: [
+                {
+                  content: vapiForm.systemPrompt,
+                  role: "system"
+                }
+              ]
+            }
+          };
+          
+          console.log('VAPI API Request Details:');
+          console.log('URL:', requestUrl);
+          console.log('Method: PATCH');
+          console.log('Body:', JSON.stringify(requestBody, null, 2));
+          console.log('Agent ID:', selectedUser.agent_id);
+          
+          // Call VAPI API to update the assistant
+          const response = await fetch(requestUrl, {
+            method: 'PATCH',
+            headers: {
+              'Authorization': 'Bearer 4214a0ea-b594-435d-9abb-599c1f3a81ea',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            console.log('VAPI assistant updated successfully:', result);
+            
+            // Log successful update
+            logger.logUserAction(
+              'USER_VAPI_SETTINGS_UPDATED',
+              selectedUser.email,
+              `Admin successfully updated VAPI configuration for user: ${selectedUser.name} (ID: ${selectedUser.id})`
+            );
+            
+            showSuccess(`VAPI configuration saved for ${selectedUser.name}`);
+            setVapiForm(prev => ({ ...prev, isEditing: false }));
+            
+            // Sync with VAPI to get updated prompts
+            try {
+              console.log('🔄 Starting VAPI sync after update...');
+              
+              // Step 1: Fetch all VAPI assistants
+              const vapiListResponse = await fetch(`${VAPI_BASE_URL}/assistant`, {
+                method: 'GET',
+                headers: {
+                  'Authorization': `Bearer ${VAPI_API_KEY}`,
+                  'Content-Type': 'application/json'
+                }
+              });
+
+              if (vapiListResponse.ok) {
+                const vapiAssistants = await vapiListResponse.json();
+                console.log('📦 Fetched VAPI assistants for sync:', vapiAssistants);
+
+                // Step 2: Create a map of agent_id to assistant data
+                const assistantMap = new Map();
+                vapiAssistants.forEach(assistant => {
+                  if (assistant.id) {
+                    // Extract system prompt from assistant model messages
+                    let systemPrompt = '';
+                    if (assistant.model?.messages && Array.isArray(assistant.model.messages)) {
+                      const systemMessage = assistant.model.messages.find(msg => msg.role === 'system');
+                      if (systemMessage) {
+                        systemPrompt = systemMessage.content || '';
+                      }
+                    }
+                    
+                    assistantMap.set(assistant.id, {
+                      firstMessage: assistant.firstMessage || '',
+                      systemPrompt: systemPrompt
+                    });
+                  }
+                });
+
+                console.log('🗺️ Assistant mapping for sync:', Array.from(assistantMap.entries()));
+
+                // Step 3: Update users with matching agent_ids
+                const updatedUsers = users.map(user => {
+                  if (user.agent_id && assistantMap.has(user.agent_id)) {
+                    const assistantData = assistantMap.get(user.agent_id);
+                    console.log(`🔄 Updating user ${user.name} (${user.agent_id}):`, assistantData);
+                    
+                    return {
+                      ...user,
+                      prompt: assistantData.systemPrompt
+                    };
+                  }
+                  return user;
+                });
+
+                // Step 4: Update database with new prompts
+                try {
+                  const usersToUpdate = updatedUsers.filter(user => {
+                    const originalUser = users.find(u => u.id === user.id);
+                    return originalUser && originalUser.prompt !== user.prompt;
+                  });
+
+                  console.log('🗃️ Updating database with new prompts for users:', usersToUpdate.map(u => ({ id: u.id, name: u.name })));
+
+                  for (const user of usersToUpdate) {
+                    console.log(`📝 Updating prompt for user ${user.name} (ID: ${user.id})`);
+                    const updateResponse = await fetch(`${API_BASE_URL}/auth/users/${user.id}/prompt`, {
+                      method: 'PUT',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                      },
+                      body: JSON.stringify({ prompt: user.prompt })
+                    });
+
+                    if (!updateResponse.ok) {
+                      console.warn(`Failed to update prompt for user ${user.id} in database:`, updateResponse.status);
+                    } else {
+                      console.log(`✅ Successfully updated prompt for user ${user.name} in database`);
+                    }
+                  }
+                } catch (dbError) {
+                  console.warn('Failed to update database with new prompts:', dbError);
+                }
+
+                // Step 5: Update local state
+                setUsers(updatedUsers);
+                
+                // Step 5: Re-populate VAPI form with updated data
+                const updatedUser = updatedUsers.find(u => u.id.toString() === selectedUser.id.toString());
+                if (updatedUser) {
+                  handleVapiFormChange('selectedUser', updatedUser.id.toString());
+                }
+                
+                console.log('✅ VAPI sync completed successfully');
+              } else {
+                console.error('Failed to sync with VAPI assistants:', vapiListResponse.status);
+              }
+            } catch (syncError) {
+              console.error('Error syncing with VAPI assistants:', syncError);
+            }
+          } else {
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            console.error('Failed to update VAPI assistant:', response.status, errorData);
+            
+            // Log API failure
+            logger.logUserAction(
+              'USER_VAPI_UPDATE_FAILED',
+              selectedUser.email,
+              `Admin failed to update VAPI configuration for user: ${selectedUser.name} (ID: ${selectedUser.id}). API Error: ${response.status} - ${JSON.stringify(errorData)}`
+            );
+            
+            showError(`Failed to update VAPI configuration: ${errorData.error || 'API request failed'}`);
+          }
+        } catch (error) {
+          console.error('Error updating VAPI assistant:', error);
+          
+          // Log connection error
+          logger.logUserAction(
+            'USER_VAPI_UPDATE_ERROR',
+            selectedUser.email,
+            `Admin encountered error updating VAPI configuration for user: ${selectedUser.name} (ID: ${selectedUser.id}). Error: ${error}`
+          );
+          
+          showError(`Failed to connect to VAPI API: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
       }
     }
-    setVapiForm(prev => ({ ...prev, isEditing: false }));
   };
 
   const cancelVapiEdit = () => {
@@ -519,18 +843,23 @@ export default function ManageUsers() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <div className="flex items-center space-x-3">
-                        {/* Settings Button - VAPI Configuration */}
-                        <button
-                          onClick={() => handleVapiSettings(user.id)}
-                          className={`p-1.5 rounded-md transition-colors ${
-                            isDark 
-                              ? 'text-gray-400 hover:text-white hover:bg-gray-600' 
-                              : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                          }`}
-                          title="VAPI Configuration"
-                        >
-                          <Cog6ToothIcon className="h-4 w-4" />
-                        </button>
+                        {/* Settings Button - VAPI Configuration - Show for users with agent_id, invisible placeholder for others */}
+                        {user.agent_id ? (
+                          <button
+                            onClick={() => handleVapiSettings(user.id)}
+                            className={`p-1.5 rounded-md transition-colors ${
+                              isDark 
+                                ? 'text-gray-400 hover:text-white hover:bg-gray-600' 
+                                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                            }`}
+                            title="VAPI Configuration"
+                          >
+                            <Cog6ToothIcon className="h-4 w-4" />
+                          </button>
+                        ) : (
+                          <div className="p-1.5 w-7 h-7"> {/* Invisible placeholder to maintain spacing */}
+                          </div>
+                        )}
                         
                         {/* Edit Button */}
                         <button
@@ -689,10 +1018,9 @@ export default function ManageUsers() {
                             : 'bg-white border-gray-300 text-gray-900'
                         } focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500`}
                       >
-                        <option value="free">Free</option>
-                        <option value="starter">Starter</option>
-                        <option value="popular">Popular</option>
-                        <option value="pro">Pro</option>
+                        <option value="basic">Basic</option>
+                        <option value="premium">Premium</option>
+                        <option value="enterprise">Enterprise</option>
                       </select>
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                         <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -840,7 +1168,7 @@ export default function ManageUsers() {
                   } focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500`}
                 >
                   <option value="">-- Select a user --</option>
-                  {users.map((user) => (
+                  {users.filter(user => user.agent_id).map((user) => (
                     <option key={user.id} value={user.id.toString()}>
                       {user.name} (#{user.id})
                     </option>
@@ -876,9 +1204,69 @@ export default function ManageUsers() {
               </div>
             )}
 
-            {/* Configuration Fields - Only show when user is selected */}
+            {/* User Information Section - Only show when user is selected */}
             {vapiForm.selectedUser && (
-              <div className="grid grid-cols-2 gap-6">
+              <>
+                {/* User Information Display */}
+                <div className={`${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} rounded-lg border p-4 mb-4`}>
+                  <h4 className={`text-sm font-semibold mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    User Information
+                  </h4>
+                  {(() => {
+                    const selectedUserData = users.find(u => u.id.toString() === vapiForm.selectedUser);
+                    return selectedUserData ? (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className={`text-xs font-medium uppercase tracking-wide ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                            Restaurant Name
+                          </label>
+                          <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            {selectedUserData.name}
+                          </p>
+                        </div>
+                        <div>
+                          <label className={`text-xs font-medium uppercase tracking-wide ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                            Email
+                          </label>
+                          <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                            {selectedUserData.email}
+                          </p>
+                        </div>
+                        <div>
+                          <label className={`text-xs font-medium uppercase tracking-wide ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                            Agent ID
+                          </label>
+                          <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                            {selectedUserData.agent_id ? (
+                              <span className="font-mono text-xs bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded">
+                                {selectedUserData.agent_id}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 italic">No agent assigned</span>
+                            )}
+                          </p>
+                        </div>
+                        <div>
+                          <label className={`text-xs font-medium uppercase tracking-wide ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                            Status
+                          </label>
+                          <p className="text-sm">
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              selectedUserData.status.toLowerCase() === 'active' 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'
+                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300'
+                            }`}>
+                              {selectedUserData.status}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
+                
+                {/* Configuration Fields */}
+                <div className="grid grid-cols-2 gap-6">
                 {/* Left Column - Starting Message */}
                 <div>
                   <div className="mb-2">
@@ -965,6 +1353,7 @@ export default function ManageUsers() {
                   )}
                 </div>
               </div>
+              </>
             )}
           </div>
         }

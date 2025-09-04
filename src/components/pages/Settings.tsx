@@ -19,14 +19,6 @@ export default function Settings() {
   const { } = useToast();
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   
-  useEffect(() => {
-    // Log settings page access
-    logger.logSystemAction(
-      'SETTINGS_ACCESSED',
-      'Admin accessed settings page',
-      'LOW'
-    );
-  }, []);
   
   // Mock account creation date - in real app this would come from user metadata
   const accountCreated = new Date('2023-01-15').toLocaleDateString('en-US', {

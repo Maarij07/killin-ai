@@ -8,14 +8,6 @@ import { logger } from '../../lib/logger';
 export default function Logs() {
   const { isDark } = useTheme();
 
-  useEffect(() => {
-    // Log access to logs page
-    logger.logSystemAction(
-      'LOGS_ACCESSED',
-      'Admin accessed activity logs page',
-      'LOW'
-    );
-  }, []);
 
   return (
     <div className="space-y-6">

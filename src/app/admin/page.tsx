@@ -34,14 +34,6 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
 
-  useEffect(() => {
-    // Log dashboard access
-    logger.logSystemAction(
-      'DASHBOARD_ACCESSED', 
-      'Admin accessed the main dashboard', 
-      'LOW'
-    );
-  }, []);
 
   // Fetch users for the dashboard table
   useEffect(() => {
@@ -55,15 +47,8 @@ export default function AdminDashboard() {
         
         if (response.ok) {
           const data = await response.json();
-          console.log('Fetched users data for dashboard:', data);
           setUsers(data.users || data || []);
           
-          // Log successful data fetch
-          logger.logSystemAction(
-            'DASHBOARD_USER_DATA_FETCHED',
-            `Successfully fetched ${(data.users || data || []).length} users for dashboard`,
-            'LOW'
-          );
         } else {
           console.error('Failed to fetch users for dashboard:', response.status);
           
@@ -92,12 +77,6 @@ export default function AdminDashboard() {
   }, [showError]);
 
   const handleViewMoreUsers = () => {
-    // Log navigation to user management
-    logger.logSystemAction(
-      'NAVIGATE_USER_MANAGEMENT',
-      'Admin navigated to user management from dashboard',
-      'LOW'
-    );
     router.push('/admin/user-management');
   };
 
