@@ -33,6 +33,17 @@ interface User {
   prompt: string | null;
 }
 
+interface VapiAssistant {
+  id: string;
+  firstMessage?: string;
+  model?: {
+    messages?: Array<{
+      role: string;
+      content?: string;
+    }>;
+  };
+}
+
 // Custom styles for dropdown hover effects
 const dropdownStyles = `
   .custom-select {
@@ -318,7 +329,7 @@ export default function ManageUsers() {
         let planChanged = false;
         
         // Map current plan names to API expected names
-        const planMapping = {
+        const planMapping: { [key: string]: string } = {
           'basic': 'basic',
           'premium': 'premium',
           'enterprise': 'enterprise'
@@ -580,7 +591,7 @@ export default function ManageUsers() {
 
                 // Step 2: Create a map of agent_id to assistant data
                 const assistantMap = new Map();
-                vapiAssistants.forEach(assistant => {
+                vapiAssistants.forEach((assistant: VapiAssistant) => {
                   if (assistant.id) {
                     // Extract system prompt from assistant model messages
                     let systemPrompt = '';
