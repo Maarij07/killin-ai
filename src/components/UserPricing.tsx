@@ -467,7 +467,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                         </div>
                         <h4 className="text-lg font-bold mb-3" style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>Restaurant Branding</h4>
                         <p className="text-sm opacity-80" style={{ color: isDark ? colors.colors.grey[300] : colors.colors.grey[600] }}>
-                          Customize your AI assistant with your restaurant's brand and personality
+                          Customize your AI assistant with your restaurant&apos;s brand and personality
                         </p>
                       </div>
                     </div>
