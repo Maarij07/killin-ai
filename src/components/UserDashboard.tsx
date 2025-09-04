@@ -6,6 +6,7 @@ import { useToast } from '../contexts/ToastContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { PowerIcon, SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 import UserPricing from './UserPricing';
+import Modal from './Modal';
 import { useState, useEffect } from 'react';
 
 interface UserDetails {
@@ -30,6 +31,7 @@ export default function UserDashboard() {
   const { isDark, toggleTheme } = useTheme();
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(true);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Fetch user details from /api/auth/users
   useEffect(() => {
@@ -102,9 +104,18 @@ export default function UserDashboard() {
     fetchUserDetails();
   }, [user?.id, user, showError]);
 
-  const handleLogout = async () => {
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+  };
+
+  const handleLogoutConfirm = async () => {
+    setShowLogoutModal(false);
     await logout();
     showSuccess('You have been signed out successfully');
+  };
+
+  const handleLogoutCancel = () => {
+    setShowLogoutModal(false);
   };
 
   // Loading state for user details
@@ -125,32 +136,61 @@ export default function UserDashboard() {
       <nav className={`sticky top-0 z-50 border-b transition-colors ${
         isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
       }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+        <div className="max-w-7xl mx-auto px-1 sm:px-2 lg:px-3">
+          <div className="flex justify-between items-center h-20">
             {/* Logo */}
             <div className="flex-shrink-0">
               <Image
                 src={isDark ? '/logo-dark.png' : '/logo.png'}
                 alt="KALLIN.AI"
-                width={32}
-                height={32}
-                className="h-8 w-auto"
+                width={173}
+                height={173}
+                className="h-24 w-auto transition-opacity duration-300"
               />
             </div>
 
             {/* Right side controls */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-6">
               {/* User Info */}
               <div className="hidden sm:block">
-                <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Welcome, <span className="font-medium">{user?.name}</span>
+                <span className={`text-base font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                  Welcome, <span className="font-semibold">{user?.name}</span>
                 </span>
               </div>
 
-              {/* Theme Toggle */}
+              {/* Theme Toggle - Desktop style */}
+              <div className="hidden sm:flex items-center gap-1 p-1 rounded-lg" style={{ backgroundColor: isDark ? '#374151' : '#F3F4F6' }}>
+                {/* Light mode box */}
+                <button
+                  onClick={() => isDark && toggleTheme()}
+                  className={`flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                    !isDark 
+                      ? 'bg-white text-gray-900 shadow-sm border border-gray-200' 
+                      : 'text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  <SunIcon className="h-4 w-4 mr-2" />
+                  Light
+                </button>
+                
+                {/* Dark mode box */}
+                <button
+                  onClick={() => !isDark && toggleTheme()}
+                  className={`flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                    isDark 
+                      ? 'bg-gray-700 text-white shadow-sm border border-gray-600' 
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  <MoonIcon className="h-4 w-4 mr-2" />
+                  Dark
+                </button>
+              </div>
+
+              {/* Mobile theme toggle */}
               <button
                 onClick={toggleTheme}
-                className={`p-2 rounded-lg transition-colors ${
+                className={`sm:hidden p-2 rounded-lg transition-colors ${
                   isDark 
                     ? 'text-gray-300 hover:text-white hover:bg-gray-700' 
                     : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
@@ -166,15 +206,15 @@ export default function UserDashboard() {
 
               {/* Logout Button */}
               <button
-                onClick={handleLogout}
-                className={`p-2 rounded-lg transition-colors ${
+                onClick={handleLogoutClick}
+                className={`p-3 rounded-lg transition-colors ${
                   isDark 
                     ? 'text-gray-300 hover:text-white hover:bg-gray-700' 
                     : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                 }`}
                 title="Sign out"
               >
-                <PowerIcon className="h-5 w-5" />
+                <PowerIcon className="h-6 w-6" />
               </button>
             </div>
           </div>
@@ -185,6 +225,24 @@ export default function UserDashboard() {
       <main>
         <UserPricing userPlan={userDetails?.plan} />
       </main>
+
+      {/* Logout Confirmation Modal */}
+      <Modal
+        isOpen={showLogoutModal}
+        onClose={handleLogoutCancel}
+        icon={<PowerIcon className="h-6 w-6" />}
+        title="Sign out of your account"
+        description="Are you sure you want to sign out? You will need to sign in again to access your account."
+        primaryButton={{
+          text: 'Sign out',
+          onClick: handleLogoutConfirm,
+          variant: 'primary'
+        }}
+        secondaryButton={{
+          text: 'Cancel',
+          onClick: handleLogoutCancel
+        }}
+      />
     </div>
   );
 }
