@@ -662,25 +662,34 @@ export default function ManageUsers() {
                 console.log('   System Prompts Match:', updatedSystemPrompt === newFormState.systemPrompt ? '✅ YES' : '❌ NO');
                 console.log('🔥 === END VERIFICATION ===\n');
                 
-                // Update database with new prompt
+                // Update database with new prompt (optional - don't let this break the VAPI update)
                 try {
-                  console.log(`📝 Updating prompt for user ${selectedUser.name} (ID: ${selectedUser.id}) in database`);
+                  console.log(`📝 Attempting to update prompt for user ${selectedUser.name} (ID: ${selectedUser.id}) in database`);
+                  
+                  // Add timeout to prevent hanging
+                  const controller = new AbortController();
+                  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+                  
                   const updateResponse = await fetch(`${API_BASE_URL}/auth/users/${selectedUser.id}/prompt`, {
                     method: 'PUT',
                     headers: {
                       'Content-Type': 'application/json',
-                      'ngrok-skip-browser-warning': 'true'
+                      'ngrok-skip-browser-warning': 'true',
+                      'Accept': 'application/json'
                     },
-                    body: JSON.stringify({ prompt: updatedSystemPrompt })
+                    body: JSON.stringify({ prompt: updatedSystemPrompt }),
+                    signal: controller.signal
                   });
+                  
+                  clearTimeout(timeoutId);
 
                   if (!updateResponse.ok) {
-                    console.warn(`Failed to update prompt for user ${selectedUser.id} in database:`, updateResponse.status);
+                    console.warn(`⚠️ Database update failed for user ${selectedUser.id}:`, updateResponse.status, 'This is optional and won\'t affect VAPI functionality');
                   } else {
                     console.log(`✅ Successfully updated prompt for user ${selectedUser.name} in database`);
                   }
                 } catch (dbError) {
-                  console.warn('Failed to update database with new prompt:', dbError);
+                  console.warn('⚠️ Database update failed (optional):', dbError instanceof Error ? dbError.message : 'Unknown error', '- VAPI update was successful');
                 }
                 
                 console.log('✅ VAPI form refreshed with updated data');
