@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useTheme } from '../contexts/ThemeContext';
 import { CheckIcon, MicrophoneIcon, BuildingStorefrontIcon, CogIcon, PhoneIcon, ClipboardDocumentIcon } from '@heroicons/react/24/solid';
-import { useStripeCheckout } from '../hooks/useStripeCheckout';
+import { useEmbeddedPayment } from '../hooks/useEmbeddedPayment';
+import PaymentModal from './PaymentModal';
 import { useSearchParams } from 'next/navigation';
 import { useUser } from '../contexts/UserContext';
 import { useToast } from '../contexts/ToastContext';
@@ -112,7 +113,14 @@ interface UserPricingProps {
 export default function UserPricing({ userPlan }: UserPricingProps) {
   const { isDark } = useTheme();
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
-  const { createCheckoutSession, loading } = useStripeCheckout();
+  const [loading] = useState(false);
+  const {
+    isModalOpen,
+    selectedPlan: embeddedSelectedPlan,
+    openPaymentModal,
+    closePaymentModal,
+    handlePaymentSuccess
+  } = useEmbeddedPayment();
   const searchParams = useSearchParams();
   const { user } = useUser();
   const { showSuccess, showError } = useToast();
@@ -129,8 +137,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
 
   const normalizedUserPlan = getNormalizedPlan(userPlan);
 
-  // Remove unused variable warning
-  console.log('Selected plan state:', selectedPlan);
+  // Log for debugging
   console.log('User plan:', userPlan, 'Normalized:', normalizedUserPlan);
 
   // Fetch user details from API
@@ -235,13 +242,33 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
   const handleSelectPlan = async (planId: string) => {
     setSelectedPlan(planId);
     
-    if (planId === 'enterprise') {
-      // Open email for enterprise plan
-      window.open('mailto:info@kallin.ai?subject=Enterprise Plan Inquiry&body=Hello, I am interested in the Enterprise plan. Please contact me to discuss the details.', '_blank');
+    // Get plan details for the modal
+    let planName = planId;
+    let planPrice = '0';
+    
+    // Find plan details from pricing plans or addon plans
+    const mainPlan = pricingPlans.find(p => p.id === planId);
+    if (mainPlan) {
+      planName = mainPlan.name;
+      planPrice = mainPlan.price.replace('+', ''); // Remove + from enterprise price
     } else {
-      // Handle Stripe checkout for other plans
-      await createCheckoutSession(planId);
+      // Handle addon plans
+      const addonPlans: { [key: string]: { name: string; price: string } } = {
+        'minutes_100': { name: '100 Minutes', price: '40.00' },
+        'minutes_250': { name: '250 Minutes', price: '75.00' },
+        'minutes_500': { name: '500 Minutes', price: '140.00' },
+        'minutes_1000': { name: '1000 Minutes', price: '260.00' },
+        'ai-voice': { name: 'AI Voice', price: '25.00' }
+      };
+      
+      if (addonPlans[planId]) {
+        planName = addonPlans[planId].name;
+        planPrice = addonPlans[planId].price;
+      }
     }
+    
+    // Open embedded payment modal instead of redirecting to Stripe Checkout
+    await openPaymentModal(planId, planName, planPrice);
   };
 
   // Copy to clipboard function
@@ -291,7 +318,103 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
 
       <div className="relative z-10 container mx-auto px-2 sm:px-4 py-8 sm:py-12">
         {/* User Summary Section */}
-        {!isLoadingDetails && userDetails && (
+        {isLoadingDetails ? (
+          /* Skeleton Loading */
+          <div className="mb-16">
+            {/* Summary Heading */}
+            <div className="text-center mb-8">
+              <h2 className="text-4xl md:text-6xl font-bold mb-6 transition-colors duration-300" 
+                style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>
+                Summary
+              </h2>
+              <p className="text-lg md:text-xl max-w-3xl mx-auto leading-relaxed transition-colors duration-300" 
+                style={{ color: isDark ? colors.colors.grey[300] : colors.colors.grey[600] }}>
+                Select the perfect AI phone assistant plan for your restaurant. Streamline your
+              </p>
+            </div>
+
+            {/* Skeleton Summary Container */}
+            <div className="max-w-7xl mx-auto px-4">
+              <div className="relative overflow-hidden rounded-3xl p-4 sm:p-6 lg:p-8 h-auto"
+                style={{
+                  background: `linear-gradient(135deg, ${colors.colors.primary}15 0%, ${colors.colors.primary}08 100%)`,
+                  border: `2px solid ${colors.colors.primary}30`
+                }}>
+                <div className="relative z-10 h-full">
+                  {/* Skeleton Header */}
+                  <div className="text-left mb-4 sm:mb-6">
+                    <div className="inline-flex items-center px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-semibold text-white mb-3 sm:mb-4"
+                      style={{ backgroundColor: colors.colors.primary }}>
+                      User Summary
+                    </div>
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+                      <div>
+                        {/* Skeleton Name */}
+                        <div className="h-8 w-48 rounded mb-2 animate-pulse" 
+                          style={{ backgroundColor: isDark ? colors.colors.grey[700] : colors.colors.grey[300] }}>
+                        </div>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                          {/* Skeleton Agent ID */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium" style={{ color: isDark ? colors.colors.grey[300] : colors.colors.grey[600] }}>Agent ID:</span>
+                            <div className="h-6 w-32 rounded animate-pulse" 
+                              style={{ backgroundColor: isDark ? colors.colors.grey[700] : colors.colors.grey[200] }}>
+                            </div>
+                          </div>
+                          {/* Skeleton Status */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium" style={{ color: isDark ? colors.colors.grey[300] : colors.colors.grey[600] }}>Status:</span>
+                            <div className="flex items-center gap-1">
+                              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                              <div className="h-4 w-16 rounded animate-pulse" 
+                                style={{ backgroundColor: isDark ? colors.colors.grey[700] : colors.colors.grey[300] }}>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Skeleton Cards Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 h-auto">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="relative rounded-2xl p-4 group cursor-default transition-all duration-300 flex flex-col justify-between overflow-hidden"
+                        style={{
+                          backgroundColor: 'transparent',
+                          background: isDark 
+                            ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                            : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                          border: isDark
+                            ? `2px solid #4a5568`
+                            : `2px solid #cbd5e0`,
+                          boxShadow: isDark
+                            ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+                            : '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.1)',
+                          transition: 'all 0.3s ease-in-out'
+                        }}>
+                        <div className="text-center">
+                          {/* Skeleton Number */}
+                          <div className="h-8 w-16 rounded mx-auto mb-2 animate-pulse" 
+                            style={{ backgroundColor: colors.colors.primary + '40' }}>
+                          </div>
+                          {/* Skeleton Title */}
+                          <div className="h-3 w-20 rounded mx-auto mb-1 animate-pulse" 
+                            style={{ backgroundColor: isDark ? colors.colors.grey[600] : colors.colors.grey[400] }}>
+                          </div>
+                          {/* Skeleton Subtitle */}
+                          <div className="h-3 w-12 rounded mx-auto animate-pulse" 
+                            style={{ backgroundColor: isDark ? colors.colors.grey[700] : colors.colors.grey[300] }}>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : !isLoadingDetails && userDetails && (
           <div className="mb-16">
             {/* Summary Heading */}
             <div className="text-center mb-8">
@@ -1013,6 +1136,18 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
         </div>
       </div>
       </div>
+
+      {/* Embedded Payment Modal */}
+      {embeddedSelectedPlan && (
+        <PaymentModal
+          isOpen={isModalOpen}
+          onClose={closePaymentModal}
+          planId={embeddedSelectedPlan.id}
+          planName={embeddedSelectedPlan.name}
+          planPrice={embeddedSelectedPlan.price}
+          onSuccess={handlePaymentSuccess}
+        />
+      )}
     </>
   );
 }
