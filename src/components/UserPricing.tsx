@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useTheme } from '../contexts/ThemeContext';
 import { CheckIcon, MicrophoneIcon, BuildingStorefrontIcon, CogIcon, PhoneIcon, ClipboardDocumentIcon } from '@heroicons/react/24/solid';
@@ -119,8 +119,22 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
     selectedPlan: embeddedSelectedPlan,
     openPaymentModal,
     closePaymentModal,
-    handlePaymentSuccess
+    handlePaymentSuccess: originalHandlePaymentSuccess
   } = useEmbeddedPayment();
+
+  // Enhanced payment success handler that refreshes user details
+  const handlePaymentSuccess = async () => {
+    console.log('🎉 Payment successful! Refreshing user details...');
+    
+    // Call the original payment success handler
+    originalHandlePaymentSuccess();
+    
+    // Wait a moment for the backend to process the update
+    setTimeout(async () => {
+      await fetchUserDetails(false); // Don't show loading since payment modal is closing
+      showSuccess('Payment successful! Your account has been updated.');
+    }, 2000); // 2-second delay to ensure backend processing
+  };
   const searchParams = useSearchParams();
   const { user } = useUser();
   const { showSuccess, showError } = useToast();
@@ -140,61 +154,70 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
   // Log for debugging
   console.log('User plan:', userPlan, 'Normalized:', normalizedUserPlan);
 
-  // Fetch user details from API
-  useEffect(() => {
-    const fetchUserDetails = async () => {
-      if (!user?.id) {
-        setIsLoadingDetails(false);
-        return;
-      }
+  // Function to fetch user details (extracted for reusability)
+  const fetchUserDetails = useCallback(async (showLoading = true) => {
+    if (!user?.id) {
+      setIsLoadingDetails(false);
+      return;
+    }
+    
+    if (showLoading) {
+      setIsLoadingDetails(true);
+    }
+    
+    try {
+      const token = localStorage.getItem('auth_token');
+      console.log('Fetching user details for user ID:', user.id);
       
-      try {
-        const token = localStorage.getItem('auth_token');
-        const response = await fetch('https://3758a6b3509d.ngrok-free.app/api/auth/users', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'ngrok-skip-browser-warning': 'true'
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('All users data:', data);
-          
-          // Find current user by ID
-          const currentUserDetails = data.users?.find((u: UserDetails) => u.id === parseInt(user.id)) || data.find((u: UserDetails) => u.id === parseInt(user.id));
-          
-          if (currentUserDetails) {
-            setUserDetails(currentUserDetails);
-            console.log('Current user details:', currentUserDetails);
-          } else {
-            console.log('User not found in users list');
-            // Create a basic UserDetails object from context user data
-            setUserDetails({
-              id: parseInt(user.id),
-              name: user.name,
-              email: user.email,
-              plan: 'Unknown',
-              status: 'active',
-              minutes_allowed: 0,
-              minutes_used: 0,
-              agent_id: 'N/A'
-            });
-          }
-        } else {
-          console.error('Failed to fetch users:', response.status);
-          showError('Failed to load user details');
+      const response = await fetch('https://3758a6b3509d.ngrok-free.app/api/auth/users', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'ngrok-skip-browser-warning': 'true'
         }
-      } catch (error) {
-        console.error('Error fetching user details:', error);
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('All users data response:', data);
+        
+        // Find current user by ID
+        const currentUserDetails = data.users?.find((u: UserDetails) => u.id === parseInt(user.id)) || data.find((u: UserDetails) => u.id === parseInt(user.id));
+        
+        if (currentUserDetails) {
+          setUserDetails(currentUserDetails);
+          console.log('✅ Found current user details:', currentUserDetails);
+        } else {
+          console.log('❌ User not found in users list, creating fallback');
+          // Create a basic UserDetails object from context user data
+          setUserDetails({
+            id: parseInt(user.id),
+            name: user.name,
+            email: user.email,
+            plan: 'Unknown',
+            status: 'active',
+            minutes_allowed: 0,
+            minutes_used: 0,
+            agent_id: 'N/A'
+          });
+        }
+      } else {
+        console.error('❌ Failed to fetch users:', response.status, response.statusText);
         showError('Failed to load user details');
-      } finally {
+      }
+    } catch (error) {
+      console.error('❌ Error fetching user details:', error);
+      showError('Failed to load user details');
+    } finally {
+      if (showLoading) {
         setIsLoadingDetails(false);
       }
-    };
-
-    fetchUserDetails();
+    }
   }, [user?.id, user, showError]);
+
+  // Initial fetch on component mount
+  useEffect(() => {
+    fetchUserDetails();
+  }, [fetchUserDetails]);
 
   // Handle success/cancel from Stripe
   useEffect(() => {
@@ -572,7 +595,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                         backgroundColor: 'transparent',
                         background: isDark 
                           ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
-                          : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75, #f8f9fa 100%)',
+                          : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
                         border: isDark
                           ? `2px solid #4a5568`
                           : `2px solid #cbd5e0`,
