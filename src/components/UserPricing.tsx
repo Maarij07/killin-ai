@@ -212,7 +212,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
         setIsLoadingDetails(false);
       }
     }
-  }, [user?.id, user, showError]);
+  }, [user, showError]);
 
   // Initial fetch on component mount
   useEffect(() => {
