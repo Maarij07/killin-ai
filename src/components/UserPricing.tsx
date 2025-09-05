@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useTheme } from '../contexts/ThemeContext';
-import { CheckIcon, MicrophoneIcon, BuildingStorefrontIcon, CogIcon, PhoneIcon } from '@heroicons/react/24/solid';
+import { CheckIcon, MicrophoneIcon, BuildingStorefrontIcon, CogIcon, PhoneIcon, ClipboardDocumentIcon } from '@heroicons/react/24/solid';
 import { useStripeCheckout } from '../hooks/useStripeCheckout';
 import { useSearchParams } from 'next/navigation';
 import { useUser } from '../contexts/UserContext';
@@ -90,6 +91,20 @@ const pricingPlans: PricingPlan[] = [
   }
 ];
 
+interface UserDetails {
+  id: number;
+  name: string;
+  email: string;
+  plan: string;
+  status: string;
+  minutes_allowed: number;
+  minutes_used: number;
+  agent_id: string;
+  twilio_phone_number?: string;
+  created_at?: string;
+  [key: string]: string | number | boolean | undefined;
+}
+
 interface UserPricingProps {
   userPlan?: string | null;
 }
@@ -101,6 +116,8 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
   const searchParams = useSearchParams();
   const { user } = useUser();
   const { showSuccess, showError } = useToast();
+  const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(true);
 
   // Helper function to normalize plan name
   const getNormalizedPlan = (plan?: string | null) => {
@@ -115,6 +132,62 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
   // Remove unused variable warning
   console.log('Selected plan state:', selectedPlan);
   console.log('User plan:', userPlan, 'Normalized:', normalizedUserPlan);
+
+  // Fetch user details from API
+  useEffect(() => {
+    const fetchUserDetails = async () => {
+      if (!user?.id) {
+        setIsLoadingDetails(false);
+        return;
+      }
+      
+      try {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch('https://3758a6b3509d.ngrok-free.app/api/auth/users', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'ngrok-skip-browser-warning': 'true'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('All users data:', data);
+          
+          // Find current user by ID
+          const currentUserDetails = data.users?.find((u: UserDetails) => u.id === parseInt(user.id)) || data.find((u: UserDetails) => u.id === parseInt(user.id));
+          
+          if (currentUserDetails) {
+            setUserDetails(currentUserDetails);
+            console.log('Current user details:', currentUserDetails);
+          } else {
+            console.log('User not found in users list');
+            // Create a basic UserDetails object from context user data
+            setUserDetails({
+              id: parseInt(user.id),
+              name: user.name,
+              email: user.email,
+              plan: 'Unknown',
+              status: 'active',
+              minutes_allowed: 0,
+              minutes_used: 0,
+              agent_id: 'N/A'
+            });
+          }
+        } else {
+          console.error('Failed to fetch users:', response.status);
+          showError('Failed to load user details');
+        }
+      } catch (error) {
+        console.error('Error fetching user details:', error);
+        showError('Failed to load user details');
+      } finally {
+        setIsLoadingDetails(false);
+      }
+    };
+
+    fetchUserDetails();
+  }, [user?.id, user, showError]);
 
   // Handle success/cancel from Stripe
   useEffect(() => {
@@ -171,6 +244,17 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
     }
   };
 
+  // Copy to clipboard function
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      showSuccess(`${label} copied to clipboard!`);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      showError(`Failed to copy ${label.toLowerCase()}`);
+    }
+  };
+
   return (
     <>
       {/* Add shimmer animation CSS */}
@@ -206,6 +290,193 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
       </div>
 
       <div className="relative z-10 container mx-auto px-2 sm:px-4 py-8 sm:py-12">
+        {/* User Summary Section */}
+        {!isLoadingDetails && userDetails && (
+          <div className="mb-16">
+            {/* Summary Heading */}
+            <div className="text-center mb-8">
+              <h2 className="text-4xl md:text-6xl font-bold mb-6 transition-colors duration-300" 
+                style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>
+                Summary
+              </h2>
+              <p className="text-lg md:text-xl max-w-3xl mx-auto leading-relaxed transition-colors duration-300" 
+                style={{ color: isDark ? colors.colors.grey[300] : colors.colors.grey[600] }}>
+                Select the perfect AI phone assistant plan for your restaurant. Streamline your
+              </p>
+            </div>
+
+            {/* Orange Summary Container */}
+            <div className="max-w-7xl mx-auto px-4">
+              <div className="relative overflow-hidden rounded-3xl p-4 sm:p-6 lg:p-8 h-auto"
+                style={{
+                  background: `linear-gradient(135deg, ${colors.colors.primary}15 0%, ${colors.colors.primary}08 100%)`,
+                  border: `2px solid ${colors.colors.primary}30`
+                }}>
+                <div className="relative z-10 h-full">
+                  {/* Header */}
+                  <div className="text-left mb-4 sm:mb-6">
+                    <div className="inline-flex items-center px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-semibold text-white mb-3 sm:mb-4"
+                      style={{ backgroundColor: colors.colors.primary }}>
+                      User Summary
+                    </div>
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+                      <div>
+                        <h3 className="text-2xl sm:text-3xl font-black mb-2" style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>
+                          {userDetails.name}
+                        </h3>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium" style={{ color: isDark ? colors.colors.grey[300] : colors.colors.grey[600] }}>Agent ID:</span>
+                            <span className="text-sm font-mono px-2 py-1 rounded" 
+                              style={{ 
+                                backgroundColor: isDark ? colors.colors.grey[700] : colors.colors.grey[200],
+                                color: isDark ? colors.colors.white : colors.colors.dark 
+                              }}>
+                              {userDetails.agent_id}
+                            </span>
+                            <button
+                              onClick={() => copyToClipboard(userDetails.agent_id, 'Agent ID')}
+                              className="p-1 rounded transition-colors duration-200 hover:bg-gray-200 dark:hover:bg-gray-700"
+                              style={{ 
+                                color: colors.colors.primary
+                              }}
+                              title="Copy Agent ID"
+                            >
+                              <ClipboardDocumentIcon className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium" style={{ color: isDark ? colors.colors.grey[300] : colors.colors.grey[600] }}>Status:</span>
+                            <div className="flex items-center gap-1">
+                              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                              <span className="text-sm font-semibold capitalize" style={{ color: colors.colors.primary }}>{userDetails.status}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* 4 Summary Cards Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 h-auto">
+                    {/* Total Minutes Card */}
+                    <div className="relative rounded-2xl p-4 group cursor-default transition-all duration-300 flex flex-col justify-between overflow-hidden"
+                      style={{
+                        backgroundColor: 'transparent',
+                        background: isDark 
+                          ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                          : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                        border: isDark
+                          ? `2px solid #4a5568`
+                          : `2px solid #cbd5e0`,
+                        boxShadow: isDark
+                          ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+                          : '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.1)',
+                        transition: 'all 0.3s ease-in-out'
+                      }}>
+                      <div className="text-center">
+                        <h4 className="text-2xl font-black mb-2" style={{ color: colors.colors.primary }}>
+                          {userDetails.minutes_allowed.toLocaleString()}
+                        </h4>
+                        <p className="text-xs uppercase tracking-wide mb-1" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>
+                          Total Minutes
+                        </p>
+                        <p className="text-xs opacity-70" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>
+                          Allowed
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Used Minutes Card */}
+                    <div className="relative rounded-2xl p-4 group cursor-default transition-all duration-300 flex flex-col justify-between overflow-hidden"
+                      style={{
+                        backgroundColor: 'transparent',
+                        background: isDark 
+                          ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                          : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                        border: isDark
+                          ? `2px solid #4a5568`
+                          : `2px solid #cbd5e0`,
+                        boxShadow: isDark
+                          ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+                          : '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.1)',
+                        transition: 'all 0.3s ease-in-out'
+                      }}>
+                      <div className="text-center">
+                        <h4 className="text-2xl font-black mb-2" style={{ color: colors.colors.primary }}>
+                          {userDetails.minutes_used.toLocaleString()}
+                        </h4>
+                        <p className="text-xs uppercase tracking-wide mb-1" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>
+                          Used Minutes
+                        </p>
+                        <p className="text-xs opacity-70" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>
+                          Consumed
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Virtual Phone Card */}
+                    <div className="relative rounded-2xl p-4 group cursor-default transition-all duration-300 flex flex-col justify-between overflow-hidden"
+                      style={{
+                        backgroundColor: 'transparent',
+                        background: isDark 
+                          ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                          : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                        border: isDark
+                          ? `2px solid #4a5568`
+                          : `2px solid #cbd5e0`,
+                        boxShadow: isDark
+                          ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+                          : '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.1)',
+                        transition: 'all 0.3s ease-in-out'
+                      }}>
+                      <div className="text-center">
+                        <h4 className="text-lg font-black mb-2" style={{ color: colors.colors.primary }}>
+                          {userDetails.twilio_phone_number || 'Not Assigned'}
+                        </h4>
+                        <p className="text-xs uppercase tracking-wide mb-1" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>
+                          Virtual Phone
+                        </p>
+                        <p className="text-xs opacity-70" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>
+                          Twilio Number
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Plan Type Card */}
+                    <div className="relative rounded-2xl p-4 group cursor-default transition-all duration-300 flex flex-col justify-between overflow-hidden"
+                      style={{
+                        backgroundColor: 'transparent',
+                        background: isDark 
+                          ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                          : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75, #f8f9fa 100%)',
+                        border: isDark
+                          ? `2px solid #4a5568`
+                          : `2px solid #cbd5e0`,
+                        boxShadow: isDark
+                          ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+                          : '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.1)',
+                        transition: 'all 0.3s ease-in-out'
+                      }}>
+                      <div className="text-center">
+                        <h4 className="text-2xl font-black mb-2 capitalize" style={{ color: colors.colors.primary }}>
+                          {userDetails.plan}
+                        </h4>
+                        <p className="text-xs uppercase tracking-wide mb-1" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>
+                          Plan Type
+                        </p>
+                        <p className="text-xs opacity-70" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>
+                          Current Plan
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-6xl font-bold mb-6 transition-colors duration-300" style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>
@@ -707,9 +978,11 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                     border: isDark ? `1px solid ${colors.colors.grey[700]}` : `1px solid ${colors.colors.grey[200]}`
                   }}>
                   <div className="absolute inset-0 bg-gradient-to-br from-black/30 to-transparent"></div>
-                  <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                  <Image 
+                    src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
                     alt="24/7 Phone Support"
-                    className="absolute inset-0 w-full h-full object-cover opacity-20" />
+                    fill
+                    className="object-cover opacity-20" />
                   <div className="flex flex-col justify-center h-full">
                     <div className="text-center mb-6">
                       <div className="w-20 h-20 rounded-2xl mx-auto mb-6 flex items-center justify-center"

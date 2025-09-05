@@ -21,6 +21,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Initialize Firebase Authentication and get a reference to the service
+// Handle build-time initialization gracefully
 export const auth = getAuth(app);
 
 // Initialize Analytics (only in browser environment)

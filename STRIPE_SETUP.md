@@ -1,3 +1,92 @@
+# Stripe Setup Guide
+
+## Fixing the 401 Authentication Error
+
+The 401 error you're seeing indicates that Stripe is not properly configured. Here's how to fix it:
+
+### 1. Create Stripe Account
+1. Go to [stripe.com](https://stripe.com)
+2. Create an account or sign in to your existing account
+
+### 2. Get Your API Keys
+1. Navigate to the [Stripe Dashboard](https://dashboard.stripe.com)
+2. Go to **Developers** > **API keys**
+3. Copy your **Publishable key** (starts with `pk_test_` for test mode)
+4. Copy your **Secret key** (starts with `sk_test_` for test mode)
+
+### 3. Set Environment Variables
+Create a `.env.local` file in your project root with:
+
+```env
+# Stripe Configuration
+STRIPE_SECRET_KEY=sk_test_your_actual_secret_key_here
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_actual_publishable_key_here
+
+# App Configuration
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+### 4. Create Products in Stripe Dashboard
+
+You need to create the following products/prices in your Stripe Dashboard:
+
+#### Subscription Plans:
+- **Trial Plan**: $25 (one-time payment)
+- **Starter Plan**: $199/month (subscription)
+- **Professional Plan**: $469/month (subscription)
+- **Enterprise Plan**: Custom pricing
+
+#### Add-on Minutes:
+- **100 Minutes**: $40 (one-time payment)
+- **250 Minutes**: $75 (one-time payment)
+- **500 Minutes**: $140 (one-time payment)
+- **1000 Minutes**: $260 (one-time payment)
+
+#### Additional Services:
+- **AI Voice**: $25/month (subscription)
+
+### 5. Update Price IDs
+After creating products in Stripe, copy the price IDs and update them in:
+`src/hooks/useStripeCheckout.ts`
+
+Replace the placeholder price IDs with your actual Stripe price IDs.
+
+### 6. Test in Development
+1. Use test mode API keys (starting with `pk_test_` and `sk_test_`)
+2. Use test card numbers from [Stripe's testing guide](https://stripe.com/docs/testing)
+3. Test card: `4242 4242 4242 4242` with any future expiry date and CVC
+
+### 7. Common Issues
+
+#### Module Loading Error (`./en`)
+- This is typically a build-time issue with Stripe's localization
+- The Next.js config has been updated to handle this
+- If it persists, restart your development server
+
+#### 401 Unauthorized
+- Check that your environment variables are correctly set
+- Ensure you're using the correct API keys for your environment
+- Verify the API keys haven't been regenerated
+
+### 8. Restart Development Server
+After setting up environment variables:
+```bash
+npm run dev
+```
+
+### 9. Testing the Flow
+1. Click "Buy Now" on any pricing card
+2. You should be redirected to Stripe Checkout
+3. Use test card details to complete the purchase
+4. You'll be redirected back to your app with success/cancel status
+
+## Need Help?
+If you continue to experience issues:
+1. Check the browser console for detailed error messages
+2. Verify all environment variables are set correctly
+3. Ensure you're in test mode for development
+4. Check that your Stripe webhook endpoints are configured if needed
+
 # Stripe Integration Setup Guide
 
 ## Overview

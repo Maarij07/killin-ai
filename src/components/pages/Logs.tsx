@@ -2,8 +2,6 @@
 
 import { useTheme } from '../../contexts/ThemeContext';
 import ActivityLogsTable from '../admin/ActivityLogsTable';
-import { useEffect } from 'react';
-import { logger } from '../../lib/logger';
 
 export default function Logs() {
   const { isDark } = useTheme();

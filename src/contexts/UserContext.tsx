@@ -73,6 +73,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       console.log('No stored session, checking authentication...');
       initializeAuth();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const initializeAuth = () => {
@@ -295,7 +296,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const loginAdmin = async (email: string, password: string) => {
     // Admin login via Firebase
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, email, password);
       
       // Check if admin is disabled in Firestore
       try {

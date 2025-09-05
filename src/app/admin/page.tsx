@@ -32,7 +32,7 @@ export default function AdminDashboard() {
   const { showError } = useToast();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+  // const [isLoading, setIsLoading] = useState(true); // unused in current implementation
 
 
   // Fetch users for the dashboard table
@@ -69,7 +69,7 @@ export default function AdminDashboard() {
           'HIGH'
         );
       } finally {
-        setIsLoadingUsers(false);
+        // setIsLoading(false); // currently unused
       }
     };
 

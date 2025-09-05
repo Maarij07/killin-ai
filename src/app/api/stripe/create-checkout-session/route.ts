@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-08-27.basil',
-});
+// Initialize Stripe lazily to avoid build-time issues
+let stripe: Stripe | null = null;
+
+const getStripe = () => {
+  if (!stripe && process.env.STRIPE_SECRET_KEY) {
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2025-08-27.basil',
+    });
+  }
+  return stripe;
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,9 +32,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if we have a valid Stripe secret key
-    if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.includes('your_secret_key_here')) {
-      console.error('Stripe secret key not configured properly');
+    // Get Stripe instance and check if available
+    const stripeInstance = getStripe();
+    if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.includes('your_secret_key_here') || !stripeInstance) {
+      console.error('Stripe secret key not configured properly or Stripe instance not available');
       return NextResponse.json(
         { error: 'Stripe configuration error' },
         { status: 500 }
@@ -36,7 +45,7 @@ export async function POST(request: NextRequest) {
     console.log('Creating Stripe checkout session with price ID:', priceId);
 
     // Create the checkout session
-    const session = await stripe.checkout.sessions.create({
+    const session = await stripeInstance.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
         {

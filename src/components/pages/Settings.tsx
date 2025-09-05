@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useUser } from '../../contexts/UserContext';
-import { useToast } from '../../contexts/ToastContext';
+// import { useToast } from '../../contexts/ToastContext'; // unused but kept for future use
 import { logger } from '../../lib/logger';
 import {
   UserCircleIcon,
@@ -16,7 +16,7 @@ import colors from '../../../colors.json';
 export default function Settings() {
   const { isDark } = useTheme();
   const { user } = useUser();
-  const { } = useToast();
+  // const { } = useToast(); // unused but will be needed for future features
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   
   

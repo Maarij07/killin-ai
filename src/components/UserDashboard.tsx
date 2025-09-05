@@ -7,7 +7,9 @@ import { useTheme } from '../contexts/ThemeContext';
 import { PowerIcon, SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 import UserPricing from './UserPricing';
 import Modal from './Modal';
+import StripeErrorBoundary from './StripeErrorBoundary';
 import { useState, useEffect } from 'react';
+import colors from '../../colors.json';
 
 interface UserDetails {
   id: number;
@@ -132,10 +134,21 @@ export default function UserDashboard() {
 
   return (
     <div className={`min-h-screen ${isDark ? 'dark' : ''}`}>
-      {/* Top Navigation Bar */}
-      <nav className={`sticky top-0 z-50 border-b transition-colors ${
-        isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-      }`}>
+      {/* Top Navigation Bar with Glassmorphism */}
+      <nav className="sticky top-0 z-50 transition-all duration-300"
+        style={{
+          background: isDark 
+            ? `${colors.colors.dark}D9` // Using the same dark color (#1a1a1a) with 85% opacity
+            : 'rgba(255, 255, 255, 0.85)', // White with transparency
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderBottom: isDark 
+            ? `1px solid ${colors.colors.dark}4D` // Same dark color with 30% opacity for border
+            : '1px solid rgba(229, 231, 235, 0.3)',
+          boxShadow: isDark
+            ? '0 4px 20px rgba(0, 0, 0, 0.3)'
+            : '0 4px 20px rgba(0, 0, 0, 0.1)'
+        }}>
         <div className="max-w-7xl mx-auto px-1 sm:px-2 lg:px-3">
           <div className="flex justify-between items-center h-20">
             {/* Logo */}
@@ -153,21 +166,53 @@ export default function UserDashboard() {
             <div className="flex items-center space-x-6">
               {/* User Info */}
               <div className="hidden sm:block">
-                <span className={`text-base font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                <span className={`text-base font-medium ${isDark ? 'text-gray-100' : 'text-gray-700'}`}>
                   Welcome, <span className="font-semibold">{user?.name}</span>
                 </span>
               </div>
 
-              {/* Theme Toggle - Desktop style */}
-              <div className="hidden sm:flex items-center gap-1 p-1 rounded-lg" style={{ backgroundColor: isDark ? '#374151' : '#F3F4F6' }}>
+              {/* Theme Toggle - Desktop style with Glassmorphism */}
+              <div className="hidden sm:flex items-center gap-1 p-1 rounded-lg" 
+                style={{ 
+                  backgroundColor: isDark 
+                    ? `${colors.colors.dark}99` // Same dark color with 60% opacity
+                    : 'rgba(243, 244, 246, 0.6)',
+                  backdropFilter: 'blur(10px)',
+                  WebkitBackdropFilter: 'blur(10px)',
+                  border: isDark 
+                    ? `1px solid ${colors.colors.dark}4D` // Same dark color with 30% opacity
+                    : '1px solid rgba(229, 231, 235, 0.3)'
+                }}>
                 {/* Light mode box */}
                 <button
                   onClick={() => isDark && toggleTheme()}
-                  className={`flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                    !isDark 
-                      ? 'bg-white text-gray-900 shadow-sm border border-gray-200' 
-                      : 'text-gray-400 hover:text-gray-300'
-                  }`}
+                  className="flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium transition-all duration-200"
+                  style={{
+                    backgroundColor: !isDark 
+                      ? 'rgba(255, 255, 255, 0.9)' 
+                      : 'transparent',
+                    color: !isDark 
+                      ? '#111827'
+                      : isDark ? 'rgba(156, 163, 175, 0.8)' : '#6B7280',
+                    backdropFilter: !isDark ? 'blur(10px)' : 'none',
+                    WebkitBackdropFilter: !isDark ? 'blur(10px)' : 'none',
+                    border: !isDark 
+                      ? '1px solid rgba(229, 231, 235, 0.3)' 
+                      : 'none',
+                    boxShadow: !isDark 
+                      ? '0 2px 8px rgba(0, 0, 0, 0.1)' 
+                      : 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (isDark) {
+                      e.currentTarget.style.color = 'rgba(209, 213, 219, 1)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (isDark) {
+                      e.currentTarget.style.color = 'rgba(156, 163, 175, 0.8)';
+                    }
+                  }}
                 >
                   <SunIcon className="h-4 w-4 mr-2" />
                   Light
@@ -176,11 +221,33 @@ export default function UserDashboard() {
                 {/* Dark mode box */}
                 <button
                   onClick={() => !isDark && toggleTheme()}
-                  className={`flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                    isDark 
-                      ? 'bg-gray-700 text-white shadow-sm border border-gray-600' 
-                      : 'text-gray-600 hover:text-gray-800'
-                  }`}
+                  className="flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium transition-all duration-200"
+                  style={{
+                    backgroundColor: isDark 
+                      ? 'rgba(15, 15, 15, 0.9)' 
+                      : 'transparent',
+                    color: isDark 
+                      ? '#FFFFFF'
+                      : '#6B7280',
+                    backdropFilter: isDark ? 'blur(10px)' : 'none',
+                    WebkitBackdropFilter: isDark ? 'blur(10px)' : 'none',
+                    border: isDark 
+                      ? '1px solid rgba(40, 40, 40, 0.5)' 
+                      : 'none',
+                    boxShadow: isDark 
+                      ? '0 2px 8px rgba(0, 0, 0, 0.3)' 
+                      : 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isDark) {
+                      e.currentTarget.style.color = '#374151';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isDark) {
+                      e.currentTarget.style.color = '#6B7280';
+                    }
+                  }}
                 >
                   <MoonIcon className="h-4 w-4 mr-2" />
                   Dark
@@ -190,11 +257,21 @@ export default function UserDashboard() {
               {/* Mobile theme toggle */}
               <button
                 onClick={toggleTheme}
-                className={`sm:hidden p-2 rounded-lg transition-colors ${
-                  isDark 
-                    ? 'text-gray-300 hover:text-white hover:bg-gray-700' 
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                }`}
+                className="sm:hidden p-2 rounded-lg transition-all duration-200"
+                style={{
+                  color: isDark ? '#F3F4F6' : '#6B7280',
+                  backgroundColor: 'transparent'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = isDark 
+                    ? `${colors.colors.dark}99` // Same dark color with 60% opacity
+                    : 'rgba(243, 244, 246, 0.6)';
+                  e.currentTarget.style.color = isDark ? '#FFFFFF' : '#374151';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = isDark ? '#F3F4F6' : '#6B7280';
+                }}
                 title="Toggle theme"
               >
                 {isDark ? (
@@ -207,11 +284,21 @@ export default function UserDashboard() {
               {/* Logout Button */}
               <button
                 onClick={handleLogoutClick}
-                className={`p-3 rounded-lg transition-colors ${
-                  isDark 
-                    ? 'text-gray-300 hover:text-white hover:bg-gray-700' 
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                }`}
+                className="p-3 rounded-lg transition-all duration-200"
+                style={{
+                  color: isDark ? '#F3F4F6' : '#6B7280',
+                  backgroundColor: 'transparent'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = isDark 
+                    ? 'rgba(20, 20, 20, 0.6)' 
+                    : 'rgba(243, 244, 246, 0.6)';
+                  e.currentTarget.style.color = isDark ? '#FFFFFF' : '#374151';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = isDark ? '#F3F4F6' : '#6B7280';
+                }}
                 title="Sign out"
               >
                 <PowerIcon className="h-6 w-6" />
@@ -223,7 +310,9 @@ export default function UserDashboard() {
 
       {/* Main Content */}
       <main>
-        <UserPricing userPlan={userDetails?.plan} />
+        <StripeErrorBoundary>
+          <UserPricing userPlan={userDetails?.plan} />
+        </StripeErrorBoundary>
       </main>
 
       {/* Logout Confirmation Modal */}

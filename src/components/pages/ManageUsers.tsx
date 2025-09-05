@@ -206,36 +206,105 @@ export default function ManageUsers() {
   };
 
   
-  const handleVapiSettings = (userId: number) => {
+  const handleVapiSettings = async (userId: number) => {
     const user = users.find(u => u.id === userId);
     if (user) {
+      // Check if user has an agent_id
+      if (!user.agent_id) {
+        // Fallback to defaults if no agent_id
+        const defaultGreeting = `Hello, Thank you for calling ${user.name}. How can I help you today?`;
+        const defaultSystemPrompt = `You are a friendly, fast restaurant phone attendant for ${user.name.toUpperCase()}. Goal: Ask for the customer's name, take accurate pickup or delivery orders and confirm timing--clearly, politely, and in as few words as possible.\nStyle:\n-\nwarm, concise, professional. One to two sentences at a time.\nAsk one question at a time. Do not interrupt the caller.\nIf unsure, ask a clarifying question; don't guess.\nCore flow (follow in order):\n1) Greet Intent: "Pickup or delivery today?"\n2) Get name and callback number.\n3) For delivery: get full address (street, apartment, city) and any gate/buzzer notes.\n4) Take the order:\n-\nItem, size/variant, quantity, options (sauce/spice/temperature), extras, special instructions.\nIf an item is unavailable or unclear, offer close alternatives or best-sellers.\n5) Ask about allergies or dietary needs. Offer safe options without medical advice.\n6) Upsell gently (ONE quick option): sides, drinks, or desserts.\n7) Read-back and confirm: items, quantities, options, subtotal if known, delivery fee/taxes, and total if available.\n8) Quote timing: pickup-ready time or delivery estimate.\n9) Payment:\n-\nPrefer pay at pickup/delivery or a secure link if available.\nDo NOT collect full credit card numbers over the phone.`;
+        
+        setVapiForm({
+          selectedUser: userId.toString(),
+          startingMessage: defaultGreeting,
+          systemPrompt: defaultSystemPrompt,
+          isEditing: false
+        });
+        setVapiModal({ isOpen: true, user });
+        return;
+      }
+
+      // Fetch data directly from VAPI API
+      console.log(`🔄 Fetching assistant configuration from VAPI for user ${user.name} (Agent ID: ${user.agent_id})`);
       
-      // Extract greeting from the prompt or use default
-      let extractedGreeting = `Hello, Thank you for calling ${user.name}. How can I help you today?`;
-      let extractedSystemPrompt = user.prompt || '';
-      
-      // If there's a prompt, try to extract a greeting from it
-      if (user.prompt) {
-        // Look for common greeting patterns in the prompt
-        const greetingMatch = user.prompt.match(/(?:Hello|Hi|Thank you for calling)[^.!?]*[.!?]/i);
-        if (greetingMatch) {
-          extractedGreeting = greetingMatch[0].trim();
+      try {
+        const response = await fetch(`${VAPI_BASE_URL}/assistant/${user.agent_id}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${VAPI_API_KEY}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const assistantData = await response.json();
+          console.log('📦 Fetched assistant data from VAPI:', JSON.stringify(assistantData, null, 2));
+          
+          // Extract data from VAPI response
+          const vapiStartingMessage = assistantData.firstMessage || `Hello, Thank you for calling ${user.name}. How can I help you today?`;
+          let vapiSystemPrompt = '';
+          
+          // Extract system prompt from model messages
+          if (assistantData.model?.messages && Array.isArray(assistantData.model.messages)) {
+            const systemMessage = assistantData.model.messages.find((msg: { role: string; content?: string }) => msg.role === 'system');
+            if (systemMessage && systemMessage.content) {
+              vapiSystemPrompt = systemMessage.content;
+            }
+          }
+          
+          // If no system prompt found in VAPI, use default
+          if (!vapiSystemPrompt) {
+            vapiSystemPrompt = `You are a friendly, fast restaurant phone attendant for ${user.name.toUpperCase()}. Goal: Ask for the customer's name, take accurate pickup or delivery orders and confirm timing--clearly, politely, and in as few words as possible.\nStyle:\n-\nwarm, concise, professional. One to two sentences at a time.\nAsk one question at a time. Do not interrupt the caller.\nIf unsure, ask a clarifying question; don't guess.\nCore flow (follow in order):\n1) Greet Intent: "Pickup or delivery today?"\n2) Get name and callback number.\n3) For delivery: get full address (street, apartment, city) and any gate/buzzer notes.\n4) Take the order:\n-\nItem, size/variant, quantity, options (sauce/spice/temperature), extras, special instructions.\nIf an item is unavailable or unclear, offer close alternatives or best-sellers.\n5) Ask about allergies or dietary needs. Offer safe options without medical advice.\n6) Upsell gently (ONE quick option): sides, drinks, or desserts.\n7) Read-back and confirm: items, quantities, options, subtotal if known, delivery fee/taxes, and total if available.\n8) Quote timing: pickup-ready time or delivery estimate.\n9) Payment:\n-\nPrefer pay at pickup/delivery or a secure link if available.\nDo NOT collect full credit card numbers over the phone.`;
+          }
+          
+          console.log('✅ Using VAPI data:');
+          console.log('   Starting Message:', vapiStartingMessage);
+          console.log('   System Prompt:', vapiSystemPrompt.substring(0, 100) + '...');
+          
+          // Pre-populate form with VAPI data
+          setVapiForm({
+            selectedUser: userId.toString(),
+            startingMessage: vapiStartingMessage,
+            systemPrompt: vapiSystemPrompt,
+            isEditing: false
+          });
+          
+        } else {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          console.error('❌ Failed to fetch assistant from VAPI:', response.status, errorData);
+          
+          // Fallback to defaults if VAPI fetch fails
+          const fallbackGreeting = `Hello, Thank you for calling ${user.name}. How can I help you today?`;
+          const fallbackSystemPrompt = `You are a friendly, fast restaurant phone attendant for ${user.name.toUpperCase()}. Goal: Ask for the customer's name, take accurate pickup or delivery orders and confirm timing--clearly, politely, and in as few words as possible.\nStyle:\n-\nwarm, concise, professional. One to two sentences at a time.\nAsk one question at a time. Do not interrupt the caller.\nIf unsure, ask a clarifying question; don't guess.\nCore flow (follow in order):\n1) Greet Intent: "Pickup or delivery today?"\n2) Get name and callback number.\n3) For delivery: get full address (street, apartment, city) and any gate/buzzer notes.\n4) Take the order:\n-\nItem, size/variant, quantity, options (sauce/spice/temperature), extras, special instructions.\nIf an item is unavailable or unclear, offer close alternatives or best-sellers.\n5) Ask about allergies or dietary needs. Offer safe options without medical advice.\n6) Upsell gently (ONE quick option): sides, drinks, or desserts.\n7) Read-back and confirm: items, quantities, options, subtotal if known, delivery fee/taxes, and total if available.\n8) Quote timing: pickup-ready time or delivery estimate.\n9) Payment:\n-\nPrefer pay at pickup/delivery or a secure link if available.\nDo NOT collect full credit card numbers over the phone.`;
+          
+          console.log('⚠️ Using fallback defaults due to VAPI fetch failure');
+          
+          setVapiForm({
+            selectedUser: userId.toString(),
+            startingMessage: fallbackGreeting,
+            systemPrompt: fallbackSystemPrompt,
+            isEditing: false
+          });
         }
         
-        // Use the full prompt as system prompt
-        extractedSystemPrompt = user.prompt;
-      } else {
-        // Generate default system prompt if none exists
-        extractedSystemPrompt = `You are a friendly, fast restaurant phone attendant for ${user.name.toUpperCase()}. Goal: Ask for the customer's name, take accurate pickup or delivery orders and confirm timing--clearly, politely, and in as few words as possible.\nStyle:\n-\nwarm, concise, professional. One to two sentences at a time.\nAsk one question at a time. Do not interrupt the caller.\nIf unsure, ask a clarifying question; don't guess.\nCore flow (follow in order):\n1) Greet Intent: "Pickup or delivery today?"\n2) Get name and callback number.\n3) For delivery: get full address (street, apartment, city) and any gate/buzzer notes.\n4) Take the order:\n-\nItem, size/variant, quantity, options (sauce/spice/temperature), extras, special instructions.\nIf an item is unavailable or unclear, offer close alternatives or best-sellers.\n5) Ask about allergies or dietary needs. Offer safe options without medical advice.\n6) Upsell gently (ONE quick option): sides, drinks, or desserts.\n7) Read-back and confirm: items, quantities, options, subtotal if known, delivery fee/taxes, and total if available.\n8) Quote timing: pickup-ready time or delivery estimate.\n9) Payment:\n-\nPrefer pay at pickup/delivery or a secure link if available.\nDo NOT collect full credit card numbers over the phone.`;
+      } catch (error) {
+        console.error('❌ Error fetching assistant from VAPI:', error);
+        
+        // Fallback to defaults if VAPI fetch fails
+        const fallbackGreeting = `Hello, Thank you for calling ${user.name}. How can I help you today?`;
+        const fallbackSystemPrompt = `You are a friendly, fast restaurant phone attendant for ${user.name.toUpperCase()}. Goal: Ask for the customer's name, take accurate pickup or delivery orders and confirm timing--clearly, politely, and in as few words as possible.\nStyle:\n-\nwarm, concise, professional. One to two sentences at a time.\nAsk one question at a time. Do not interrupt the caller.\nIf unsure, ask a clarifying question; don't guess.\nCore flow (follow in order):\n1) Greet Intent: "Pickup or delivery today?"\n2) Get name and callback number.\n3) For delivery: get full address (street, apartment, city) and any gate/buzzer notes.\n4) Take the order:\n-\nItem, size/variant, quantity, options (sauce/spice/temperature), extras, special instructions.\nIf an item is unavailable or unclear, offer close alternatives or best-sellers.\n5) Ask about allergies or dietary needs. Offer safe options without medical advice.\n6) Upsell gently (ONE quick option): sides, drinks, or desserts.\n7) Read-back and confirm: items, quantities, options, subtotal if known, delivery fee/taxes, and total if available.\n8) Quote timing: pickup-ready time or delivery estimate.\n9) Payment:\n-\nPrefer pay at pickup/delivery or a secure link if available.\nDo NOT collect full credit card numbers over the phone.`;
+        
+        console.log('⚠️ Using fallback defaults due to VAPI error');
+        
+        setVapiForm({
+          selectedUser: userId.toString(),
+          startingMessage: fallbackGreeting,
+          systemPrompt: fallbackSystemPrompt,
+          isEditing: false
+        });
       }
       
-      // Pre-populate form with the selected user's real data
-      setVapiForm({
-        selectedUser: userId.toString(),
-        startingMessage: extractedGreeting,
-        systemPrompt: extractedSystemPrompt,
-        isEditing: false
-      });
       setVapiModal({ isOpen: true, user });
     }
   };
@@ -422,39 +491,108 @@ export default function ManageUsers() {
   };
 
   // VAPI Configuration Handlers
-  const handleVapiFormChange = (field: string, value: string) => {
+  const handleVapiFormChange = async (field: string, value: string) => {
     setVapiForm(prev => ({ ...prev, [field]: value }));
     
-    // When user selects a user from dropdown, load their configuration
+    // When user selects a user from dropdown, load their configuration from VAPI API
     if (field === 'selectedUser' && value) {
       const selectedUser = users.find(u => u.id.toString() === value);
       if (selectedUser) {
         
-        // Extract greeting from the prompt or use default
-        let extractedGreeting = `Hello, Thank you for calling ${selectedUser.name}. How can I help you today?`;
-        let extractedSystemPrompt = selectedUser.prompt || '';
+        // Check if user has an agent_id
+        if (!selectedUser.agent_id) {
+          // Fallback to defaults if no agent_id
+          const defaultGreeting = `Hello, Thank you for calling ${selectedUser.name}. How can I help you today?`;
+          const defaultSystemPrompt = `You are a friendly, fast restaurant phone attendant for ${selectedUser.name.toUpperCase()}. Goal: Ask for the customer's name, take accurate pickup or delivery orders and confirm timing--clearly, politely, and in as few words as possible.\nStyle:\n-\nwarm, concise, professional. One to two sentences at a time.\nAsk one question at a time. Do not interrupt the caller.\nIf unsure, ask a clarifying question; don't guess.\nCore flow (follow in order):\n1) Greet Intent: "Pickup or delivery today?"\n2) Get name and callback number.\n3) For delivery: get full address (street, apartment, city) and any gate/buzzer notes.\n4) Take the order:\n-\nItem, size/variant, quantity, options (sauce/spice/temperature), extras, special instructions.\nIf an item is unavailable or unclear, offer close alternatives or best-sellers.\n5) Ask about allergies or dietary needs. Offer safe options without medical advice.\n6) Upsell gently (ONE quick option): sides, drinks, or desserts.\n7) Read-back and confirm: items, quantities, options, subtotal if known, delivery fee/taxes, and total if available.\n8) Quote timing: pickup-ready time or delivery estimate.\n9) Payment:\n-\nPrefer pay at pickup/delivery or a secure link if available.\nDo NOT collect full credit card numbers over the phone.`;
+          
+          setVapiForm(prev => ({
+            ...prev,
+            selectedUser: value,
+            startingMessage: defaultGreeting,
+            systemPrompt: defaultSystemPrompt
+          }));
+          return;
+        }
+
+        // Fetch data directly from VAPI API
+        console.log(`🔄 [Dropdown] Fetching assistant configuration from VAPI for user ${selectedUser.name} (Agent ID: ${selectedUser.agent_id})`);
         
-        // If there's a prompt, try to extract a greeting from it
-        if (selectedUser.prompt) {
-          // Look for common greeting patterns in the prompt
-          const greetingMatch = selectedUser.prompt.match(/(?:Hello|Hi|Thank you for calling)[^.!?]*[.!?]/i);
-          if (greetingMatch) {
-            extractedGreeting = greetingMatch[0].trim();
+        try {
+          const response = await fetch(`${VAPI_BASE_URL}/assistant/${selectedUser.agent_id}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${VAPI_API_KEY}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (response.ok) {
+            const assistantData = await response.json();
+            console.log('📦 [Dropdown] Fetched assistant data from VAPI:', JSON.stringify(assistantData, null, 2));
+            
+            // Extract data from VAPI response
+            const vapiStartingMessage = assistantData.firstMessage || `Hello, Thank you for calling ${selectedUser.name}. How can I help you today?`;
+            let vapiSystemPrompt = '';
+            
+            // Extract system prompt from model messages
+            if (assistantData.model?.messages && Array.isArray(assistantData.model.messages)) {
+              const systemMessage = assistantData.model.messages.find((msg: { role: string; content?: string }) => msg.role === 'system');
+              if (systemMessage && systemMessage.content) {
+                vapiSystemPrompt = systemMessage.content;
+              }
+            }
+            
+            // If no system prompt found in VAPI, use default
+            if (!vapiSystemPrompt) {
+              vapiSystemPrompt = `You are a friendly, fast restaurant phone attendant for ${selectedUser.name.toUpperCase()}. Goal: Ask for the customer's name, take accurate pickup or delivery orders and confirm timing--clearly, politely, and in as few words as possible.\nStyle:\n-\nwarm, concise, professional. One to two sentences at a time.\nAsk one question at a time. Do not interrupt the caller.\nIf unsure, ask a clarifying question; don't guess.\nCore flow (follow in order):\n1) Greet Intent: "Pickup or delivery today?"\n2) Get name and callback number.\n3) For delivery: get full address (street, apartment, city) and any gate/buzzer notes.\n4) Take the order:\n-\nItem, size/variant, quantity, options (sauce/spice/temperature), extras, special instructions.\nIf an item is unavailable or unclear, offer close alternatives or best-sellers.\n5) Ask about allergies or dietary needs. Offer safe options without medical advice.\n6) Upsell gently (ONE quick option): sides, drinks, or desserts.\n7) Read-back and confirm: items, quantities, options, subtotal if known, delivery fee/taxes, and total if available.\n8) Quote timing: pickup-ready time or delivery estimate.\n9) Payment:\n-\nPrefer pay at pickup/delivery or a secure link if available.\nDo NOT collect full credit card numbers over the phone.`;
+            }
+            
+            console.log('✅ [Dropdown] Using VAPI data:');
+            console.log('   Starting Message:', vapiStartingMessage);
+            console.log('   System Prompt:', vapiSystemPrompt.substring(0, 100) + '...');
+            
+            // Pre-populate form with VAPI data
+            setVapiForm(prev => ({
+              ...prev,
+              selectedUser: value,
+              startingMessage: vapiStartingMessage,
+              systemPrompt: vapiSystemPrompt
+            }));
+            
+          } else {
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            console.error('❌ [Dropdown] Failed to fetch assistant from VAPI:', response.status, errorData);
+            
+            // Fallback to defaults if VAPI fetch fails
+            const fallbackGreeting = `Hello, Thank you for calling ${selectedUser.name}. How can I help you today?`;
+            const fallbackSystemPrompt = `You are a friendly, fast restaurant phone attendant for ${selectedUser.name.toUpperCase()}. Goal: Ask for the customer's name, take accurate pickup or delivery orders and confirm timing--clearly, politely, and in as few words as possible.\nStyle:\n-\nwarm, concise, professional. One to two sentences at a time.\nAsk one question at a time. Do not interrupt the caller.\nIf unsure, ask a clarifying question; don't guess.\nCore flow (follow in order):\n1) Greet Intent: "Pickup or delivery today?"\n2) Get name and callback number.\n3) For delivery: get full address (street, apartment, city) and any gate/buzzer notes.\n4) Take the order:\n-\nItem, size/variant, quantity, options (sauce/spice/temperature), extras, special instructions.\nIf an item is unavailable or unclear, offer close alternatives or best-sellers.\n5) Ask about allergies or dietary needs. Offer safe options without medical advice.\n6) Upsell gently (ONE quick option): sides, drinks, or desserts.\n7) Read-back and confirm: items, quantities, options, subtotal if known, delivery fee/taxes, and total if available.\n8) Quote timing: pickup-ready time or delivery estimate.\n9) Payment:\n-\nPrefer pay at pickup/delivery or a secure link if available.\nDo NOT collect full credit card numbers over the phone.`;
+            
+            console.log('⚠️ [Dropdown] Using fallback defaults due to VAPI fetch failure');
+            
+            setVapiForm(prev => ({
+              ...prev,
+              selectedUser: value,
+              startingMessage: fallbackGreeting,
+              systemPrompt: fallbackSystemPrompt
+            }));
           }
           
-          // Use the full prompt as system prompt
-          extractedSystemPrompt = selectedUser.prompt;
-        } else {
-          // Generate default system prompt if none exists
-          extractedSystemPrompt = `You are a friendly, fast restaurant phone attendant for ${selectedUser.name.toUpperCase()}. Goal: Ask for the customer's name, take accurate pickup or delivery orders and confirm timing--clearly, politely, and in as few words as possible.\nStyle:\n-\nwarm, concise, professional. One to two sentences at a time.\nAsk one question at a time. Do not interrupt the caller.\nIf unsure, ask a clarifying question; don't guess.\nCore flow (follow in order):\n1) Greet Intent: "Pickup or delivery today?"\n2) Get name and callback number.\n3) For delivery: get full address (street, apartment, city) and any gate/buzzer notes.\n4) Take the order:\n-\nItem, size/variant, quantity, options (sauce/spice/temperature), extras, special instructions.\nIf an item is unavailable or unclear, offer close alternatives or best-sellers.\n5) Ask about allergies or dietary needs. Offer safe options without medical advice.\n6) Upsell gently (ONE quick option): sides, drinks, or desserts.\n7) Read-back and confirm: items, quantities, options, subtotal if known, delivery fee/taxes, and total if available.\n8) Quote timing: pickup-ready time or delivery estimate.\n9) Payment:\n-\nPrefer pay at pickup/delivery or a secure link if available.\nDo NOT collect full credit card numbers over the phone.`;
+        } catch (error) {
+          console.error('❌ [Dropdown] Error fetching assistant from VAPI:', error);
+          
+          // Fallback to defaults if VAPI fetch fails
+          const fallbackGreeting = `Hello, Thank you for calling ${selectedUser.name}. How can I help you today?`;
+          const fallbackSystemPrompt = `You are a friendly, fast restaurant phone attendant for ${selectedUser.name.toUpperCase()}. Goal: Ask for the customer's name, take accurate pickup or delivery orders and confirm timing--clearly, politely, and in as few words as possible.\nStyle:\n-\nwarm, concise, professional. One to two sentences at a time.\nAsk one question at a time. Do not interrupt the caller.\nIf unsure, ask a clarifying question; don't guess.\nCore flow (follow in order):\n1) Greet Intent: "Pickup or delivery today?"\n2) Get name and callback number.\n3) For delivery: get full address (street, apartment, city) and any gate/buzzer notes.\n4) Take the order:\n-\nItem, size/variant, quantity, options (sauce/spice/temperature), extras, special instructions.\nIf an item is unavailable or unclear, offer close alternatives or best-sellers.\n5) Ask about allergies or dietary needs. Offer safe options without medical advice.\n6) Upsell gently (ONE quick option): sides, drinks, or desserts.\n7) Read-back and confirm: items, quantities, options, subtotal if known, delivery fee/taxes, and total if available.\n8) Quote timing: pickup-ready time or delivery estimate.\n9) Payment:\n-\nPrefer pay at pickup/delivery or a secure link if available.\nDo NOT collect full credit card numbers over the phone.`;
+          
+          console.log('⚠️ [Dropdown] Using fallback defaults due to VAPI error');
+          
+          setVapiForm(prev => ({
+            ...prev,
+            selectedUser: value,
+            startingMessage: fallbackGreeting,
+            systemPrompt: fallbackSystemPrompt
+          }));
         }
-        
-        setVapiForm(prev => ({
-          ...prev,
-          selectedUser: value,
-          startingMessage: extractedGreeting,
-          systemPrompt: extractedSystemPrompt
-        }));
       }
     }
   };

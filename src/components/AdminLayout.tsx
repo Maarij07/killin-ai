@@ -5,7 +5,6 @@ import Image from 'next/image';
 import { useUser } from '../contexts/UserContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useToast } from '../contexts/ToastContext';
-import { logger } from '../lib/logger';
 import {
   HomeIcon,
   UsersIcon,

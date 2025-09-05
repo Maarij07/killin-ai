@@ -12,7 +12,6 @@ import {
   MagnifyingGlassIcon,
   Cog6ToothIcon,
   PencilIcon,
-  TrashIcon,
   PlusIcon,
   ExclamationTriangleIcon,
   ShieldCheckIcon,
@@ -202,12 +201,12 @@ export default function Admins() {
     handleManage(adminId); // Same as manage for now
   };
 
-  const handleDelete = (adminId: string) => {
-    const admin = admins.find(a => a.id === adminId);
-    if (admin) {
-      setDeleteModal({ isOpen: true, admin });
-    }
-  };
+  // const handleDelete = (adminId: string) => {
+  //   const admin = admins.find(a => a.id === adminId);
+  //   if (admin) {
+  //     setDeleteModal({ isOpen: true, admin });
+  //   }
+  // };
 
   const handleAddAdmin = () => {
     setAddModal(true);
