@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-08-27.basil',
-});
+// Initialize Stripe lazily to avoid build-time issues
+let stripe: Stripe | null = null;
+
+const getStripe = () => {
+  if (!stripe && process.env.STRIPE_SECRET_KEY) {
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2025-08-27.basil',
+    });
+  }
+  return stripe;
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,8 +24,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get Stripe instance and check if available
+    const stripeInstance = getStripe();
+    if (!process.env.STRIPE_SECRET_KEY || !stripeInstance) {
+      console.error('Stripe secret key not configured properly');
+      return NextResponse.json(
+        { error: 'Stripe configuration error' },
+        { status: 500 }
+      );
+    }
+
     // Retrieve the checkout session from Stripe
-    const session = await stripe.checkout.sessions.retrieve(session_id);
+    const session = await stripeInstance.checkout.sessions.retrieve(session_id);
 
     if (session.payment_status !== 'paid') {
       return NextResponse.json(
