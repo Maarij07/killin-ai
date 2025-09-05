@@ -46,6 +46,8 @@ export async function POST(request: NextRequest) {
       trial: { amount: 2500, description: 'Trial Plan - 100 minutes' },
       starter: { amount: 19900, description: 'Starter Plan - Monthly subscription' },
       professional: { amount: 46900, description: 'Professional Plan - Monthly subscription' },
+      enterprise: { amount: 89900, description: 'Enterprise Plan - Monthly subscription' },
+      custom: { amount: 0, description: 'Custom Plan - Contact sales for pricing' },
       'ai-voice': { amount: 2500, description: 'AI Voice Add-on - Monthly subscription' },
       minutes_100: { amount: 4000, description: '100 Minutes Top-up' },
       minutes_250: { amount: 7500, description: '250 Minutes Top-up' },
@@ -56,9 +58,18 @@ export async function POST(request: NextRequest) {
     const config = planConfig[planId as keyof typeof planConfig];
     
     if (!config) {
-      console.error(`Unknown plan ID: ${planId}`);
+      console.error(`Unknown plan ID: ${planId}. Available plans:`, Object.keys(planConfig));
       return NextResponse.json(
-        { error: 'Invalid plan selected' },
+        { error: `Invalid plan selected: ${planId}` },
+        { status: 400 }
+      );
+    }
+
+    // Handle custom and enterprise plans that require sales contact
+    if (planId === 'custom' || (planId === 'enterprise' && config.amount === 0)) {
+      console.log(`${planId} plan requires sales contact`);
+      return NextResponse.json(
+        { error: 'This plan requires sales contact. Please contact our sales team.' },
         { status: 400 }
       );
     }

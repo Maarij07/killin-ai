@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import { useTheme } from '../contexts/ThemeContext';
 import { CheckIcon, MicrophoneIcon, BuildingStorefrontIcon, CogIcon, PhoneIcon, ClipboardDocumentIcon } from '@heroicons/react/24/solid';
@@ -146,13 +146,26 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
     if (!plan || plan.trim() === '') {
       return 'free';
     }
-    return plan.toLowerCase();
+    const normalized = plan.toLowerCase().trim();
+    // Handle common plan variations
+    switch (normalized) {
+      case 'custom':
+      case 'enterprise':
+      case 'starter':
+      case 'professional':
+      case 'trial':
+        return normalized;
+      default:
+        return 'free';
+    }
   };
 
-  const normalizedUserPlan = getNormalizedPlan(userPlan);
-
-  // Log for debugging
-  console.log('User plan:', userPlan, 'Normalized:', normalizedUserPlan);
+  // Use useMemo to prevent unnecessary re-calculations
+  const normalizedUserPlan = useMemo(() => {
+    const normalized = getNormalizedPlan(userPlan);
+    console.log('User plan:', userPlan, 'Normalized:', normalized);
+    return normalized;
+  }, [userPlan]);
 
   // Function to fetch user details (extracted for reusability)
   const fetchUserDetails = useCallback(async (showLoading = true) => {

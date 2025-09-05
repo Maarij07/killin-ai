@@ -250,11 +250,11 @@ export default function ManageAssistants() {
             extractedGreeting = assistantData.firstMessage || extractedGreeting;
             extractedSystemPrompt = assistantData.systemPrompt || extractedSystemPrompt;
           } else if (updatedUserData.prompt) {
-            // Fallback: try to extract a greeting from the prompt
-            const greetingMatch = updatedUserData.prompt.match(/(?:Hello|Hi|Thank you for calling)[^.!?]*[.!?]/i);
-            if (greetingMatch) {
-              extractedGreeting = greetingMatch[0].trim();
-            }
+          // Fallback: try to extract a greeting from the prompt
+          const greetingMatch = updatedUserData.prompt?.match(/(?:Hello|Hi|Thank you for calling)[^.!?]*[.!?]/i);
+          if (greetingMatch) {
+            extractedGreeting = greetingMatch[0].trim();
+          }
             extractedSystemPrompt = updatedUserData.prompt;
           }
           
@@ -307,7 +307,7 @@ export default function ManageAssistants() {
         // If there's a prompt, try to extract a greeting from it
         if (selectedUserData.prompt) {
           // Look for common greeting patterns in the prompt
-          const greetingMatch = selectedUserData.prompt.match(/(?:Hello|Hi|Thank you for calling)[^.!?]*[.!?]/i);
+          const greetingMatch = selectedUserData.prompt?.match(/(?:Hello|Hi|Thank you for calling)[^.!?]*[.!?]/i);
           if (greetingMatch) {
             extractedGreeting = greetingMatch[0].trim();
           }
