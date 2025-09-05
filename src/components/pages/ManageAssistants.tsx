@@ -234,9 +234,38 @@ export default function ManageAssistants() {
       // Step 5: Update local state
       setUsers(updatedUsers);
       
-      // Step 6: Re-select current user to refresh the form
+      // Step 6: Re-select current user to refresh the form with updated data
       if (selectedUser) {
-        handleUserChange(selectedUser);
+        const updatedUserData = updatedUsers.find(u => u.id.toString() === selectedUser);
+        if (updatedUserData) {
+          console.log('🔄 Refreshing form with updated user data:', updatedUserData);
+          
+          // Extract greeting and system prompt from VAPI data
+          let extractedGreeting = `Hello, Thank you for calling ${updatedUserData.name}. How can I help you today?`;
+          let extractedSystemPrompt = updatedUserData.prompt || '';
+          
+          // Get the actual VAPI assistant data to extract the firstMessage
+          if (updatedUserData.agent_id && assistantMap.has(updatedUserData.agent_id)) {
+            const assistantData = assistantMap.get(updatedUserData.agent_id);
+            extractedGreeting = assistantData.firstMessage || extractedGreeting;
+            extractedSystemPrompt = assistantData.systemPrompt || extractedSystemPrompt;
+          } else if (updatedUserData.prompt) {
+            // Fallback: try to extract a greeting from the prompt
+            const greetingMatch = updatedUserData.prompt.match(/(?:Hello|Hi|Thank you for calling)[^.!?]*[.!?]/i);
+            if (greetingMatch) {
+              extractedGreeting = greetingMatch[0].trim();
+            }
+            extractedSystemPrompt = updatedUserData.prompt;
+          }
+          
+          console.log('🔄 Setting form state to:', {
+            greetingMessage: extractedGreeting,
+            systemPrompt: extractedSystemPrompt
+          });
+          
+          setGreetingMessage(extractedGreeting);
+          setSystemPrompt(extractedSystemPrompt);
+        }
       }
 
       console.log('✅ VAPI sync completed successfully');
@@ -325,6 +354,7 @@ export default function ManageAssistants() {
             model: {
               provider: "openai",
               model: "gpt-4o",
+              toolIds: ['351ff32f-5b41-4f96-a103-1d2b90b64574'],
               messages: [
                 {
                   content: systemPrompt,
@@ -350,8 +380,35 @@ export default function ManageAssistants() {
             const vapiResult = await vapiResponse.json();
             console.log('✅ VAPI assistant updated successfully:', vapiResult);
             
+            // Log current form state BEFORE sync
+            console.log('📋 BEFORE SYNC - Form State:', {
+              greetingMessage,
+              systemPrompt,
+              selectedUser: selectedUser,
+              userAgentId: selectedUserData.agent_id
+            });
+            
             // Step 2: Update our local database by syncing with VAPI
             await syncVapiAssistants();
+            
+            // Log current form state AFTER sync
+            console.log('📋 AFTER SYNC - Form State:', {
+              greetingMessage,
+              systemPrompt,
+              selectedUser: selectedUser,
+              userAgentId: selectedUserData.agent_id
+            });
+            
+            // Verify that VAPI data matches form data
+            const updatedUserData = users.find(u => u.id.toString() === selectedUser);
+            if (updatedUserData) {
+              console.log('🔍 VERIFICATION - Updated User Data:', {
+                userName: updatedUserData.name,
+                prompt: updatedUserData.prompt,
+                formSystemPrompt: systemPrompt,
+                doTheyMatch: updatedUserData.prompt === systemPrompt
+              });
+            }
             
             // Log successful update
             logger.logSystemAction(

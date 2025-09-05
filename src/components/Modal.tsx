@@ -12,9 +12,10 @@ interface ModalProps {
   description?: string;
   customContent?: React.ReactNode;
   primaryButton?: {
-    text: string;
+    text: string | React.ReactNode;
     onClick: () => void;
     variant?: 'danger' | 'primary';
+    disabled?: boolean;
   };
   secondaryButton?: {
     text: string;

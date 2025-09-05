@@ -33,16 +33,6 @@ interface User {
   prompt: string | null;
 }
 
-interface VapiAssistant {
-  id: string;
-  firstMessage?: string;
-  model?: {
-    messages?: Array<{
-      role: string;
-      content?: string;
-    }>;
-  };
-}
 
 // Custom styles for dropdown hover effects
 const dropdownStyles = `
@@ -110,9 +100,10 @@ export default function ManageUsers() {
   });
   const [editForm, setEditForm] = useState({
     status: '',
-    totalMinutes: '',
+    addMinutes: '1',
     planSubscription: ''
   });
+  const [isSaving, setIsSaving] = useState(false);
   const [vapiForm, setVapiForm] = useState({
     selectedUser: '',
     startingMessage: '',
@@ -214,22 +205,6 @@ export default function ManageUsers() {
     return plan.charAt(0).toUpperCase() + plan.slice(1).toLowerCase();
   };
 
-  // handleManage function - currently not used but kept for future functionality
-  const handleManage = (userId: number) => {
-    const user = users.find(u => u.id === userId);
-    if (user) {
-      // Reset VAPI form
-      setVapiForm({
-        selectedUser: user.id.toString(),
-        startingMessage: 'Hello, Thank you for calling {name}. How can I help you today?',
-        systemPrompt: 'You are a friendly, fast restaurant phone attendant for {NAME}. Goal: Ask for the customer\'s name, take accurate pickup or delivery orders and confirm timing--clearly, politely, and in as few words as possible.\nStyle:\n-\nwarm, concise, professional. One to two sentences at a time.\nAsk one question at a time. Do not interrupt the caller.\nIf unsure, ask a clarifying question; don\'t guess.\nCore flow (follow in order):\n1) Greet Intent: "Pickup or delivery today?"\n2) Get name and callback number.\n3) For delivery: get full address (street, apartment, city) and any gate/buzzer notes.\n4) Take the order:\n-\nItem, size/variant, quantity, options (sauce/spice/temperature), extras, special instructions.\nIf an item is unavailable or unclear, offer close alternatives or best-sellers.\n5) Ask about allergies or dietary needs. Offer safe options without medical advice.\n6) Upsell gently (ONE quick option): sides, drinks, or desserts.\n7) Read-back and confirm: items, quantities, options, subtotal if known, delivery fee/taxes, and total if available.\n8) Quote timing: pickup-ready time or delivery estimate.\n9) Payment:\n-\nPrefer pay at pickup/delivery or a secure link if available.\nDo NOT collect full credit card numbers over the phone.',
-        isEditing: false
-      });
-      setVapiModal({ isOpen: true, user });
-    }
-  };
-  // Suppress unused warning
-  console.log('handleManage function available:', handleManage);
   
   const handleVapiSettings = (userId: number) => {
     const user = users.find(u => u.id === userId);
@@ -271,7 +246,7 @@ export default function ManageUsers() {
       
       setEditForm({
         status: user.status,
-        totalMinutes: user.minutes_allowed.toString(),
+        addMinutes: '1', // Default to 1 for add minutes
         planSubscription: user.plan || 'basic' // Default to 'basic' if plan is null or empty
       });
       setManageModal({ isOpen: true, user });
@@ -307,12 +282,19 @@ export default function ManageUsers() {
 
   const handleSaveChanges = async () => {
     if (manageModal.user) {
+      setIsSaving(true);
+      
+      // Calculate new total minutes by adding addMinutes to current allowed minutes
+      const addMinutesValue = parseInt(editForm.addMinutes) || 0;
+      const newTotalMinutes = manageModal.user.minutes_allowed + addMinutesValue;
+      
       // Log user update with details of changes
       const changes = {
         oldStatus: manageModal.user.status,
         newStatus: editForm.status,
         oldMinutes: manageModal.user.minutes_allowed.toString(),
-        newMinutes: editForm.totalMinutes,
+        addedMinutes: addMinutesValue.toString(),
+        newMinutes: newTotalMinutes.toString(),
         oldPlan: manageModal.user.plan || 'basic',
         newPlan: editForm.planSubscription
       };
@@ -326,7 +308,6 @@ export default function ManageUsers() {
       try {
         // Determine plan type based on changes
         let planType = "custom";
-        let planChanged = false;
         
         // Map current plan names to API expected names
         const planMapping: { [key: string]: string } = {
@@ -337,21 +318,20 @@ export default function ManageUsers() {
         
         // Check if plan actually changed
         if (changes.oldPlan !== changes.newPlan) {
-          planChanged = true;
           planType = planMapping[changes.newPlan] || 'basic';
         } else {
           // If only minutes changed (same plan), set plan_type as "custom"
           planType = "custom";
         }
         
-        // Prepare API payload with admin flag
+        // Prepare API payload with admin flag - send only the minutes to ADD, not the total
         const payload = {
           user_id: manageModal.user.id,
           plan_type: planType,
           amount_paid: 0,
           transaction_id: "",
           payment_intent_id: "",
-          minutes: parseInt(editForm.totalMinutes),
+          minutes: addMinutesValue, // Send only the minutes to add, not the calculated total
           is_admin: true
         };
         
@@ -375,7 +355,7 @@ export default function ManageUsers() {
           logger.logUserAction(
             'USER_PAYMENT_CONFIRMED',
             manageModal.user.email,
-            `Admin updated user via payment API: ${manageModal.user.name} (ID: ${manageModal.user.id}). Plan: ${planType}, Minutes: ${editForm.totalMinutes}`
+            `Admin updated user via payment API: ${manageModal.user.name} (ID: ${manageModal.user.id}). Plan: ${planType}, Minutes: ${newTotalMinutes}`
           );
           
           showSuccess(`Changes saved for ${manageModal.user.name}`);
@@ -425,6 +405,8 @@ export default function ManageUsers() {
         
         showError(`Failed to connect to API: ${error instanceof Error ? error.message : 'Unknown error'}`);
         return; // Don't close modal if API fails
+      } finally {
+        setIsSaving(false);
       }
       
       setManageModal({ isOpen: false, user: null });
@@ -505,6 +487,13 @@ export default function ManageUsers() {
         }
 
         try {
+          // 🔍 DETAILED AGENT ID DEBUGGING
+          console.log('🔍 === AGENT ID DEBUGGING ===');
+          console.log('selectedUser object:', JSON.stringify(selectedUser, null, 2));
+          console.log('selectedUser.agent_id:', selectedUser.agent_id);
+          console.log('typeof selectedUser.agent_id:', typeof selectedUser.agent_id);
+          console.log('selectedUser.agent_id length:', selectedUser.agent_id ? selectedUser.agent_id.length : 'null');
+          console.log('=== END AGENT ID DEBUGGING ===');
 
           // First, try to GET the assistant to see if it exists
           console.log('Testing assistant existence with GET request...');
@@ -519,20 +508,37 @@ export default function ManageUsers() {
           console.log('GET Response Status:', testResponse.status);
           if (testResponse.ok) {
             const assistantData = await testResponse.json();
-            console.log('Assistant exists:', assistantData);
+            console.log('🔍 Current Assistant Data:', JSON.stringify(assistantData, null, 2));
+            
+            // Check if this assistant has toolIds
+            if (assistantData.model && assistantData.model.toolIds) {
+              console.log('⚠️ WARNING: Assistant currently has toolIds:', assistantData.model.toolIds);
+            } else {
+              console.log('✅ Assistant does NOT currently have toolIds');
+            }
           } else {
             const errorData = await testResponse.json().catch(() => ({ error: 'Unknown error' }));
             console.error('Assistant GET failed:', testResponse.status, errorData);
+            
+            // If GET fails, maybe the agent_id is wrong?
+            if (testResponse.status === 404) {
+              console.error('🚨 AGENT NOT FOUND! The agent_id might be incorrect.');
+              showError(`Assistant with ID ${selectedUser.agent_id} not found. Please check the agent ID.`);
+              return;
+            }
           }
 
           // Log the request details for debugging
           const requestUrl = `https://api.vapi.ai/assistant/${selectedUser.agent_id}`;
+          
+          // Use same structure as working ManageAssistants
           const requestBody = {
             firstMessage: vapiForm.startingMessage,
             backgroundSound: "office",
             model: {
               provider: "openai",
               model: "gpt-4o",
+              toolIds: ['351ff32f-5b41-4f96-a103-1d2b90b64574'],
               messages: [
                 {
                   content: vapiForm.systemPrompt,
@@ -542,11 +548,16 @@ export default function ManageUsers() {
             }
           };
           
-          console.log('VAPI API Request Details:');
+          console.log('🚀 === MINIMAL VAPI API REQUEST TEST ===');
           console.log('URL:', requestUrl);
           console.log('Method: PATCH');
+          console.log('Headers:', {
+            'Authorization': 'Bearer 4214a0ea-b594-435d-9abb-599c1f3a81ea',
+            'Content-Type': 'application/json'
+          });
           console.log('Body:', JSON.stringify(requestBody, null, 2));
           console.log('Agent ID:', selectedUser.agent_id);
+          console.log('=== END REQUEST DETAILS ===');
           
           // Call VAPI API to update the assistant
           const response = await fetch(requestUrl, {
@@ -572,104 +583,137 @@ export default function ManageUsers() {
             showSuccess(`VAPI configuration saved for ${selectedUser.name}`);
             setVapiForm(prev => ({ ...prev, isEditing: false }));
             
-            // Sync with VAPI to get updated prompts
+            // Immediately fetch the updated assistant data to refresh the form
             try {
-              console.log('🔄 Starting VAPI sync after update...');
+              console.log('🔄 Fetching updated assistant data from VAPI...');
+              console.log('🔍 Agent ID being used:', selectedUser.agent_id);
               
-              // Step 1: Fetch all VAPI assistants
-              const vapiListResponse = await fetch(`${VAPI_BASE_URL}/assistant`, {
+              // Add a small delay to ensure VAPI has processed the update
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              
+              // Fetch the specific assistant that was just updated
+              const updatedAssistantResponse = await fetch(`${VAPI_BASE_URL}/assistant/${selectedUser.agent_id}`, {
                 method: 'GET',
                 headers: {
                   'Authorization': `Bearer ${VAPI_API_KEY}`,
                   'Content-Type': 'application/json'
                 }
               });
-
-              if (vapiListResponse.ok) {
-                const vapiAssistants = await vapiListResponse.json();
-                console.log('📦 Fetched VAPI assistants for sync:', vapiAssistants);
-
-                // Step 2: Create a map of agent_id to assistant data
-                const assistantMap = new Map();
-                vapiAssistants.forEach((assistant: VapiAssistant) => {
-                  if (assistant.id) {
-                    // Extract system prompt from assistant model messages
-                    let systemPrompt = '';
-                    if (assistant.model?.messages && Array.isArray(assistant.model.messages)) {
-                      const systemMessage = assistant.model.messages.find(msg => msg.role === 'system');
-                      if (systemMessage) {
-                        systemPrompt = systemMessage.content || '';
-                      }
-                    }
-                    
-                    assistantMap.set(assistant.id, {
-                      firstMessage: assistant.firstMessage || '',
-                      systemPrompt: systemPrompt
-                    });
+              
+              console.log('📡 Updated assistant response status:', updatedAssistantResponse.status);
+              
+              if (updatedAssistantResponse.ok) {
+                const updatedAssistant = await updatedAssistantResponse.json();
+                console.log('📦 Fetched updated assistant full data:', JSON.stringify(updatedAssistant, null, 2));
+                
+                // Extract the updated system prompt
+                let updatedSystemPrompt = '';
+                const updatedStartingMessage = updatedAssistant.firstMessage || '';
+                
+                if (updatedAssistant.model?.messages && Array.isArray(updatedAssistant.model.messages)) {
+                  const systemMessage = updatedAssistant.model.messages.find((msg: { role: string; content?: string }) => msg.role === 'system');
+                  if (systemMessage) {
+                    updatedSystemPrompt = systemMessage.content || '';
                   }
-                });
-
-                console.log('🗺️ Assistant mapping for sync:', Array.from(assistantMap.entries()));
-
-                // Step 3: Update users with matching agent_ids
+                }
+                
+                console.log('📝 Extracted data:');
+                console.log('   Starting Message:', updatedStartingMessage);
+                console.log('   System Prompt (first 100 chars):', updatedSystemPrompt.substring(0, 100) + '...');
+                
+                // Update the local users state with the new prompt
                 const updatedUsers = users.map(user => {
-                  if (user.agent_id && assistantMap.has(user.agent_id)) {
-                    const assistantData = assistantMap.get(user.agent_id);
-                    console.log(`🔄 Updating user ${user.name} (${user.agent_id}):`, assistantData);
-                    
+                  if (user.id === selectedUser.id) {
                     return {
                       ...user,
-                      prompt: assistantData.systemPrompt
+                      prompt: updatedSystemPrompt
                     };
                   }
                   return user;
                 });
-
-                // Step 4: Update database with new prompts
-                try {
-                  const usersToUpdate = updatedUsers.filter(user => {
-                    const originalUser = users.find(u => u.id === user.id);
-                    return originalUser && originalUser.prompt !== user.prompt;
-                  });
-
-                  console.log('🗃️ Updating database with new prompts for users:', usersToUpdate.map(u => ({ id: u.id, name: u.name })));
-
-                  for (const user of usersToUpdate) {
-                    console.log(`📝 Updating prompt for user ${user.name} (ID: ${user.id})`);
-                    const updateResponse = await fetch(`${API_BASE_URL}/auth/users/${user.id}/prompt`, {
-                      method: 'PUT',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'ngrok-skip-browser-warning': 'true'
-                      },
-                      body: JSON.stringify({ prompt: user.prompt })
-                    });
-
-                    if (!updateResponse.ok) {
-                      console.warn(`Failed to update prompt for user ${user.id} in database:`, updateResponse.status);
-                    } else {
-                      console.log(`✅ Successfully updated prompt for user ${user.name} in database`);
-                    }
-                  }
-                } catch (dbError) {
-                  console.warn('Failed to update database with new prompts:', dbError);
-                }
-
-                // Step 5: Update local state
+                
+                console.log('🔄 Updating users state...');
                 setUsers(updatedUsers);
                 
-                // Step 5: Re-populate VAPI form with updated data
-                const updatedUser = updatedUsers.find(u => u.id.toString() === selectedUser.id.toString());
-                if (updatedUser) {
-                  handleVapiFormChange('selectedUser', updatedUser.id.toString());
+                // Update the VAPI form with the fresh data from the API
+                console.log('🔄 Updating VAPI form state...');
+                const newFormState = {
+                  selectedUser: selectedUser.id.toString(),
+                  startingMessage: updatedStartingMessage,
+                  systemPrompt: updatedSystemPrompt,
+                  isEditing: false
+                };
+                
+                console.log('📝 New form state:', newFormState);
+                setVapiForm(newFormState);
+                
+                // 🔥 REAL-TIME VERIFICATION: Show what VAPI actually has vs what frontend shows
+                console.log('\n🔥 === REAL-TIME SYNC VERIFICATION ===');
+                console.log('📊 VAPI API Response Data:');
+                console.log('   Starting Message (firstMessage):', `"${updatedStartingMessage}"`);
+                console.log('   System Prompt (model.messages[0].content):');
+                console.log('   ', updatedSystemPrompt.substring(0, 200) + '...');
+                console.log('\n📱 Frontend Form State:');
+                console.log('   Starting Message:', `"${newFormState.startingMessage}"`);
+                console.log('   System Prompt:');
+                console.log('   ', newFormState.systemPrompt.substring(0, 200) + '...');
+                console.log('\n🎯 Sync Status:');
+                console.log('   Starting Messages Match:', updatedStartingMessage === newFormState.startingMessage ? '✅ YES' : '❌ NO');
+                console.log('   System Prompts Match:', updatedSystemPrompt === newFormState.systemPrompt ? '✅ YES' : '❌ NO');
+                console.log('🔥 === END VERIFICATION ===\n');
+                
+                // Update database with new prompt
+                try {
+                  console.log(`📝 Updating prompt for user ${selectedUser.name} (ID: ${selectedUser.id}) in database`);
+                  const updateResponse = await fetch(`${API_BASE_URL}/auth/users/${selectedUser.id}/prompt`, {
+                    method: 'PUT',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'ngrok-skip-browser-warning': 'true'
+                    },
+                    body: JSON.stringify({ prompt: updatedSystemPrompt })
+                  });
+
+                  if (!updateResponse.ok) {
+                    console.warn(`Failed to update prompt for user ${selectedUser.id} in database:`, updateResponse.status);
+                  } else {
+                    console.log(`✅ Successfully updated prompt for user ${selectedUser.name} in database`);
+                  }
+                } catch (dbError) {
+                  console.warn('Failed to update database with new prompt:', dbError);
                 }
                 
-                console.log('✅ VAPI sync completed successfully');
+                console.log('✅ VAPI form refreshed with updated data');
+                
+                // Force a re-render by updating the form again after a short delay
+                setTimeout(() => {
+                  console.log('🔄 Force refreshing form state...');
+                  setVapiForm({
+                    selectedUser: selectedUser.id.toString(),
+                    startingMessage: updatedStartingMessage,
+                    systemPrompt: updatedSystemPrompt,
+                    isEditing: false
+                  });
+                }, 100);
+                
               } else {
-                console.error('Failed to sync with VAPI assistants:', vapiListResponse.status);
+                const errorText = await updatedAssistantResponse.text();
+                console.error('Failed to fetch updated assistant:', updatedAssistantResponse.status, errorText);
+                // If we can't fetch the updated data, use what we just sent
+                console.log('🔄 Using locally saved data since fetch failed...');
+                setVapiForm(prev => ({
+                  ...prev,
+                  isEditing: false
+                }));
               }
             } catch (syncError) {
-              console.error('Error syncing with VAPI assistants:', syncError);
+              console.error('Error fetching updated assistant data:', syncError);
+              // If sync fails, use what we just sent
+              console.log('🔄 Using locally saved data due to sync error...');
+              setVapiForm(prev => ({
+                ...prev,
+                isEditing: false
+              }));
             }
           } else {
             const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
@@ -979,7 +1023,10 @@ export default function ManageUsers() {
                       <select
                         value={editForm.status}
                         onChange={(e) => handleFormChange('status', e.target.value)}
+                        disabled={isSaving}
                         className={`custom-select w-full px-3 py-2 border rounded-lg text-sm appearance-none cursor-pointer ${
+                          isSaving ? 'opacity-50 cursor-not-allowed' : ''
+                        } ${
                           isDark
                             ? 'bg-gray-800 border-gray-600 text-white'
                             : 'bg-white border-gray-300 text-gray-900'
@@ -996,21 +1043,25 @@ export default function ManageUsers() {
                     </div>
                   </div>
 
-                  {/* Total Minutes */}
+                  {/* Add Minutes */}
                   <div>
                     <label className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                      Total Minutes
+                      Add Minutes
                     </label>
                     <input
                       type="number"
-                      value={editForm.totalMinutes}
-                      onChange={(e) => handleFormChange('totalMinutes', e.target.value)}
+                      value={editForm.addMinutes}
+                      onChange={(e) => handleFormChange('addMinutes', e.target.value)}
+                      disabled={isSaving}
                       className={`w-full px-3 py-2 border rounded-lg text-sm ${
+                        isSaving ? 'opacity-50 cursor-not-allowed' : ''
+                      } ${
                         isDark
                           ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400'
                           : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
                       } focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500`}
-                      placeholder="Enter total minutes"
+                      placeholder="Enter minutes to add"
+                      min="1"
                     />
                   </div>
 
@@ -1023,7 +1074,10 @@ export default function ManageUsers() {
                       <select
                         value={editForm.planSubscription}
                         onChange={(e) => handleFormChange('planSubscription', e.target.value)}
+                        disabled={isSaving}
                         className={`custom-select w-full px-3 py-2 border rounded-lg text-sm appearance-none cursor-pointer ${
+                          isSaving ? 'opacity-50 cursor-not-allowed' : ''
+                        } ${
                           isDark
                             ? 'bg-gray-800 border-gray-600 text-white'
                             : 'bg-white border-gray-300 text-gray-900'
@@ -1069,8 +1123,14 @@ export default function ManageUsers() {
           ) : null
         }
         primaryButton={{
-          text: 'Save Changes',
-          onClick: handleSaveChanges
+          text: isSaving ? (
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+              Saving...
+            </div>
+          ) : 'Save Changes',
+          onClick: handleSaveChanges,
+          disabled: isSaving
         }}
         secondaryButton={{
           text: 'Cancel',
