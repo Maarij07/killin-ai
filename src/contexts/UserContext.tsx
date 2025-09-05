@@ -28,149 +28,205 @@ const API_BASE_URL = 'https://3758a6b3509d.ngrok-free.app/api';
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [sessionRestored, setSessionRestored] = useState(false);
 
   useEffect(() => {
-    // Check for existing session on mount
-    const unsubscribe = checkAuthStatus();
+    console.log('=== UserProvider initializing ===');
     
-    // Clean up listener on unmount
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
+    // Step 1: Try to restore from localStorage immediately
+    const storedToken = localStorage.getItem('auth_token');
+    const storedUser = localStorage.getItem('user_data');
+    
+    console.log('Stored token:', storedToken ? 'exists' : 'none');
+    console.log('Stored user:', storedUser ? 'exists' : 'none');
+    
+    if (storedToken && storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        console.log('✅ Restoring user session:', userData.email);
+        
+        const restoredUser = {
+          id: userData.id.toString(),
+          email: userData.email,
+          name: userData.name,
+          role: userData.role || 'user',
+          authType: 'api' as const
+        };
+        
+        setUser(restoredUser);
+        setIsLoading(false);
+        setSessionRestored(true);
+        
+        console.log('✅ User session restored successfully');
+        
+        // Validate token in background (don't await)
+        validateTokenInBackground(storedToken);
+        
+      } catch (error) {
+        console.error('❌ Error parsing stored user data:', error);
+        localStorage.removeItem('user_data');
+        localStorage.removeItem('auth_token');
+        setIsLoading(false);
       }
-    };
+    } else {
+      // Step 2: No stored session, check for fresh authentication
+      console.log('No stored session, checking authentication...');
+      initializeAuth();
+    }
   }, []);
 
-  const checkAuthStatus = () => {
-    // First, check for API token immediately (synchronous)
-    const checkAPIToken = async () => {
-      try {
-        const token = localStorage.getItem('auth_token');
-        if (token) {
-          console.log('Found API token, validating...');
-          // Validate token with API
-          const response = await fetch(`${API_BASE_URL}/auth/me`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'ngrok-skip-browser-warning': 'true'
-            }
-          });
-          
-          if (response.ok) {
-            const userData = await response.json();
-            console.log('API token valid, setting user:', userData);
-            setUser({
-              id: userData.id.toString(),
-              email: userData.email,
-              name: userData.name || userData.email?.split('@')[0] || 'User',
-              role: userData.role || 'user',
-              authType: 'api'
-            });
-            setIsLoading(false);
-            return true; // API user found
-          } else {
-            console.log('API token invalid, removing...');
-            // Token invalid, remove it
-            localStorage.removeItem('auth_token');
-          }
-        }
-      } catch (error) {
-        console.error('API auth check failed:', error);
-        localStorage.removeItem('auth_token');
-      }
-      return false; // No valid API user
-    };
+  const initializeAuth = () => {
+    console.log('Initializing fresh authentication check...');
     
-    let firebaseUnsubscribe: (() => void) | null = null;
-    
-    // Check API token first
-    checkAPIToken().then(hasAPIUser => {
-      if (hasAPIUser) {
-        return; // API user found, no need to check Firebase
-      }
+    // Only check for tokens if no session was restored
+    if (!sessionRestored) {
+      const token = localStorage.getItem('auth_token');
       
-      // No API user, set up Firebase listener
-      firebaseUnsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-        if (firebaseUser) {
-          console.log('Firebase user found:', firebaseUser.email);
-          // Firebase user found (admin) - check if disabled
-          try {
-            const db = getFirestore();
-            const adminsCollection = collection(db, 'admins');
-            const adminQuery = query(adminsCollection, where('email', '==', (firebaseUser.email || '').toLowerCase()));
-            const querySnapshot = await getDocs(adminQuery);
-            
-            if (!querySnapshot.empty) {
-              const adminDoc = querySnapshot.docs[0];
-              const adminData = adminDoc.data();
-              
-              // Check if admin is disabled
-              if (adminData.disabled === true) {
-                // Sign out disabled admin automatically
-                await signOut(auth);
-                
-                // Log automatic signout of disabled admin
-                await logger.logSystemAction(
-                  'DISABLED_ADMIN_AUTO_SIGNOUT',
-                  `Disabled admin was automatically signed out: ${firebaseUser.email}`,
-                  'HIGH'
-                );
-                
-                setUser(null);
-                setIsLoading(false);
-                return;
-              }
-            }
-            
-            // Admin is not disabled or not found in Firestore (allow access for backwards compatibility)
-            const userData: User = {
-              id: firebaseUser.uid,
-              email: firebaseUser.email || '',
-              name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Admin',
-              role: 'admin',
-              authType: 'firebase'
-            };
-            setUser(userData);
-            setIsLoading(false);
-            return;
-          } catch (firestoreError) {
-            console.error('Error checking admin disabled status on auth change:', firestoreError);
-            
-            // If Firestore check fails, still allow access but log the issue
-            console.warn('Could not verify admin status on auth change, allowing access');
-            await logger.logSystemAction(
-              'ADMIN_STATUS_CHECK_FAILED_ON_AUTH',
-              `Could not verify admin status on auth change: ${firebaseUser.email}. Error: ${firestoreError}`,
-              'MEDIUM'
-            );
-            
-            const userData: User = {
-              id: firebaseUser.uid,
-              email: firebaseUser.email || '',
-              name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Admin',
-              role: 'admin',
-              authType: 'firebase'
-            };
-            setUser(userData);
-            setIsLoading(false);
-            return;
+      if (token) {
+        console.log('Found token without user data, validating...');
+        // Try to get user info with this token
+        fetch(`${API_BASE_URL}/auth/me`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'ngrok-skip-browser-warning': 'true'
           }
-        } else {
-          // No Firebase user and no API user
-          console.log('No Firebase user found, no session to restore');
-          setUser(null);
+        })
+        .then(response => {
+          if (response.ok) {
+            return response.json();
+          } else {
+            throw new Error('Token invalid');
+          }
+        })
+        .then(userData => {
+          console.log('✅ Token valid, setting user:', userData.email);
+          const userObj = {
+            id: userData.id.toString(),
+            email: userData.email,
+            name: userData.name || userData.email?.split('@')[0] || 'User',
+            role: userData.role || 'user',
+            authType: 'api' as const
+          };
+          
+          setUser(userObj);
+          localStorage.setItem('user_data', JSON.stringify(userObj));
+          setIsLoading(false);
+        })
+        .catch(error => {
+          console.log('❌ Token invalid or expired:', error);
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('user_data');
+          // No API token, check Firebase auth
+          checkFirebaseAuth();
+        });
+      } else {
+        // No API token at all, check Firebase auth
+        console.log('No authentication token found, checking Firebase...');
+        checkFirebaseAuth();
+      }
+    }
+  };
+
+  const checkFirebaseAuth = () => {
+    console.log('Setting up Firebase auth listener...');
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        console.log('Firebase user found:', firebaseUser.email);
+        try {
+          const db = getFirestore();
+          const adminsCollection = collection(db, 'admins');
+          const adminQuery = query(adminsCollection, where('email', '==', (firebaseUser.email || '').toLowerCase()));
+          const querySnapshot = await getDocs(adminQuery);
+          
+          if (!querySnapshot.empty) {
+            const adminDoc = querySnapshot.docs[0];
+            const adminData = adminDoc.data();
+            
+            // Check if admin is disabled
+            if (adminData.disabled === true) {
+              await signOut(auth);
+              await logger.logSystemAction(
+                'DISABLED_ADMIN_AUTO_SIGNOUT',
+                `Disabled admin was automatically signed out: ${firebaseUser.email}`,
+                'HIGH'
+              );
+              setUser(null);
+              setIsLoading(false);
+              return;
+            }
+          }
+          
+          // Admin is not disabled, set user
+          const userData: User = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email || '',
+            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Admin',
+            role: 'admin',
+            authType: 'firebase'
+          };
+          console.log('Setting Firebase admin user:', userData);
+          setUser(userData);
+          setIsLoading(false);
+        } catch (firestoreError) {
+          console.error('Error checking admin status:', firestoreError);
+          // If Firestore check fails, still allow access
+          const userData: User = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email || '',
+            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Admin',
+            role: 'admin',
+            authType: 'firebase'
+          };
+          setUser(userData);
           setIsLoading(false);
         }
-      });
+      } else {
+        console.log('No Firebase user found');
+        setUser(null);
+        setIsLoading(false);
+      }
     });
     
     // Return cleanup function
-    return () => {
-      if (firebaseUnsubscribe) {
-        firebaseUnsubscribe();
-      }
-    };
+    return unsubscribe;
   };
+
+  const validateTokenInBackground = async (token: string) => {
+    try {
+      console.log('Validating token in background...');
+      const response = await fetch(`${API_BASE_URL}/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+      
+      if (response.ok) {
+        const currentUserData = await response.json();
+        console.log('Token is valid, updating user data:', currentUserData);
+        
+        const updatedUser = {
+          id: currentUserData.id.toString(),
+          email: currentUserData.email,
+          name: currentUserData.name || currentUserData.email?.split('@')[0] || 'User',
+          role: currentUserData.role || 'user',
+          authType: 'api' as const
+        };
+        
+        setUser(updatedUser);
+        localStorage.setItem('user_data', JSON.stringify(updatedUser));
+      } else {
+        console.log('Token is invalid, clearing session');
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_data');
+        setUser(null);
+      }
+    } catch (error) {
+      console.error('Background token validation failed:', error);
+      // Don't clear session on network errors, keep user logged in
+    }
+  };
+
 
   const loginUser = async (usernameOrEmail: string, password: string) => {
     // User login via API
@@ -202,6 +258,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         };
         console.log('UserContext - Setting user data:', userData);
         setUser(userData);
+        
+        // Save user data to localStorage for persistence
+        localStorage.setItem('user_data', JSON.stringify(userData));
         
         return { success: true };
       } else {
@@ -360,8 +419,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           }).catch(() => {}); // Ignore errors for logout
         }
         
-        // Remove token from storage
+        // Remove token and user data from storage
         localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_data');
         
         // Clear user state
         setUser(null);
