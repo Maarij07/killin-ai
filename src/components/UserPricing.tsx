@@ -1,8 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { CheckIcon, MicrophoneIcon, BuildingStorefrontIcon, CogIcon, PhoneIcon } from '@heroicons/react/24/solid';
+import { useStripeCheckout } from '../hooks/useStripeCheckout';
+import { useSearchParams } from 'next/navigation';
+import { useUser } from '../contexts/UserContext';
+import { useToast } from '../contexts/ToastContext';
 import colors from '../../colors.json';
 
 interface PricingPlan {
@@ -18,17 +22,17 @@ interface PricingPlan {
 
 const pricingPlans: PricingPlan[] = [
   {
-    id: 'free',
-    name: 'Free',
-    price: '0.00',
-    period: '50 mins',
-    description: 'Get started with basic AI phone assistance for free - perfect for testing.',
+    id: 'trial',
+    name: 'Trial',
+    price: '25.00',
+    period: '100 mins',
+    description: 'Perfect trial package to test our AI phone assistance with generous minutes.',
     features: [
-      '50 calls per month',
+      '100 minutes included',
       'Basic voice assistant',
       'Simple dashboard',
       'Email support',
-      'No credit card required'
+      'Great for testing'
     ],
     featured: false,
     color: colors.colors.grey[600]
@@ -93,6 +97,10 @@ interface UserPricingProps {
 export default function UserPricing({ userPlan }: UserPricingProps) {
   const { isDark } = useTheme();
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const { createCheckoutSession, loading } = useStripeCheckout();
+  const searchParams = useSearchParams();
+  const { user } = useUser();
+  const { showSuccess, showError } = useToast();
 
   // Helper function to normalize plan name
   const getNormalizedPlan = (plan?: string | null) => {
@@ -108,17 +116,58 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
   console.log('Selected plan state:', selectedPlan);
   console.log('User plan:', userPlan, 'Normalized:', normalizedUserPlan);
 
-  const handleSelectPlan = (planId: string) => {
+  // Handle success/cancel from Stripe
+  useEffect(() => {
+    const success = searchParams?.get('success');
+    const canceled = searchParams?.get('canceled');
+    const sessionId = searchParams?.get('session_id');
+    
+    if (success && sessionId && user) {
+      // Handle successful payment
+      console.log('Payment successful! Processing...');
+      
+      // Call our payment success API to confirm with backend
+      fetch('/api/stripe/payment-success', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          session_id: sessionId,
+          user_id: user.id
+        }),
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          showSuccess('Payment successful! Your plan has been updated.');
+          console.log('Payment processed successfully:', data);
+          // Optionally refresh user data or redirect
+        } else {
+          showError('Payment completed but there was an issue updating your account. Please contact support.');
+        }
+      })
+      .catch(error => {
+        console.error('Error processing payment success:', error);
+        showError('Payment completed but there was an issue updating your account. Please contact support.');
+      });
+    }
+    
+    if (canceled) {
+      console.log('Payment was canceled');
+      showError('Payment was canceled. You can try again anytime.');
+    }
+  }, [searchParams, user, showSuccess, showError]);
+
+  const handleSelectPlan = async (planId: string) => {
     setSelectedPlan(planId);
     
     if (planId === 'enterprise') {
       // Open email for enterprise plan
       window.open('mailto:info@kallin.ai?subject=Enterprise Plan Inquiry&body=Hello, I am interested in the Enterprise plan. Please contact me to discuss the details.', '_blank');
     } else {
-      // Handle Buy Now for other plans
-      // Here you would integrate with your payment system (Stripe, PayPal, etc.)
-      console.log('Proceeding with purchase for plan:', planId);
-      // TODO: Implement actual purchase logic
+      // Handle Stripe checkout for other plans
+      await createCheckoutSession(planId);
     }
   };
 
@@ -169,43 +218,33 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 max-w-7xl mx-auto px-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 max-w-7xl mx-auto px-4">
           {pricingPlans.map((plan) => (
             <div
               key={plan.id}
-              className={`relative rounded-3xl transition-all duration-300 hover:scale-105 hover:shadow-2xl flex flex-col h-[600px] ${plan.id !== 'free' ? 'overflow-hidden' : ''} ${plan.featured ? 'scale-105' : ''
+              className={`relative rounded-3xl transition-all duration-300 hover:scale-105 hover:shadow-2xl flex flex-col h-auto min-h-[550px] sm:min-h-[600px] overflow-hidden ${plan.featured ? 'lg:scale-105' : ''
                 }`}
               style={{
-                backgroundColor: plan.id === 'free' 
-                  ? (isDark ? colors.colors.grey[800] : colors.colors.white)
-                  : 'transparent',
-                background: plan.id === 'free' 
-                  ? undefined
-                  : isDark 
-                    ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
-                    : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
-                border: plan.id === 'free'
-                  ? (isDark ? `1px solid ${colors.colors.grey[700]}` : `1px solid ${colors.colors.grey[200]}`)
-                  : isDark
-                    ? `2px solid #4a5568`
-                    : `2px solid #cbd5e0`,
-                boxShadow: plan.id === 'free'
-                  ? (isDark ? '0 20px 40px -10px rgba(0, 0, 0, 0.4)' : '0 20px 40px -10px rgba(0, 0, 0, 0.1)')
-                  : isDark
-                    ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
-                    : '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.1)',
+                backgroundColor: 'transparent',
+                background: isDark 
+                  ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                  : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                border: isDark
+                  ? `2px solid #4a5568`
+                  : `2px solid #cbd5e0`,
+                boxShadow: isDark
+                  ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+                  : '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.1)',
                 transition: 'all 0.3s ease-in-out'
               }}
             >
-              {/* Shine effect for premium plans only */}
-              {plan.id !== 'free' && (
-                <div className="absolute inset-0 rounded-3xl opacity-30 pointer-events-none"
-                  style={{
-                    background: 'linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.1) 45%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0.1) 55%, transparent 100%)',
-                    animation: 'shimmer 3s ease-in-out infinite'
-                  }}>
-                </div>
-              )}
+              {/* Shine effect for all plans */}
+              <div className="absolute inset-0 rounded-3xl opacity-30 pointer-events-none"
+                style={{
+                  background: 'linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.1) 45%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0.1) 55%, transparent 100%)',
+                  animation: 'shimmer 3s ease-in-out infinite'
+                }}>
+              </div>
               {/* Angled Plan Badge */}
               <div className="absolute top-0 left-0">
                 <div
@@ -219,40 +258,26 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                 </div>
               </div>
 
-              <div className="flex flex-col flex-grow p-8 pt-16">
+              <div className="flex flex-col flex-grow p-4 sm:p-6 lg:p-8 pt-12 sm:pt-16">
                 {/* Price */}
-                <div className="mb-8">
+                <div className="mb-6 sm:mb-8">
                   <div className="flex items-baseline mb-2">
                     <span 
-                      className={`text-6xl font-black transition-all duration-300 ${
-                        plan.id !== 'free' ? 'bg-gradient-to-r bg-clip-text text-transparent' : ''
-                      }`}
+                      className={`text-4xl sm:text-5xl lg:text-6xl font-black transition-all duration-300 bg-gradient-to-r bg-clip-text text-transparent`}
                       style={{
-                        color: plan.id === 'free' 
-                          ? (isDark ? colors.colors.white : colors.colors.dark)
-                          : undefined,
-                        backgroundImage: plan.id === 'free' 
-                          ? undefined
-                          : isDark
-                            ? 'linear-gradient(135deg, #ffffff 0%, #cbd5e0 25%, #e2e8f0 50%, #f7fafc 75%, #ffffff 100%)'
-                            : 'linear-gradient(135deg, #1a202c 0%, #2d3748 25%, #4a5568 50%, #718096 75%, #1a202c 100%)',
+                        backgroundImage: isDark
+                          ? 'linear-gradient(135deg, #ffffff 0%, #cbd5e0 25%, #e2e8f0 50%, #f7fafc 75%, #ffffff 100%)'
+                          : 'linear-gradient(135deg, #1a202c 0%, #2d3748 25%, #4a5568 50%, #718096 75%, #1a202c 100%)',
                         transition: 'all 0.3s ease-in-out'
                       }}>
                       ${Math.floor(parseFloat(plan.price))}
                     </span>
                     <span 
-                      className={`text-2xl font-bold ml-1 transition-all duration-300 ${
-                        plan.id !== 'free' ? 'bg-gradient-to-r bg-clip-text text-transparent' : ''
-                      }`}
+                      className={`text-2xl font-bold ml-1 transition-all duration-300 bg-gradient-to-r bg-clip-text text-transparent`}
                       style={{
-                        color: plan.id === 'free' 
-                          ? (isDark ? colors.colors.white : colors.colors.dark)
-                          : undefined,
-                        backgroundImage: plan.id === 'free' 
-                          ? undefined
-                          : isDark
-                            ? 'linear-gradient(135deg, #ffffff 0%, #cbd5e0 25%, #e2e8f0 50%, #f7fafc 75%, #ffffff 100%)'
-                            : 'linear-gradient(135deg, #1a202c 0%, #2d3748 25%, #4a5568 50%, #718096 75%, #1a202c 100%)',
+                        backgroundImage: isDark
+                          ? 'linear-gradient(135deg, #ffffff 0%, #cbd5e0 25%, #e2e8f0 50%, #f7fafc 75%, #ffffff 100%)'
+                          : 'linear-gradient(135deg, #1a202c 0%, #2d3748 25%, #4a5568 50%, #718096 75%, #1a202c 100%)',
                         transition: 'all 0.3s ease-in-out'
                       }}>
                       .{plan.price.split('.')[1] || '00'}
@@ -297,15 +322,22 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                 {plan.id !== 'free' && (
                   <button
                     onClick={() => handleSelectPlan(plan.id)}
-                    disabled={normalizedUserPlan === plan.id}
-                    className={`w-full py-4 px-6 rounded-2xl font-bold text-white text-lg uppercase tracking-wide transition-all duration-300 hover:scale-105 transform ${normalizedUserPlan === plan.id ? 'opacity-75 cursor-default' : 'hover:opacity-90'
+                    disabled={normalizedUserPlan === plan.id || loading}
+                    className={`w-full py-4 px-6 rounded-2xl font-bold text-white text-lg uppercase tracking-wide transition-all duration-300 hover:scale-105 transform ${normalizedUserPlan === plan.id || loading ? 'opacity-75 cursor-default' : 'hover:opacity-90'
                       }`}
                     style={{
                       background: `linear-gradient(135deg, ${plan.color} 0%, ${plan.color}dd 100%)`,
                       boxShadow: `0 10px 25px -5px ${plan.color}40`
                     }}
                   >
-                    {normalizedUserPlan === plan.id ? 'CURRENT PLAN' : plan.id === 'enterprise' ? 'CONTACT SALES' : 'BUY NOW'}
+                    {loading && selectedPlan === plan.id 
+                      ? 'PROCESSING...' 
+                      : normalizedUserPlan === plan.id 
+                        ? 'CURRENT PLAN' 
+                        : plan.id === 'enterprise' 
+                          ? 'CONTACT SALES' 
+                          : 'BUY NOW'
+                    }
                   </button>
                 )}
               </div>
@@ -335,28 +367,28 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
               {/* Left Side - 70% */}
               <div className="flex-1 lg:w-[70%]">
                 {/* Addon Minutes Container */}
-                <div className="relative overflow-hidden rounded-3xl mb-6 p-8 h-[480px]"
+                <div className="relative overflow-hidden rounded-3xl mb-6 p-4 sm:p-6 lg:p-8 h-auto min-h-[400px] sm:min-h-[480px]"
                   style={{
                     background: `linear-gradient(135deg, ${colors.colors.primary}15 0%, ${colors.colors.primary}08 100%)`,
                     border: `2px solid ${colors.colors.primary}30`
                   }}>
                   <div className="relative z-10 h-full">
                     {/* Header */}
-                    <div className="text-left mb-6">
-                      <div className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold text-white mb-4"
+                    <div className="text-left mb-4 sm:mb-6">
+                      <div className="inline-flex items-center px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-semibold text-white mb-3 sm:mb-4"
                         style={{ backgroundColor: colors.colors.primary }}>
                         Addon Minutes
                       </div>
-                      <h3 className="text-3xl md:text-4xl font-black mb-2" style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>
+                      <h3 className="text-2xl sm:text-3xl md:text-4xl font-black mb-2" style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>
                         Choose Your Add-on
                       </h3>
-                      <p className="text-base opacity-80" style={{ color: isDark ? colors.colors.grey[300] : colors.colors.grey[600] }}>
+                      <p className="text-sm sm:text-base opacity-80" style={{ color: isDark ? colors.colors.grey[300] : colors.colors.grey[600] }}>
                         Select the perfect minutes package for your needs.
                       </p>
                     </div>
                     
                     {/* 4 Inner Cards Grid */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 h-[200px]">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 h-auto min-h-[180px] sm:min-h-[200px]">
                       {/* 100 Minutes Card */}
                       <div className="relative rounded-2xl p-4 group cursor-pointer hover:scale-105 transition-all duration-300 flex flex-col justify-between overflow-hidden"
                         style={{
@@ -395,9 +427,12 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                             </span>
                           </div>
                         </div>
-                        <button className="w-full py-2 px-3 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90"
+                        <button 
+                          onClick={() => handleSelectPlan('minutes_100')}
+                          disabled={loading}
+                          className="w-full py-2 px-3 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90 disabled:opacity-50"
                           style={{ background: `linear-gradient(135deg, ${colors.colors.primary} 0%, ${colors.colors.primary}dd 100%)` }}>
-                          Buy Now
+                          {loading && selectedPlan === 'minutes_100' ? 'Processing...' : 'Buy Now'}
                         </button>
                       </div>
                       
@@ -439,9 +474,12 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                             </span>
                           </div>
                         </div>
-                        <button className="w-full py-2 px-3 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90"
+                        <button 
+                          onClick={() => handleSelectPlan('minutes_250')}
+                          disabled={loading}
+                          className="w-full py-2 px-3 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90 disabled:opacity-50"
                           style={{ background: `linear-gradient(135deg, ${colors.colors.primary} 0%, ${colors.colors.primary}dd 100%)` }}>
-                          Buy Now
+                          {loading && selectedPlan === 'minutes_250' ? 'Processing...' : 'Buy Now'}
                         </button>
                       </div>
                       
@@ -483,9 +521,12 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                             </span>
                           </div>
                         </div>
-                        <button className="w-full py-2 px-3 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90"
+                        <button 
+                          onClick={() => handleSelectPlan('minutes_500')}
+                          disabled={loading}
+                          className="w-full py-2 px-3 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90 disabled:opacity-50"
                           style={{ background: `linear-gradient(135deg, ${colors.colors.primary} 0%, ${colors.colors.primary}dd 100%)` }}>
-                          Buy Now
+                          {loading && selectedPlan === 'minutes_500' ? 'Processing...' : 'Buy Now'}
                         </button>
                       </div>
                       
@@ -527,9 +568,12 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                             </span>
                           </div>
                         </div>
-                        <button className="w-full py-2 px-3 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90"
+                        <button 
+                          onClick={() => handleSelectPlan('minutes_1000')}
+                          disabled={loading}
+                          className="w-full py-2 px-3 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90 disabled:opacity-50"
                           style={{ background: `linear-gradient(135deg, ${colors.colors.primary} 0%, ${colors.colors.primary}dd 100%)` }}>
-                          Buy Now
+                          {loading && selectedPlan === 'minutes_1000' ? 'Processing...' : 'Buy Now'}
                         </button>
                       </div>
                     </div>
@@ -537,7 +581,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                 </div>
 
                 {/* Three Feature Cards Row */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[240px]">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 h-auto min-h-[200px] sm:min-h-[240px]">
                   
                   {/* AI Voice Card */}
                   <div className="relative rounded-2xl p-6 group cursor-pointer hover:scale-[1.02] transition-all duration-300"
@@ -562,9 +606,10 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                         </div>
                         <button 
                           onClick={() => handleSelectPlan('ai-voice')}
-                          className="w-full py-2 px-4 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90"
+                          disabled={loading}
+                          className="w-full py-2 px-4 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90 disabled:opacity-50"
                           style={{ background: `linear-gradient(135deg, ${colors.colors.primary} 0%, ${colors.colors.primary}dd 100%)` }}>
-                          Buy Now
+                          {loading && selectedPlan === 'ai-voice' ? 'Processing...' : 'Buy Now'}
                         </button>
                       </div>
                     </div>
