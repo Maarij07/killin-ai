@@ -167,10 +167,11 @@ export default function EmbeddedPaymentForm({
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Payment Element */}
-        <div className="p-4 rounded-2xl border"
+        <div className="p-4 rounded-2xl border transition-all duration-200"
           style={{
-            backgroundColor: isDark ? colors.colors.grey[800] : colors.colors.white,
-            borderColor: isDark ? colors.colors.grey[600] : colors.colors.grey[300]
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : colors.colors.white,
+            borderColor: isDark ? colors.colors.grey[500] : colors.colors.grey[300],
+            backdropFilter: isDark ? 'blur(10px)' : 'none'
           }}>
           <PaymentElement 
             id="payment-element"
@@ -179,10 +180,11 @@ export default function EmbeddedPaymentForm({
         </div>
 
         {/* User Info Display - No billing address required */}
-        <div className="p-4 rounded-2xl border"
+        <div className="p-4 rounded-2xl border transition-all duration-200"
           style={{
-            backgroundColor: isDark ? colors.colors.grey[800] : colors.colors.white,
-            borderColor: isDark ? colors.colors.grey[600] : colors.colors.grey[300]
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : colors.colors.white,
+            borderColor: isDark ? colors.colors.grey[500] : colors.colors.grey[300],
+            backdropFilter: isDark ? 'blur(10px)' : 'none'
           }}>
           <h4 className="text-sm font-semibold mb-3"
             style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>
@@ -201,11 +203,12 @@ export default function EmbeddedPaymentForm({
             type="button"
             onClick={onCancel}
             disabled={isProcessing}
-            className="flex-1 py-3 px-6 rounded-xl font-semibold border-2 transition-all duration-200 disabled:opacity-50"
+            className="flex-1 py-3 px-6 rounded-xl font-semibold border-2 transition-all duration-200 disabled:opacity-50 hover:bg-gray-600/20"
             style={{
-              borderColor: isDark ? colors.colors.grey[600] : colors.colors.grey[300],
-              backgroundColor: 'transparent',
-              color: isDark ? colors.colors.white : colors.colors.dark
+              borderColor: isDark ? colors.colors.grey[500] : colors.colors.grey[300],
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'transparent',
+              color: isDark ? colors.colors.grey[200] : colors.colors.dark,
+              backdropFilter: isDark ? 'blur(5px)' : 'none'
             }}
           >
             Cancel

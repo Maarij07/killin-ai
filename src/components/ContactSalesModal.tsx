@@ -101,14 +101,28 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
       <div 
         className="relative w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl transform transition-all duration-300 scale-100 flex flex-col"
         style={{ 
-          backgroundColor: isDark ? colors.colors.grey[900] : colors.colors.white,
-          border: isDark ? `1px solid ${colors.colors.grey[700]}` : `1px solid ${colors.colors.grey[200]}`
+          backgroundColor: 'transparent',
+          background: isDark 
+            ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+            : colors.colors.white,
+          border: isDark
+            ? `2px solid #4a5568`
+            : `1px solid ${colors.colors.grey[200]}`,
+          boxShadow: isDark
+            ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+            : '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          transition: 'all 0.3s ease-in-out'
         }}
       >
         {/* Header */}
         <div className="sticky top-0 z-10 p-6 pb-0 rounded-t-3xl"
           style={{ 
-            backgroundColor: isDark ? colors.colors.grey[900] : colors.colors.white,
+            backgroundColor: isDark 
+              ? 'transparent'
+              : colors.colors.white,
+            background: isDark 
+              ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+              : colors.colors.white,
           }}>
           <div className={`flex items-center justify-between mb-4`}>
             <div>
@@ -140,7 +154,15 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
         </div>
 
         {/* Form */}
-        <div className="flex-1 overflow-y-auto scrollbar-hide rounded-b-3xl">
+        <div className="flex-1 overflow-y-auto scrollbar-hide rounded-b-3xl"
+          style={{
+            backgroundColor: isDark 
+              ? 'transparent'
+              : colors.colors.white,
+            background: isDark 
+              ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+              : colors.colors.white,
+          }}>
           <form onSubmit={handleSubmit} className="p-6">
             <div className="space-y-6">
               {/* Phone Number */}
@@ -159,7 +181,7 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
                         onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
                         className={`flex items-center px-3 py-3 border-r h-full rounded-l-lg transition-colors ${
                           isDark 
-                            ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                            ? 'border-gray-500 text-gray-200 hover:bg-gray-600/20' 
                             : 'border-gray-300 text-gray-500 hover:bg-gray-50'
                         }`}
                       >
@@ -179,9 +201,15 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
                           <div 
                             className={`absolute top-full left-0 mt-1 w-64 rounded-lg shadow-lg border z-20 max-h-60 overflow-y-auto ${
                               isDark 
-                                ? 'bg-gray-800 border-gray-600' 
+                                ? 'border-gray-500' 
                                 : 'bg-white border-gray-300'
                             }`}
+                            style={{
+                              backgroundColor: isDark ? 'transparent' : 'white',
+                              background: isDark 
+                                ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                                : 'white'
+                            }}
                           >
                             {countryCodes.map((country, index) => (
                               <button
@@ -193,7 +221,7 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
                                 }}
                                 className={`w-full text-left px-4 py-2 flex items-center hover:bg-opacity-80 transition-colors ${
                                   isDark 
-                                    ? 'text-gray-300 hover:bg-gray-700' 
+                                    ? 'text-gray-200 hover:bg-gray-600/20' 
                                     : 'text-gray-700 hover:bg-gray-100'
                                 }`}
                               >
@@ -215,11 +243,15 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
                     required
                     value={formData.phoneNumber}
                     onChange={handleInputChange}
-                    className={`block w-full pl-28 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                    className={`block w-full pl-28 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 ${
                       isDark 
-                        ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400' 
+                        ? 'border-gray-500 text-white placeholder-gray-400' 
                         : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
                     }`}
+                    style={{
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'white',
+                      backdropFilter: isDark ? 'blur(10px)' : 'none'
+                    }}
                     placeholder="311-5230740"
                   />
                 </div>
@@ -240,11 +272,15 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
                     required
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    className={`block w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                    className={`block w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 ${
                       isDark 
-                        ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400' 
+                        ? 'border-gray-500 text-white placeholder-gray-400' 
                         : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
                     }`}
+                    style={{
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'white',
+                      backdropFilter: isDark ? 'blur(10px)' : 'none'
+                    }}
                     placeholder="Sameer"
                   />
                 </div>
@@ -262,11 +298,15 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
                     required
                     value={formData.lastName}
                     onChange={handleInputChange}
-                    className={`block w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                    className={`block w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 ${
                       isDark 
-                        ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400' 
+                        ? 'border-gray-500 text-white placeholder-gray-400' 
                         : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
                     }`}
+                    style={{
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'white',
+                      backdropFilter: isDark ? 'blur(10px)' : 'none'
+                    }}
                     placeholder="Ahmed"
                   />
                 </div>
@@ -286,11 +326,15 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  className={`block w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                  className={`block w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 ${
                     isDark 
-                      ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400' 
+                      ? 'border-gray-500 text-white placeholder-gray-400' 
                       : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
                   }`}
+                  style={{
+                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'white',
+                    backdropFilter: isDark ? 'blur(10px)' : 'none'
+                  }}
                   placeholder="email@example.com"
                 />
               </div>
@@ -309,11 +353,15 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
                   required
                   value={formData.companyName}
                   onChange={handleInputChange}
-                  className={`block w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                  className={`block w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 ${
                     isDark 
-                      ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400' 
+                      ? 'border-gray-500 text-white placeholder-gray-400' 
                       : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
                   }`}
+                  style={{
+                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'white',
+                    backdropFilter: isDark ? 'blur(10px)' : 'none'
+                  }}
                   placeholder="Your company name"
                 />
               </div>
@@ -333,11 +381,15 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
                     required
                     value={formData.city}
                     onChange={handleInputChange}
-                    className={`block w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                    className={`block w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 ${
                       isDark 
-                        ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400' 
+                        ? 'border-gray-500 text-white placeholder-gray-400' 
                         : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
                     }`}
+                    style={{
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'white',
+                      backdropFilter: isDark ? 'blur(10px)' : 'none'
+                    }}
                     placeholder="Your city"
                   />
                 </div>
@@ -355,11 +407,15 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
                     required
                     value={formData.state}
                     onChange={handleInputChange}
-                    className={`block w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                    className={`block w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 ${
                       isDark 
-                        ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400' 
+                        ? 'border-gray-500 text-white placeholder-gray-400' 
                         : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
                     }`}
+                    style={{
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'white',
+                      backdropFilter: isDark ? 'blur(10px)' : 'none'
+                    }}
                     placeholder="Your state"
                   />
                 </div>
@@ -378,11 +434,15 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
                   required
                   value={formData.services}
                   onChange={handleInputChange}
-                  className={`block w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                  className={`block w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 ${
                     isDark 
-                      ? 'bg-gray-800 border-gray-600 text-white' 
+                      ? 'border-gray-500 text-white' 
                       : 'bg-white border-gray-300 text-gray-900'
                   }`}
+                  style={{
+                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'white',
+                    backdropFilter: isDark ? 'blur(10px)' : 'none'
+                  }}
                 >
                   <option value="">Select a service...</option>
                   <option value="AI Voice Assistant">AI Voice Assistant</option>
@@ -401,11 +461,15 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
                 <button
                   type="button"
                   onClick={onClose}
-                  className={`px-6 py-3 border rounded-lg font-medium transition-colors ${
+                  className={`px-6 py-3 border rounded-lg font-medium transition-all duration-200 ${
                     isDark 
-                      ? 'border-gray-600 text-gray-300 hover:bg-gray-800' 
+                      ? 'border-gray-500 text-gray-200 hover:bg-gray-600/20' 
                       : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                   }`}
+                  style={{
+                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'transparent',
+                    backdropFilter: isDark ? 'blur(5px)' : 'none'
+                  }}
                 >
                   Cancel
                 </button>

@@ -96,13 +96,38 @@ export default function PaymentModal({
     theme: isDark ? ('night' as const) : ('stripe' as const),
     variables: {
       colorPrimary: colors.colors.primary,
-      colorBackground: isDark ? colors.colors.grey[800] : colors.colors.white,
+      colorBackground: isDark ? 'rgba(255, 255, 255, 0.05)' : colors.colors.white,
       colorText: isDark ? colors.colors.white : colors.colors.dark,
       colorDanger: '#df1b41',
       fontFamily: 'Inter, system-ui, sans-serif',
       spacingUnit: '4px',
       borderRadius: '12px',
+      colorTextPlaceholder: isDark ? colors.colors.grey[400] : colors.colors.grey[500],
+      colorInputBorder: isDark ? colors.colors.grey[500] : colors.colors.grey[300],
     },
+    rules: {
+      '.Input': {
+        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : colors.colors.white,
+        border: isDark ? `1px solid ${colors.colors.grey[500]}` : `1px solid ${colors.colors.grey[300]}`,
+        borderRadius: '8px',
+        backdropFilter: isDark ? 'blur(10px)' : 'none',
+        transition: 'all 0.2s ease',
+      },
+      '.Input:focus': {
+        borderColor: colors.colors.primary,
+        boxShadow: `0 0 0 2px ${colors.colors.primary}20`,
+      },
+      '.Tab': {
+        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'transparent',
+        border: isDark ? `1px solid ${colors.colors.grey[500]}` : `1px solid ${colors.colors.grey[300]}`,
+        backdropFilter: isDark ? 'blur(5px)' : 'none',
+      },
+      '.Tab--selected': {
+        backgroundColor: colors.colors.primary,
+        color: 'white',
+        borderColor: colors.colors.primary,
+      }
+    }
   };
 
   return (
@@ -118,14 +143,28 @@ export default function PaymentModal({
       <div 
         className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto scrollbar-hide rounded-3xl shadow-2xl transform transition-all duration-300 scale-100"
         style={{ 
-          backgroundColor: isDark ? colors.colors.grey[900] : colors.colors.white,
-          border: isDark ? `1px solid ${colors.colors.grey[700]}` : `1px solid ${colors.colors.grey[200]}`
+          backgroundColor: 'transparent',
+          background: isDark 
+            ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+            : colors.colors.white,
+          border: isDark
+            ? `2px solid #4a5568`
+            : `1px solid ${colors.colors.grey[200]}`,
+          boxShadow: isDark
+            ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+            : '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          transition: 'all 0.3s ease-in-out'
         }}
       >
         {/* Header */}
         <div className="sticky top-0 z-10 p-6 pb-0"
           style={{ 
-            backgroundColor: isDark ? colors.colors.grey[900] : colors.colors.white,
+            backgroundColor: isDark 
+              ? 'transparent'
+              : colors.colors.white,
+            background: isDark 
+              ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+              : colors.colors.white,
           }}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold"
@@ -149,7 +188,15 @@ export default function PaymentModal({
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-6"
+          style={{
+            backgroundColor: isDark 
+              ? 'transparent'
+              : colors.colors.white,
+            background: isDark 
+              ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+              : colors.colors.white,
+          }}>
           {loading ? (
             // Loading State
             <div className="text-center py-12">

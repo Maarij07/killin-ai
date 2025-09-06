@@ -780,7 +780,8 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
           ))}
         </div>
 
-        {/* Topup Minutes Section */}
+        {/* Topup Minutes Section - Only show if user has a matching plan */}
+        {(normalizedUserPlan === 'trial' || normalizedUserPlan === 'starter' || normalizedUserPlan === 'professional' || normalizedUserPlan === 'enterprise') && (
         <div className="mt-20 mb-16">
           <div className="text-center mb-8">
             <h2 className="text-2xl md:text-3xl font-bold mb-3" style={{ 
@@ -1036,9 +1037,6 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                         </p>
                       </div>
                       <div className="text-center">
-                        <div className="mb-3">
-                          <span className="text-xl font-bold" style={{ color: colors.colors.primary }}>$25/month</span>
-                        </div>
                         <button 
                           onClick={() => { setContactService('AI Voice Add-on'); setIsContactOpen(true); }}
                           className="w-full py-2 px-4 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90"
@@ -1167,11 +1165,18 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
             </div>
           </div>
         </div>
+        )}
 
         {/* Bottom CTA */}
         <div className="text-center mt-16">
           <p className="text-sm" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>
-            Need a custom solution? <a href="/contact" style={{ color: colors.colors.primary }} className="hover:opacity-80 font-medium transition-opacity">Contact our sales team</a>
+            Need a custom solution? <button 
+              onClick={() => { setContactService('Custom Solution'); setIsContactOpen(true); }}
+              style={{ color: colors.colors.primary }} 
+              className="hover:opacity-80 font-medium transition-opacity underline bg-transparent border-none cursor-pointer"
+            >
+              Contact our sales team
+            </button>
           </p>
         </div>
       </div>
