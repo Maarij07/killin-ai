@@ -1040,11 +1040,10 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                           <span className="text-xl font-bold" style={{ color: colors.colors.primary }}>$25/month</span>
                         </div>
                         <button 
-                          onClick={() => handleSelectPlan('ai-voice')}
-                          disabled={loading}
-                          className="w-full py-2 px-4 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90 disabled:opacity-50"
+                          onClick={() => { setContactService('AI Voice Add-on'); setIsContactOpen(true); }}
+                          className="w-full py-2 px-4 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90"
                           style={{ background: `linear-gradient(135deg, ${colors.colors.primary} 0%, ${colors.colors.primary}dd 100%)` }}>
-                          {loading && selectedPlan === 'ai-voice' ? 'Processing...' : 'Buy Now'}
+                          Contact Sales
                         </button>
                       </div>
                     </div>
