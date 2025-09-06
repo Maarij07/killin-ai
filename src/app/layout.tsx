@@ -19,6 +19,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "KALLIN.AI - Admin Panel",
   description: "Access your Admin Panel to manage data",
+  icons: {
+    icon: "/kallin-fav.ico",
+  },
 };
 
 export default function RootLayout({
