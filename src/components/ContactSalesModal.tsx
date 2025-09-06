@@ -106,7 +106,7 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
         }}
       >
         {/* Header */}
-        <div className="sticky top-0 z-10 p-6 pb-0"
+        <div className="sticky top-0 z-10 p-6 pb-0 rounded-t-3xl"
           style={{ 
             backgroundColor: isDark ? colors.colors.grey[900] : colors.colors.white,
           }}>
@@ -140,7 +140,7 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
         </div>
 
         {/* Form */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto scrollbar-hide rounded-b-3xl">
           <form onSubmit={handleSubmit} className="p-6">
             <div className="space-y-6">
               {/* Phone Number */}

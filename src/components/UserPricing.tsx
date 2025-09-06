@@ -228,12 +228,14 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
         setIsLoadingDetails(false);
       }
     }
-  }, [user, showError]);
+  }, [user?.id]); // Only depend on user ID, not the entire user object or showError
 
-  // Initial fetch on component mount
+  // Initial fetch on component mount - only run when user ID changes
   useEffect(() => {
-    fetchUserDetails();
-  }, [fetchUserDetails]);
+    if (user?.id) {
+      fetchUserDetails();
+    }
+  }, [user?.id]); // Only depend on user ID to prevent unnecessary refetches
 
   // Handle success/cancel from Stripe
   useEffect(() => {
@@ -310,7 +312,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
     await openPaymentModal(planId, planName, planPrice);
   };
 
-  // Copy to clipboard function
+  // Copy to clipboard function - prevent event propagation
   const copyToClipboard = async (text: string, label: string) => {
     try {
       await navigator.clipboard.writeText(text);

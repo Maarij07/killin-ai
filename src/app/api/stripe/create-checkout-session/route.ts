@@ -62,7 +62,6 @@ export async function POST(request: NextRequest) {
         userId: userId || '',
       },
       allow_promotion_codes: true,
-      billing_address_collection: 'required',
     });
 
     console.log('Stripe session created successfully:', session.id);

@@ -1,0 +1,46 @@
+VERCEL ENVIRONMENT VARIABLES - COPY/PASTE TEMPLATE
+==================================================
+
+Variable Name: STRIPE_SECRET_KEY
+Value: sk_test_your_actual_stripe_secret_key_here
+Environment: Production, Preview, Development
+
+Variable Name: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+Value: pk_test_your_actual_stripe_publishable_key_here
+Environment: Production, Preview, Development
+
+Variable Name: NEXT_PUBLIC_APP_URL
+Value: https://your-vercel-project-name.vercel.app
+Environment: Production, Preview, Development
+
+Variable Name: BACKEND_API_URL
+Value: https://3758a6b3509d.ngrok-free.app
+Environment: Production, Preview, Development
+
+Variable Name: STRIPE_WEBHOOK_SECRET
+Value: whsec_your_webhook_signing_secret_here
+Environment: Production, Preview, Development
+
+==================================================
+INSTRUCTIONS:
+1. Replace "your_actual_stripe_secret_key_here" with your real Stripe secret key from dashboard.stripe.com
+2. Replace "your_actual_stripe_publishable_key_here" with your real Stripe publishable key
+3. Replace "your-vercel-project-name.vercel.app" with your actual Vercel app URL
+4. Replace "your_webhook_signing_secret_here" with your actual webhook secret (optional)
+5. Keep the ngrok URL as-is if that's your backend
+
+JSON FORMAT (if you prefer):
+{
+  "STRIPE_SECRET_KEY": "sk_test_your_actual_stripe_secret_key_here",
+  "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_your_actual_stripe_publishable_key_here",
+  "NEXT_PUBLIC_APP_URL": "https://your-vercel-project-name.vercel.app",
+  "BACKEND_API_URL": "https://3758a6b3509d.ngrok-free.app",
+  "STRIPE_WEBHOOK_SECRET": "whsec_your_webhook_signing_secret_here"
+}
+
+COPY-PASTE FORMAT FOR VERCEL DASHBOARD:
+Name: STRIPE_SECRET_KEY | Value: sk_test_your_actual_stripe_secret_key_here
+Name: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY | Value: pk_test_your_actual_stripe_publishable_key_here
+Name: NEXT_PUBLIC_APP_URL | Value: https://your-vercel-project-name.vercel.app
+Name: BACKEND_API_URL | Value: https://3758a6b3509d.ngrok-free.app
+Name: STRIPE_WEBHOOK_SECRET | Value: whsec_your_webhook_signing_secret_here

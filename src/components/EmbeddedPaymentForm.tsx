@@ -5,7 +5,6 @@ import {
   useStripe,
   useElements,
   PaymentElement,
-  AddressElement,
 } from '@stripe/react-stripe-js';
 import { useTheme } from '../contexts/ThemeContext';
 import { useToast } from '../contexts/ToastContext';
@@ -189,7 +188,7 @@ export default function EmbeddedPaymentForm({
           />
         </div>
 
-        {/* Billing Address */}
+        {/* User Info Display - No billing address required */}
         <div className="p-4 rounded-2xl border"
           style={{
             backgroundColor: isDark ? colors.colors.grey[800] : colors.colors.white,
@@ -197,17 +196,13 @@ export default function EmbeddedPaymentForm({
           }}>
           <h4 className="text-sm font-semibold mb-3"
             style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>
-            Billing Address
+            Account Information
           </h4>
-          <AddressElement 
-            options={{ 
-              mode: 'billing',
-              allowedCountries: ['US', 'CA'],
-              defaultValues: {
-                name: user?.name || '',
-              }
-            }}
-          />
+          <div className="text-sm"
+            style={{ color: isDark ? colors.colors.grey[300] : colors.colors.grey[600] }}>
+            <p><strong>Email:</strong> {user?.email}</p>
+            <p><strong>Name:</strong> {user?.name}</p>
+          </div>
         </div>
 
         {/* Action Buttons */}

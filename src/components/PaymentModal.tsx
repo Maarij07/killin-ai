@@ -116,7 +116,7 @@ export default function PaymentModal({
 
       {/* Modal */}
       <div 
-        className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl transform transition-all duration-300 scale-100"
+        className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto scrollbar-hide rounded-3xl shadow-2xl transform transition-all duration-300 scale-100"
         style={{ 
           backgroundColor: isDark ? colors.colors.grey[900] : colors.colors.white,
           border: isDark ? `1px solid ${colors.colors.grey[700]}` : `1px solid ${colors.colors.grey[200]}`
