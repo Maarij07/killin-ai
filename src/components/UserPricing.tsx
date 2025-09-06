@@ -695,7 +695,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
 
               <div className="flex flex-col flex-grow p-4 sm:p-6 lg:p-8 pt-12 sm:pt-16">
                 {/* Price */}
-                <div className="mb-6 sm:mb-8">
+                <div className="mb-6 sm:mb-8 pt-4">
                   <div className="flex items-baseline mb-2">
                     <span 
                       className={`text-4xl sm:text-5xl lg:text-6xl font-black transition-all duration-300 bg-gradient-to-r bg-clip-text text-transparent`}
@@ -1154,10 +1154,6 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                       <p className="text-base opacity-80 mb-6" style={{ color: isDark ? colors.colors.grey[300] : colors.colors.grey[600] }}>
                         AI assistant never sleeps, handles calls anytime, ensuring every customer reaches you 24/7.
                       </p>
-                      <div className="flex items-center justify-center text-sm" style={{ color: colors.colors.primary }}>
-                        <div className="w-3 h-3 bg-green-400 rounded-full mr-3 animate-pulse"></div>
-                        <span className="font-semibold">Active now</span>
-                      </div>
                     </div>
                   </div>
                 </div>

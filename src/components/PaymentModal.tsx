@@ -35,8 +35,17 @@ export default function PaymentModal({
   const stripe = getStripe();
 
   const createPaymentIntent = useCallback(async () => {
+    if (loading) {
+      console.log('Payment intent creation already in progress');
+      return;
+    }
+    
     setLoading(true);
+    setClientSecret(''); // Clear any existing client secret
+    
     try {
+      console.log('Creating payment intent for plan:', planId);
+      
       const response = await fetch('/api/stripe/create-payment-intent', {
         method: 'POST',
         headers: {
@@ -53,31 +62,44 @@ export default function PaymentModal({
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to create payment intent');
+        console.error('Payment intent creation failed:', response.status, errorData);
+        throw new Error(errorData.error || `Server error (${response.status}): Failed to create payment intent`);
       }
 
-      const { clientSecret } = await response.json();
+      const responseData = await response.json();
+      console.log('Payment intent response:', responseData);
       
-      if (!clientSecret) {
-        throw new Error('No client secret received');
+      if (!responseData.clientSecret) {
+        throw new Error('No client secret received from server');
       }
 
-      setClientSecret(clientSecret);
+      setClientSecret(responseData.clientSecret);
+      console.log('Payment intent created successfully');
+      
     } catch (error) {
       console.error('Error creating payment intent:', error);
-      showError(error instanceof Error ? error.message : 'Failed to initialize payment');
-      onClose();
+      const errorMessage = error instanceof Error ? error.message : 'Failed to initialize payment';
+      showError(errorMessage);
+      
+      // Don't close the modal immediately, give user a chance to retry
+      setTimeout(() => {
+        if (!clientSecret) {
+          console.log('No client secret after error, closing modal');
+          onClose();
+        }
+      }, 5000); // Close after 5 seconds if no retry
     } finally {
       setLoading(false);
     }
-  }, [planId, planName, planPrice, user?.id, user?.email, showError, onClose]);
+  }, [planId, planName, planPrice, user?.id, user?.email, showError, onClose, loading, clientSecret]);
 
-  // Create payment intent when modal opens
+  // Create payment intent when modal opens - only once per modal opening
   useEffect(() => {
-    if (isOpen && planId) {
+    if (isOpen && planId && !clientSecret && !loading) {
+      console.log('Modal opened, creating payment intent for plan:', planId);
       createPaymentIntent();
     }
-  }, [isOpen, planId, createPaymentIntent]);
+  }, [isOpen, planId]); // Removed createPaymentIntent from dependencies to prevent loops
 
   const handleSuccess = () => {
     setClientSecret(''); // Clear the client secret

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createStripeInstance, validateStripeConfig } from '../../../../lib/stripe-server';
 import { getPlanConfig } from '../../../../config/plans';
-import { paymentSessions } from '../../../../lib/payment-sessions';
 
 export async function POST(request: NextRequest) {
   try {
@@ -43,24 +42,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if there's already an active payment session for this user/plan
-    const existingSession = paymentSessions.getExistingSession(userId, planId);
-    if (existingSession) {
-      console.log(`Returning existing payment session for user ${userId}, plan ${planId}`);
-      return NextResponse.json({
-        clientSecret: existingSession.clientSecret,
-        paymentIntentId: existingSession.paymentIntentId,
-        amount: getPlanConfig(planId)?.amountCents || 0,
-        description: getPlanConfig(planId)?.description || '',
-        planConfig: {
-          id: planId,
-          name: getPlanConfig(planId)?.name || '',
-          minutes: getPlanConfig(planId)?.minutes || 0,
-          plan_type: getPlanConfig(planId)?.plan_type || ''
-        }
-      });
-    }
-
     // Initialize Stripe
     let stripe;
     try {
@@ -93,8 +74,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Prevent duplicate payment intents for the same user/plan combination
-    const idempotencyKey = `${userId}-${planId}-${Date.now()}`;
+    // Use a simple idempotency key that doesn't change - this prevents duplicates
+    const idempotencyKey = `${userId}-${planId}`;
     
     console.log('Creating payment intent with idempotency key:', idempotencyKey);
 
@@ -121,15 +102,7 @@ export async function POST(request: NextRequest) {
 
     console.log('Payment intent created successfully:', paymentIntent.id);
     
-    // Create a session to track this payment intent and prevent duplicates
-    paymentSessions.createSession(
-      userId, 
-      planId, 
-      paymentIntent.id, 
-      paymentIntent.client_secret || ''
-    );
-    
-    return NextResponse.json({ 
+    return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
       amount: planConfig.amountCents,

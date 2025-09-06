@@ -21,12 +21,19 @@ export const useEmbeddedPayment = () => {
       return;
     }
 
+    // Prevent opening modal if already open or loading
+    if (isModalOpen || loading) {
+      console.log('Modal already open or loading, ignoring request');
+      return;
+    }
+
     // Special handling for enterprise plan
     if (planId === 'enterprise') {
       window.open('mailto:info@kallin.ai?subject=Enterprise Plan Inquiry&body=Hello, I am interested in the Enterprise plan. Please contact me to discuss the details.', '_blank');
       return;
     }
 
+    console.log('Opening payment modal for plan:', planId);
     setLoading(true);
     setSelectedPlan({ id: planId, name: planName, price: planPrice });
     setIsModalOpen(true);

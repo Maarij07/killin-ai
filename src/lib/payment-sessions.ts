@@ -6,8 +6,10 @@ interface PaymentSession {
   planId: string;
   paymentIntentId: string;
   clientSecret: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
   createdAt: Date;
   expiresAt: Date;
+  lastUpdated: Date;
 }
 
 class PaymentSessionManager {
@@ -48,14 +50,49 @@ class PaymentSessionManager {
       planId,
       paymentIntentId,
       clientSecret,
+      status: 'pending',
       createdAt: now,
-      expiresAt
+      expiresAt,
+      lastUpdated: now
     };
     
     this.sessions.set(key, session);
     console.log(`Created payment session for user ${userId}, plan ${planId}, expires at ${expiresAt}`);
     
     return session;
+  }
+
+  // Update session status
+  public updateSessionStatus(userId: string, planId: string, status: PaymentSession['status']): boolean {
+    const key = this.getSessionKey(userId, planId);
+    const session = this.sessions.get(key);
+    
+    if (session) {
+      session.status = status;
+      session.lastUpdated = new Date();
+      this.sessions.set(key, session);
+      console.log(`Updated payment session status for user ${userId}, plan ${planId} to ${status}`);
+      return true;
+    }
+    
+    return false;
+  }
+
+  // Get session by payment intent ID
+  public getSessionByPaymentIntent(paymentIntentId: string): PaymentSession | null {
+    for (const session of this.sessions.values()) {
+      if (session.paymentIntentId === paymentIntentId) {
+        return session;
+      }
+    }
+    return null;
+  }
+
+  // Force clear session (for failed payments)
+  public clearSession(userId: string, planId: string): void {
+    const key = this.getSessionKey(userId, planId);
+    this.sessions.delete(key);
+    console.log(`Cleared payment session for user ${userId}, plan ${planId}`);
   }
 
   // Complete a session (remove it from the store)

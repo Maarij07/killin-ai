@@ -22,7 +22,7 @@ interface EmbeddedPaymentFormProps {
 }
 
 export default function EmbeddedPaymentForm({
-  clientSecret,
+  clientSecret, // eslint-disable-line @typescript-eslint/no-unused-vars
   planId,
   planName,
   planPrice,
@@ -47,10 +47,17 @@ export default function EmbeddedPaymentForm({
       return;
     }
 
+    if (isProcessing) {
+      console.log('Payment already processing, ignoring duplicate submission');
+      return;
+    }
+
     setIsProcessing(true);
 
     try {
-      const { error } = await stripe.confirmPayment({
+      console.log('Starting payment confirmation process...');
+      
+      const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/pricing?success=true`,
@@ -59,18 +66,28 @@ export default function EmbeddedPaymentForm({
       });
 
       if (error) {
+        console.error('Payment confirmation error:', error);
         if (error.type === 'card_error' || error.type === 'validation_error') {
           showError(error.message || 'Payment failed. Please check your payment details.');
         } else {
           showError('An unexpected error occurred. Please try again.');
         }
-      } else {
+      } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+        console.log('Payment succeeded!', paymentIntent.id);
+        
         // Payment succeeded - now call our API to confirm the payment
         console.log('Payment succeeded, confirming with backend...');
-        await confirmPaymentWithBackend();
+        const backendConfirmed = await confirmPaymentWithBackend(paymentIntent.id);
         
-        showSuccess(`Payment successful! Welcome to the ${planName} plan.`);
-        onSuccess();
+        if (backendConfirmed) {
+          showSuccess(`Payment successful! Welcome to the ${planName} plan.`);
+          onSuccess();
+        } else {
+          showError('Payment completed but account update failed. Please contact support.');
+        }
+      } else {
+        console.log('Payment requires additional action or failed:', paymentIntent?.status);
+        showError('Payment could not be completed. Please try again.');
       }
     } catch (error) {
       console.error('Payment error:', error);
@@ -81,10 +98,10 @@ export default function EmbeddedPaymentForm({
   };
 
   // Function to confirm payment with our backend
-  const confirmPaymentWithBackend = async () => {
+  const confirmPaymentWithBackend = async (paymentIntentId: string): Promise<boolean> => {
     if (!user?.id) {
       console.error('No user ID available for payment confirmation');
-      return;
+      return false;
     }
 
     try {
@@ -92,18 +109,15 @@ export default function EmbeddedPaymentForm({
       const config = getPlanConfig(planId);
       if (!config) {
         console.error(`Unknown plan ID: ${planId}`);
-        return;
+        return false;
       }
-
-      // Extract payment intent ID from client secret
-      const paymentIntentId = clientSecret.split('_secret_')[0];
       
       // Prepare the API payload
       const payload = {
         user_id: user.id,
         plan_type: config.plan_type,
         amount_paid: config.price,
-        transaction_id: paymentIntentId, // Use payment intent ID as transaction ID
+        transaction_id: paymentIntentId,
         payment_intent_id: paymentIntentId,
         minutes: config.minutes,
         is_admin: false // This is a user payment, not admin action
@@ -122,16 +136,17 @@ export default function EmbeddedPaymentForm({
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
         console.error('Payment confirmation failed:', response.status, errorData);
-        throw new Error(errorData.error || 'Failed to confirm payment');
+        return false;
       }
 
       const result = await response.json();
       console.log('Payment confirmation successful:', result);
 
+      return true;
+
     } catch (error) {
       console.error('Error confirming payment with backend:', error);
-      // Don't throw the error here - we don't want to break the user experience
-      // The payment already succeeded with Stripe, the backend confirmation is secondary
+      return false;
     }
   };
 
