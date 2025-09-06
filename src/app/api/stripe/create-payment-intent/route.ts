@@ -3,11 +3,14 @@ import Stripe from 'stripe';
 
 // Serverless-compatible Stripe initialization
 function getStripe(): Stripe {
-  if (!process.env.STRIPE_SECRET_KEY) {
-    throw new Error('STRIPE_SECRET_KEY is not set in environment variables');
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  
+  if (!secretKey) {
+    console.error('STRIPE_SECRET_KEY environment variable is not set');
+    throw new Error('Stripe secret key is required but not configured');
   }
   
-  return new Stripe(process.env.STRIPE_SECRET_KEY, {
+  return new Stripe(secretKey, {
     apiVersion: '2025-08-27.basil',
     typescript: true,
   });
