@@ -13,7 +13,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { planId, userId, userEmail } = await request.json();
+    // Parse request body with better error handling
+    let requestBody;
+    try {
+      requestBody = await request.json();
+    } catch (parseError) {
+      console.error('Failed to parse request body:', parseError);
+      return NextResponse.json(
+        { error: 'Invalid request body format' },
+        { status: 400 }
+      );
+    }
+
+    const { planId, userId, userEmail } = requestBody;
     
     console.log('Received payment intent request:', {
       planId,
@@ -102,9 +114,17 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Detailed error creating payment intent:', error);
+    console.error('Error details:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : 'No stack trace'
+    });
     
     return NextResponse.json(
-      { error: 'Error creating payment intent' },
+      { 
+        error: 'Error creating payment intent',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
