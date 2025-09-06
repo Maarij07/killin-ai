@@ -281,6 +281,19 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
   }, [searchParams, user, showSuccess, showError]);
 
   const handleSelectPlan = async (planId: string) => {
+    // Prevent multiple selections while one is in progress
+    if (selectedPlan && selectedPlan === planId) {
+      console.log(`Plan ${planId} already selected, ignoring duplicate selection`);
+      return;
+    }
+    
+    // Prevent selection if modal is already open
+    if (isModalOpen) {
+      console.log('Modal already open, ignoring plan selection');
+      return;
+    }
+    
+    console.log(`Selecting plan: ${planId}`);
     setSelectedPlan(planId);
     
     // Get plan details for the modal
@@ -309,7 +322,12 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
     }
     
     // Open embedded payment modal instead of redirecting to Stripe Checkout
-    await openPaymentModal(planId, planName, planPrice);
+    try {
+      await openPaymentModal(planId, planName, planPrice);
+    } finally {
+      // Clear selected plan after modal operation completes
+      setTimeout(() => setSelectedPlan(null), 1000);
+    }
   };
 
   // Copy to clipboard function - prevent event propagation

@@ -74,8 +74,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Use a simple idempotency key that doesn't change - this prevents duplicates
-    const idempotencyKey = `${userId}-${planId}`;
+    // Use idempotency key with current date to allow new payments after 24h but prevent immediate duplicates
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const idempotencyKey = `${userId}-${planId}-${today}`;
     
     console.log('Creating payment intent with idempotency key:', idempotencyKey);
 

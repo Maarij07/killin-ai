@@ -118,21 +118,19 @@ export default function PaymentModal({
     theme: isDark ? ('night' as const) : ('stripe' as const),
     variables: {
       colorPrimary: colors.colors.primary,
-      colorBackground: isDark ? 'rgba(255, 255, 255, 0.05)' : colors.colors.white,
+      colorBackground: isDark ? colors.colors.dark : colors.colors.white,
       colorText: isDark ? colors.colors.white : colors.colors.dark,
       colorDanger: '#df1b41',
       fontFamily: 'Inter, system-ui, sans-serif',
       spacingUnit: '4px',
       borderRadius: '12px',
       colorTextPlaceholder: isDark ? colors.colors.grey[400] : colors.colors.grey[500],
-      colorInputBorder: isDark ? colors.colors.grey[500] : colors.colors.grey[300],
     },
     rules: {
       '.Input': {
-        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : colors.colors.white,
+        backgroundColor: isDark ? colors.colors.grey[800] : colors.colors.white,
         border: isDark ? `1px solid ${colors.colors.grey[500]}` : `1px solid ${colors.colors.grey[300]}`,
         borderRadius: '8px',
-        backdropFilter: isDark ? 'blur(10px)' : 'none',
         transition: 'all 0.2s ease',
       },
       '.Input:focus': {
@@ -140,9 +138,8 @@ export default function PaymentModal({
         boxShadow: `0 0 0 2px ${colors.colors.primary}20`,
       },
       '.Tab': {
-        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'transparent',
+        backgroundColor: isDark ? colors.colors.grey[700] : 'transparent',
         border: isDark ? `1px solid ${colors.colors.grey[500]}` : `1px solid ${colors.colors.grey[300]}`,
-        backdropFilter: isDark ? 'blur(5px)' : 'none',
       },
       '.Tab--selected': {
         backgroundColor: colors.colors.primary,
