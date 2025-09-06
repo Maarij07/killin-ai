@@ -4,9 +4,19 @@ let stripePromise: Promise<Stripe | null>;
 
 export const getStripe = () => {
   if (!stripePromise) {
-    stripePromise = loadStripe(
-      process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
-    );
+    const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    
+    if (!publishableKey) {
+      console.error('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not set in environment variables');
+      throw new Error('Stripe configuration error: Missing publishable key');
+    }
+    
+    if (publishableKey.includes('your_publishable_key_here')) {
+      console.error('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is using placeholder value');
+      throw new Error('Stripe configuration error: Publishable key not properly configured');
+    }
+    
+    stripePromise = loadStripe(publishableKey);
   }
   return stripePromise;
 };

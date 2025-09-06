@@ -15,11 +15,24 @@ function getStripe(): Stripe {
 
 export async function POST(request: NextRequest) {
   try {
-    // Validate environment first
+    // Detailed environment validation
+    console.log('Environment check:');
+    console.log('- STRIPE_SECRET_KEY exists:', !!process.env.STRIPE_SECRET_KEY);
+    console.log('- NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY exists:', !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+    
     if (!process.env.STRIPE_SECRET_KEY) {
       console.error('STRIPE_SECRET_KEY not found in environment variables');
+      console.error('Available env vars:', Object.keys(process.env).filter(key => key.includes('STRIPE')));
       return NextResponse.json(
         { error: 'Stripe configuration error: Missing secret key' },
+        { status: 500 }
+      );
+    }
+    
+    if (process.env.STRIPE_SECRET_KEY.includes('your_secret_key_here')) {
+      console.error('STRIPE_SECRET_KEY is using placeholder value');
+      return NextResponse.json(
+        { error: 'Stripe configuration error: Secret key not properly configured' },
         { status: 500 }
       );
     }
