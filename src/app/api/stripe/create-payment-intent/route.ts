@@ -1,20 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
-// Initialize Stripe lazily to avoid build-time issues
-let stripe: Stripe | null = null;
-
-const getStripe = () => {
-  if (!stripe && process.env.STRIPE_SECRET_KEY) {
-    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2025-08-27.basil',
-    });
+// Serverless-compatible Stripe initialization
+function getStripe(): Stripe {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error('STRIPE_SECRET_KEY is not set in environment variables');
   }
-  return stripe;
-};
+  
+  return new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2025-08-27.basil',
+    typescript: true,
+  });
+}
 
 export async function POST(request: NextRequest) {
   try {
+    // Validate environment first
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error('STRIPE_SECRET_KEY not found in environment variables');
+      return NextResponse.json(
+        { error: 'Stripe configuration error: Missing secret key' },
+        { status: 500 }
+      );
+    }
+
     const { planId, userId, userEmail } = await request.json();
     
     console.log('Received payment intent request:', {
@@ -26,17 +35,19 @@ export async function POST(request: NextRequest) {
     if (!planId) {
       console.error('Missing required parameters:', { planId });
       return NextResponse.json(
-        { error: 'Missing required parameters' },
+        { error: 'Missing required parameters: planId is required' },
         { status: 400 }
       );
     }
 
-    // Get Stripe instance and check if available
-    const stripeInstance = getStripe();
-    if (!process.env.STRIPE_SECRET_KEY || !stripeInstance) {
-      console.error('Stripe secret key not configured properly');
+    // Initialize Stripe
+    let stripeInstance: Stripe;
+    try {
+      stripeInstance = getStripe();
+    } catch (error) {
+      console.error('Failed to initialize Stripe:', error);
       return NextResponse.json(
-        { error: 'Stripe configuration error' },
+        { error: 'Stripe initialization failed' },
         { status: 500 }
       );
     }

@@ -329,8 +329,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         }
         
         // Admin is not disabled or not found in Firestore (allow login for backwards compatibility)
-        // Log successful admin login
-        await logger.logAdminLogin(email);
         
         return { success: true };
       } catch (firestoreError) {
@@ -344,8 +342,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           'MEDIUM'
         );
         
-        // Log successful admin login
-        await logger.logAdminLogin(email);
         
         return { success: true };
       }
@@ -396,12 +392,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      // Log logout before signing out
-      if (user?.email) {
-        if (user.authType === 'firebase') {
-          await logger.logAdminLogout(user.email);
-        }
-      }
       
       if (user?.authType === 'firebase') {
         // Firebase logout

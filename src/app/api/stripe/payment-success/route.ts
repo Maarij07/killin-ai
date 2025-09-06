@@ -1,20 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-
-// Initialize Stripe lazily to avoid build-time issues
-let stripe: Stripe | null = null;
-
-const getStripe = () => {
-  if (!stripe && process.env.STRIPE_SECRET_KEY) {
-    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2025-08-27.basil',
-    });
-  }
-  return stripe;
-};
+import { createStripeInstance, validateStripeConfig } from '../../../../lib/stripe-server';
 
 export async function POST(request: NextRequest) {
   try {
+    // Validate Stripe configuration first
+    const configValidation = validateStripeConfig();
+    if (!configValidation.isValid) {
+      console.error('Stripe configuration error:', configValidation.error);
+      return NextResponse.json(
+        { error: `Stripe configuration error: ${configValidation.error}` },
+        { status: 500 }
+      );
+    }
+
     const { session_id, user_id } = await request.json();
 
     if (!session_id) {
@@ -24,12 +23,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get Stripe instance and check if available
-    const stripeInstance = getStripe();
-    if (!process.env.STRIPE_SECRET_KEY || !stripeInstance) {
-      console.error('Stripe secret key not configured properly');
+    // Initialize Stripe
+    let stripeInstance: Stripe;
+    try {
+      stripeInstance = createStripeInstance();
+    } catch (error) {
+      console.error('Failed to initialize Stripe:', error);
       return NextResponse.json(
-        { error: 'Stripe configuration error' },
+        { error: 'Stripe initialization failed' },
         { status: 500 }
       );
     }

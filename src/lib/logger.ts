@@ -155,22 +155,34 @@ class Logger {
     }
   }
 
-  // Convenience methods for specific actions
-  async logAdminLogin(adminEmail: string) {
+  // Convenience methods for specific admin actions only
+  async logPromptChanged(userEmail: string, userName: string, changes: { oldPrompt?: string, newPrompt?: string }) {
     await this.logActivity(
-      'ADMIN_LOGIN',
-      'AUTHENTICATION',
-      `Admin logged in: ${adminEmail}`,
-      'LOW'
+      'PROMPT_CHANGED',
+      'USER_MANAGEMENT', 
+      `Admin changed prompt for ${userName} (${userEmail})`,
+      'MEDIUM',
+      {
+        targetEmail: userEmail,
+        targetUser: userName,
+        oldValue: changes.oldPrompt,
+        newValue: changes.newPrompt
+      }
     );
   }
 
-  async logAdminLogout(adminEmail: string) {
+  async logMinutesAdded(userEmail: string, userName: string, minutesAdded: number, newTotal: number) {
     await this.logActivity(
-      'ADMIN_LOGOUT',
-      'AUTHENTICATION',
-      `Admin logged out: ${adminEmail}`,
-      'LOW'
+      'MINUTES_ADDED',
+      'USER_MANAGEMENT',
+      `Admin added ${minutesAdded} minutes to ${userName} (${userEmail}). New total: ${newTotal} minutes`,
+      'MEDIUM',
+      {
+        targetEmail: userEmail,
+        targetUser: userName,
+        oldValue: newTotal - minutesAdded,
+        newValue: newTotal
+      }
     );
   }
 
@@ -187,6 +199,7 @@ class Logger {
     );
   }
 
+  // Keep other existing admin methods for backwards compatibility
   async logAdminDeleted(deletedAdminEmail: string) {
     await this.logActivity(
       'ADMIN_DELETED',
@@ -212,25 +225,32 @@ class Logger {
     );
   }
 
+  // Keep legacy methods for backwards compatibility - but they won't be used for new logs
   async logUserAction(action: string, userEmail: string, details: string) {
-    await this.logActivity(
-      action,
-      'USER_MANAGEMENT',
-      details,
-      'MEDIUM',
-      {
-        targetEmail: userEmail
-      }
-    );
+    // Only log if it's not a login/logout action
+    if (!action.includes('LOGIN') && !action.includes('LOGOUT')) {
+      await this.logActivity(
+        action,
+        'USER_MANAGEMENT',
+        details,
+        'MEDIUM',
+        {
+          targetEmail: userEmail
+        }
+      );
+    }
   }
 
   async logSystemAction(action: string, details: string, severity: LogEntry['severity'] = 'LOW') {
-    await this.logActivity(
-      action,
-      'SYSTEM',
-      details,
-      severity
-    );
+    // Only log if it's not a login/logout action  
+    if (!action.includes('LOGIN') && !action.includes('LOGOUT') && !action.includes('ADMIN_SIGNIN')) {
+      await this.logActivity(
+        action,
+        'SYSTEM',
+        details,
+        severity
+      );
+    }
   }
 }
 

@@ -1064,7 +1064,29 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                       </div>
                       <div className="text-center">
                         <button 
-                          onClick={() => window.open('mailto:info@kallin.ai?subject=Restaurant Branding Inquiry&body=Hello, I am interested in restaurant branding options. Please contact me to discuss the details.', '_blank')}
+                          onClick={() => {
+                            const subject = encodeURIComponent('Restaurant Branding Inquiry');
+                            const body = encodeURIComponent('Hello, I am interested in restaurant branding options. Please contact me to discuss the details.');
+                            const mailtoUrl = `mailto:info@kallin.ai?subject=${subject}&body=${body}`;
+                            
+                            // Try different approaches for better cross-platform compatibility
+                            try {
+                              // First try: Direct location change (works best on desktop)
+                              window.location.href = mailtoUrl;
+                            } catch {
+                              // Fallback: Use window.open without _blank
+                              try {
+                                window.open(mailtoUrl);
+                              } catch {
+                                // Final fallback: Copy email to clipboard and alert user
+                                navigator.clipboard?.writeText('info@kallin.ai').then(() => {
+                                  alert('Email address copied to clipboard: info@kallin.ai');
+                                }).catch(() => {
+                                  alert('Please contact us at: info@kallin.ai');
+                                });
+                              }
+                            }
+                          }}
                           className="w-full py-2 px-4 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90"
                           style={{ background: `linear-gradient(135deg, ${colors.colors.primary} 0%, ${colors.colors.primary}dd 100%)` }}>
                           Contact Sales
@@ -1092,7 +1114,29 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                       </div>
                       <div className="text-center">
                         <button 
-                          onClick={() => window.open('mailto:info@kallin.ai?subject=Custom Options Inquiry&body=Hello, I am interested in adding custom options to my AI assistant. Please contact me to discuss the available features.', '_blank')}
+                          onClick={() => {
+                            const subject = encodeURIComponent('Custom Options Inquiry');
+                            const body = encodeURIComponent('Hello, I am interested in adding custom options to my AI assistant. Please contact me to discuss the available features.');
+                            const mailtoUrl = `mailto:info@kallin.ai?subject=${subject}&body=${body}`;
+                            
+                            // Try different approaches for better cross-platform compatibility
+                            try {
+                              // First try: Direct location change (works best on desktop)
+                              window.location.href = mailtoUrl;
+                            } catch {
+                              // Fallback: Use window.open without _blank
+                              try {
+                                window.open(mailtoUrl);
+                              } catch {
+                                // Final fallback: Copy email to clipboard and alert user
+                                navigator.clipboard?.writeText('info@kallin.ai').then(() => {
+                                  alert('Email address copied to clipboard: info@kallin.ai');
+                                }).catch(() => {
+                                  alert('Please contact us at: info@kallin.ai');
+                                });
+                              }
+                            }
+                          }}
                           className="w-full py-2 px-4 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90"
                           style={{ background: `linear-gradient(135deg, ${colors.colors.primary} 0%, ${colors.colors.primary}dd 100%)` }}>
                           Contact Sales

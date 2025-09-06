@@ -1,40 +1,51 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { createStripeInstance, validateStripeConfig } from '../../../../lib/stripe-server';
 
 export async function GET() {
   try {
-    // Check if environment variables are set
-    if (!process.env.STRIPE_SECRET_KEY) {
+    // Validate Stripe configuration first
+    const configValidation = validateStripeConfig();
+    if (!configValidation.isValid) {
       return NextResponse.json({ 
-        error: 'STRIPE_SECRET_KEY not found in environment variables',
-        configured: false 
-      }, { status: 500 });
-    }
-
-    if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
-      return NextResponse.json({ 
-        error: 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY not found in environment variables',
+        error: configValidation.error,
         configured: false 
       }, { status: 500 });
     }
 
     // Initialize Stripe
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2025-08-27.basil',
-    });
+    let stripe: Stripe;
+    try {
+      stripe = createStripeInstance();
+    } catch (error) {
+      return NextResponse.json({ 
+        error: `Failed to initialize Stripe: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        configured: false 
+      }, { status: 500 });
+    }
 
     // Try to retrieve account info (this will fail if keys don't match)
     const account = await stripe.accounts.retrieve();
     
     // Check if both keys are from the same account
-    const secretKeyAccountId = process.env.STRIPE_SECRET_KEY.split('_')[2];
-    const publishableKeyAccountId = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.split('_')[2];
+    const secretKey = process.env.STRIPE_SECRET_KEY;
+    const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    
+    if (!secretKey || !publishableKey) {
+      return NextResponse.json({ 
+        error: 'Missing Stripe keys',
+        configured: false 
+      }, { status: 500 });
+    }
+    
+    const secretKeyAccountId = secretKey.split('_')[2];
+    const publishableKeyAccountId = publishableKey.split('_')[2];
     
     const keysMatch = secretKeyAccountId === publishableKeyAccountId;
 
     return NextResponse.json({
       configured: true,
-      testMode: process.env.STRIPE_SECRET_KEY.includes('test'),
+      testMode: secretKey.includes('test'),
       accountId: account.id,
       accountEmail: account.email || 'Not provided',
       keysMatch,

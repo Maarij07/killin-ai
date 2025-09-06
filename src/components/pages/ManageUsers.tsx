@@ -11,7 +11,9 @@ import {
   TrashIcon,
   UserCircleIcon,
   ExclamationTriangleIcon,
-  UsersIcon
+  UsersIcon,
+  ArrowPathIcon,
+  SignalIcon
 } from '@heroicons/react/24/outline';
 import colors from '../../../colors.json';
 import Modal from '../Modal';
@@ -31,6 +33,22 @@ interface User {
   join_date: string;
   agent_id: string | null;
   prompt: string | null;
+  assistant_status?: 'synced' | 'out_of_sync' | 'no_assistant' | 'error';
+  last_synced?: string;
+}
+
+interface VapiAssistant {
+  id: string;
+  firstMessage?: string;
+  backgroundSound?: string;
+  model?: {
+    provider?: string;
+    model?: string;
+    messages?: Array<{
+      content?: string;
+      role?: string;
+    }>;
+  };
 }
 
 
@@ -104,6 +122,8 @@ export default function ManageUsers() {
     planSubscription: ''
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const [vapiForm, setVapiForm] = useState({
     selectedUser: '',
     startingMessage: '',
@@ -111,11 +131,13 @@ export default function ManageUsers() {
     isEditing: false
   });
 
-  // Fetch users from API
+  // Fetch users from API and sync with VAPI
   useEffect(() => {
-    const fetchUsers = async () => {
+    const fetchUsersAndSync = async () => {
       try {
+        console.log('🔄 Fetching users and syncing with VAPI...');
         
+        // Step 1: Fetch users from database
         const response = await fetch(`${API_BASE_URL}/auth/users`, {
           headers: {
             'ngrok-skip-browser-warning': 'true'
@@ -124,7 +146,13 @@ export default function ManageUsers() {
         
         if (response.ok) {
           const data = await response.json();
-          setUsers(data.users || data || []);
+          const usersData = data.users || data || [];
+          console.log('📊 Fetched users from database:', usersData.length);
+          
+          // Step 2: Sync with VAPI to get live assistant data
+          const syncedUsers = await syncUsersWithVAPI(usersData);
+          setUsers(syncedUsers);
+          setLastSyncTime(new Date());
           
         } else {
           console.error('Failed to fetch users:', response.status);
@@ -152,8 +180,165 @@ export default function ManageUsers() {
       }
     };
 
-    fetchUsers();
+    fetchUsersAndSync();
   }, [showError]);
+
+  // Function to sync users with VAPI and get live data
+  const syncUsersWithVAPI = async (usersData: User[]): Promise<User[]> => {
+    try {
+      console.log('🔄 Starting VAPI sync for users...');
+      
+      // Fetch all VAPI assistants
+      const vapiResponse = await fetch(`${VAPI_BASE_URL}/assistant`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${VAPI_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!vapiResponse.ok) {
+        console.warn('⚠️ VAPI sync failed, using database data only');
+        return usersData.map(user => ({
+          ...user,
+          assistant_status: user.agent_id ? ('error' as const) : ('no_assistant' as const),
+          last_synced: new Date().toISOString()
+        }));
+      }
+
+      const vapiAssistants: VapiAssistant[] = await vapiResponse.json();
+      console.log('📦 Fetched VAPI assistants:', vapiAssistants.length);
+
+      // Create a map of agent_id to assistant data
+      const assistantMap = new Map();
+      vapiAssistants.forEach((assistant: VapiAssistant) => {
+        if (assistant.id) {
+          let systemPrompt = '';
+          if (assistant.model?.messages && Array.isArray(assistant.model.messages)) {
+            const systemMessage = assistant.model.messages.find(msg => msg.role === 'system');
+            if (systemMessage) {
+              systemPrompt = systemMessage.content || '';
+            }
+          }
+          
+          assistantMap.set(assistant.id, {
+            firstMessage: assistant.firstMessage || '',
+            systemPrompt: systemPrompt,
+            lastSynced: new Date().toISOString()
+          });
+        }
+      });
+
+      // Update users with VAPI sync status and data
+      const syncedUsers = usersData.map(user => {
+        if (!user.agent_id) {
+          return {
+            ...user,
+            assistant_status: 'no_assistant' as const,
+            last_synced: new Date().toISOString()
+          };
+        }
+
+        if (assistantMap.has(user.agent_id)) {
+          const assistantData = assistantMap.get(user.agent_id);
+          const isInSync = user.prompt === assistantData.systemPrompt;
+          
+          return {
+            ...user,
+            prompt: assistantData.systemPrompt, // Update with live VAPI data
+            assistant_status: isInSync ? ('synced' as const) : ('out_of_sync' as const),
+            last_synced: assistantData.lastSynced
+          };
+        } else {
+          return {
+            ...user,
+            assistant_status: 'error' as const,
+            last_synced: new Date().toISOString()
+          };
+        }
+      });
+
+      console.log('✅ VAPI sync completed for users');
+      return syncedUsers;
+    } catch (error) {
+      console.error('❌ Error syncing with VAPI:', error);
+      return usersData.map(user => ({
+        ...user,
+        assistant_status: user.agent_id ? ('error' as const) : ('no_assistant' as const),
+        last_synced: new Date().toISOString()
+      }));
+    }
+  };
+
+  // Manual VAPI sync function
+  const handleVAPISync = async () => {
+    setIsSyncing(true);
+    try {
+      console.log('🔄 Manual VAPI sync initiated...');
+      const syncedUsers = await syncUsersWithVAPI(users);
+      setUsers(syncedUsers);
+      setLastSyncTime(new Date());
+      showSuccess('Successfully synced with VAPI assistants');
+      
+      // Log the sync action
+      logger.logSystemAction(
+        'USER_VAPI_SYNC_COMPLETED',
+        `Successfully synced ${syncedUsers.filter(u => u.agent_id).length} users with VAPI assistants`,
+        'MEDIUM'
+      );
+    } catch (error) {
+      console.error('❌ Manual VAPI sync failed:', error);
+      showError(`Failed to sync with VAPI: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      
+      // Log the sync error
+      logger.logSystemAction(
+        'USER_VAPI_SYNC_FAILED',
+        `Failed to sync users with VAPI: ${error}`,
+        'HIGH'
+      );
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Get assistant status color and icon
+  const getAssistantStatusInfo = (status?: string) => {
+    switch (status) {
+      case 'synced':
+        return { 
+          color: '#10B981', 
+          bgColor: '#ECFDF5', 
+          text: 'Synced', 
+          icon: '✅',
+          description: 'Assistant is in sync with VAPI'
+        };
+      case 'out_of_sync':
+        return { 
+          color: '#F59E0B', 
+          bgColor: '#FFFBEB', 
+          text: 'Out of Sync', 
+          icon: '⚠️',
+          description: 'Assistant data differs from VAPI'
+        };
+      case 'error':
+        return { 
+          color: '#EF4444', 
+          bgColor: '#FEF2F2', 
+          text: 'Error', 
+          icon: '❌',
+          description: 'Failed to connect to VAPI'
+        };
+      case 'no_assistant':
+      default:
+        return { 
+          color: '#6B7280', 
+          bgColor: '#F9FAFB', 
+          text: 'No Assistant', 
+          icon: '➖',
+          description: 'No assistant configured'
+        };
+    }
+  };
 
   // Filter users based on search term
   const filteredUsers = users.filter(user =>
@@ -368,11 +553,15 @@ export default function ManageUsers() {
         newPlan: editForm.planSubscription
       };
       
-      logger.logUserAction(
-        'USER_UPDATED',
-        manageModal.user.email,
-        `Admin updated user: ${manageModal.user.name} (ID: ${manageModal.user.id}). Changes: Status(${changes.oldStatus}→${changes.newStatus}), Minutes(${changes.oldMinutes}→${changes.newMinutes}), Plan(${changes.oldPlan}→${changes.newPlan})`
-      );
+      // Log minutes added if any minutes were added
+      if (addMinutesValue > 0) {
+        logger.logMinutesAdded(
+          manageModal.user.email,
+          manageModal.user.name,
+          addMinutesValue,
+          newTotalMinutes
+        );
+      }
       
       try {
         // Determine plan type based on changes
@@ -711,11 +900,14 @@ export default function ManageUsers() {
             const result = await response.json();
             console.log('VAPI assistant updated successfully:', result);
             
-            // Log successful update
-            logger.logUserAction(
-              'USER_VAPI_SETTINGS_UPDATED',
+            // Log prompt change
+            logger.logPromptChanged(
               selectedUser.email,
-              `Admin successfully updated VAPI configuration for user: ${selectedUser.name} (ID: ${selectedUser.id})`
+              selectedUser.name,
+              {
+                oldPrompt: selectedUser.prompt || undefined,
+                newPrompt: vapiForm.systemPrompt
+              }
             );
             
             showSuccess(`VAPI configuration saved for ${selectedUser.name}`);
@@ -933,25 +1125,57 @@ export default function ManageUsers() {
           </h1>
           <p className={`mt-2 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
             Manage user accounts, permissions, and access controls
+            {lastSyncTime && (
+              <span className={`ml-2 text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                • Last synced: {lastSyncTime.toLocaleTimeString()}
+              </span>
+            )}
           </p>
         </div>
         
-        {/* Search Bar */}
-        <div className="relative w-80">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <MagnifyingGlassIcon className={`h-5 w-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+        <div className="flex items-center gap-4">
+          {/* VAPI Sync Button */}
+          <button
+            onClick={handleVAPISync}
+            disabled={isSyncing || isLoading}
+            className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border transition-colors ${
+              isSyncing || isLoading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            style={{
+              color: isDark ? colors.colors.grey[300] : colors.colors.grey[700],
+              borderColor: isDark ? colors.colors.grey[600] : colors.colors.grey[300]
+            }}
+            onMouseEnter={(e) => {
+              if (!isSyncing && !isLoading) {
+                e.currentTarget.style.backgroundColor = isDark ? colors.colors.grey[700] : colors.colors.grey[50];
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+            title="Sync with VAPI to get latest assistant data"
+          >
+            <ArrowPathIcon className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+            {isSyncing ? 'Syncing...' : 'Sync VAPI'}
+          </button>
+          
+          {/* Search Bar */}
+          <div className="relative w-80">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <MagnifyingGlassIcon className={`h-5 w-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+            </div>
+            <input
+              type="text"
+              placeholder="Search users..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={`block w-full pl-10 pr-3 py-2.5 border rounded-lg text-sm shadow-sm ${
+                isDark
+                  ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-orange-500'
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-orange-500'
+              } focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-colors`}
+            />
           </div>
-          <input
-            type="text"
-            placeholder="Search users..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className={`block w-full pl-10 pr-3 py-2.5 border rounded-lg text-sm shadow-sm ${
-              isDark
-                ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-orange-500'
-                : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-orange-500'
-            } focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-colors`}
-          />
         </div>
       </div>
 
@@ -975,6 +1199,9 @@ export default function ManageUsers() {
                 </th>
                 <th className={`px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
                   MINUTES
+                </th>
+                <th className={`px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                  ASSISTANT
                 </th>
                 <th className={`px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
                   ACTIONS
@@ -1042,6 +1269,33 @@ export default function ManageUsers() {
                           />
                         </div>
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {(() => {
+                        const statusInfo = getAssistantStatusInfo(user.assistant_status);
+                        return (
+                          <div className="flex items-center space-x-2">
+                            <div 
+                              className="flex items-center px-2 py-1 text-xs font-medium rounded-full border"
+                              style={{
+                                backgroundColor: statusInfo.bgColor,
+                                color: statusInfo.color,
+                                borderColor: statusInfo.color + '40'
+                              }}
+                              title={statusInfo.description}
+                            >
+                              <span className="mr-1">{statusInfo.icon}</span>
+                              {statusInfo.text}
+                            </div>
+                            {user.agent_id && (
+                              <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                                <SignalIcon className="h-3 w-3 inline mr-1" />
+                                {user.last_synced ? new Date(user.last_synced).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Never'}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <div className="flex items-center space-x-3">
