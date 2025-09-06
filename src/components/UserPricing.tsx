@@ -675,19 +675,32 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
           {pricingPlans.map((plan) => (
             <div
               key={plan.id}
-              className={`relative rounded-3xl transition-all duration-300 hover:scale-105 hover:shadow-2xl flex flex-col h-auto min-h-[550px] sm:min-h-[600px] overflow-hidden ${plan.featured ? 'lg:scale-105' : ''
-                }`}
+              className={`relative rounded-3xl transition-all duration-300 hover:scale-105 hover:shadow-2xl flex flex-col h-auto min-h-[550px] sm:min-h-[600px] overflow-hidden ${
+                plan.featured ? 'lg:scale-105' : ''
+              } ${
+                normalizedUserPlan === plan.id ? 'ring-4' : ''
+              }`}
               style={{
                 backgroundColor: 'transparent',
-                background: isDark 
-                  ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
-                  : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
-                border: isDark
-                  ? `2px solid #4a5568`
-                  : `2px solid #cbd5e0`,
-                boxShadow: isDark
-                  ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
-                  : '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.1)',
+                background: normalizedUserPlan === plan.id
+                  ? isDark 
+                    ? `linear-gradient(135deg, ${colors.colors.primary}20 0%, ${colors.colors.primary}10 25%, ${colors.colors.primary}15 50%, ${colors.colors.primary}08 75%, ${colors.colors.primary}20 100%)`
+                    : `linear-gradient(135deg, ${colors.colors.primary}15 0%, ${colors.colors.primary}08 25%, ${colors.colors.primary}12 50%, ${colors.colors.primary}06 75%, ${colors.colors.primary}15 100%)`
+                  : isDark 
+                    ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                    : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                border: normalizedUserPlan === plan.id
+                  ? `3px solid ${colors.colors.primary}`
+                  : isDark
+                    ? `2px solid #4a5568`
+                    : `2px solid #cbd5e0`,
+                boxShadow: normalizedUserPlan === plan.id
+                  ? isDark
+                    ? `0 25px 50px -12px ${colors.colors.primary}60, inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 0 0 1px ${colors.colors.primary}30, 0 0 20px ${colors.colors.primary}40`
+                    : `0 25px 50px -12px ${colors.colors.primary}40, inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 0 1px ${colors.colors.primary}20, 0 0 20px ${colors.colors.primary}30`
+                  : isDark
+                    ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+                    : '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.1)',
                 transition: 'all 0.3s ease-in-out'
               }}
             >
