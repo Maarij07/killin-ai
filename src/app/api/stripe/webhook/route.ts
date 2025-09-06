@@ -1,24 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-
-// Serverless-compatible Stripe initialization
-function getStripe(): Stripe {
-  if (!process.env.STRIPE_SECRET_KEY) {
-    throw new Error('STRIPE_SECRET_KEY is not set in environment variables');
-  }
-  
-  return new Stripe(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: '2025-08-27.basil',
-    typescript: true,
-  });
-}
+import { createStripeInstance, validateStripeConfig } from '../../../../lib/stripe-server';
 
 export async function POST(request: NextRequest) {
-  // Validate environment first
-  if (!process.env.STRIPE_SECRET_KEY) {
-    console.error('STRIPE_SECRET_KEY not found in environment variables');
+  // Validate Stripe configuration
+  const configValidation = validateStripeConfig();
+  if (!configValidation.isValid) {
+    console.error('Stripe configuration error:', configValidation.error);
     return NextResponse.json(
-      { error: 'Stripe configuration error: Missing secret key' },
+      { error: `Stripe configuration error: ${configValidation.error}` },
       { status: 500 }
     );
   }
@@ -43,9 +33,9 @@ export async function POST(request: NextRequest) {
   }
 
   // Initialize Stripe
-  let stripeInstance: Stripe;
+  let stripe;
   try {
-    stripeInstance = getStripe();
+    stripe = createStripeInstance();
   } catch (error) {
     console.error('Failed to initialize Stripe:', error);
     return NextResponse.json(
@@ -57,7 +47,7 @@ export async function POST(request: NextRequest) {
   let event: Stripe.Event;
 
   try {
-    event = stripeInstance.webhooks.constructEvent(body, signature, webhookSecret);
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err) {
     console.error('Webhook signature verification failed:', err);
     return NextResponse.json(

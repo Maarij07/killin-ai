@@ -6,6 +6,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { CheckIcon, MicrophoneIcon, BuildingStorefrontIcon, CogIcon, PhoneIcon, ClipboardDocumentIcon } from '@heroicons/react/24/solid';
 import { useEmbeddedPayment } from '../hooks/useEmbeddedPayment';
 import PaymentModal from './PaymentModal';
+import ContactSalesModal from './ContactSalesModal';
 import { useSearchParams } from 'next/navigation';
 import { useUser } from '../contexts/UserContext';
 import { useToast } from '../contexts/ToastContext';
@@ -114,6 +115,8 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
   const { isDark } = useTheme();
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [loading] = useState(false);
+  const [isContactOpen, setIsContactOpen] = useState(false);
+  const [contactService, setContactService] = useState<string | undefined>(undefined);
   const {
     isModalOpen,
     selectedPlan: embeddedSelectedPlan,
@@ -751,7 +754,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                 {/* CTA Button - positioned at bottom - Only show for non-free plans */}
                 {plan.id !== 'free' && (
                   <button
-                    onClick={() => handleSelectPlan(plan.id)}
+                    onClick={() => plan.id === 'enterprise' ? (() => { setContactService('Enterprise Solution'); setIsContactOpen(true); })() : handleSelectPlan(plan.id)}
                     disabled={normalizedUserPlan === plan.id || loading}
                     className={`w-full py-4 px-6 rounded-2xl font-bold text-white text-lg uppercase tracking-wide transition-all duration-300 hover:scale-105 transform ${normalizedUserPlan === plan.id || loading ? 'opacity-75 cursor-default' : 'hover:opacity-90'
                       }`}
@@ -1064,29 +1067,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                       </div>
                       <div className="text-center">
                         <button 
-                          onClick={() => {
-                            const subject = encodeURIComponent('Restaurant Branding Inquiry');
-                            const body = encodeURIComponent('Hello, I am interested in restaurant branding options. Please contact me to discuss the details.');
-                            const mailtoUrl = `mailto:info@kallin.ai?subject=${subject}&body=${body}`;
-                            
-                            // Try different approaches for better cross-platform compatibility
-                            try {
-                              // First try: Direct location change (works best on desktop)
-                              window.location.href = mailtoUrl;
-                            } catch {
-                              // Fallback: Use window.open without _blank
-                              try {
-                                window.open(mailtoUrl);
-                              } catch {
-                                // Final fallback: Copy email to clipboard and alert user
-                                navigator.clipboard?.writeText('info@kallin.ai').then(() => {
-                                  alert('Email address copied to clipboard: info@kallin.ai');
-                                }).catch(() => {
-                                  alert('Please contact us at: info@kallin.ai');
-                                });
-                              }
-                            }
-                          }}
+                          onClick={() => { setContactService('Restaurant Branding'); setIsContactOpen(true); }}
                           className="w-full py-2 px-4 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90"
                           style={{ background: `linear-gradient(135deg, ${colors.colors.primary} 0%, ${colors.colors.primary}dd 100%)` }}>
                           Contact Sales
@@ -1114,29 +1095,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                       </div>
                       <div className="text-center">
                         <button 
-                          onClick={() => {
-                            const subject = encodeURIComponent('Custom Options Inquiry');
-                            const body = encodeURIComponent('Hello, I am interested in adding custom options to my AI assistant. Please contact me to discuss the available features.');
-                            const mailtoUrl = `mailto:info@kallin.ai?subject=${subject}&body=${body}`;
-                            
-                            // Try different approaches for better cross-platform compatibility
-                            try {
-                              // First try: Direct location change (works best on desktop)
-                              window.location.href = mailtoUrl;
-                            } catch {
-                              // Fallback: Use window.open without _blank
-                              try {
-                                window.open(mailtoUrl);
-                              } catch {
-                                // Final fallback: Copy email to clipboard and alert user
-                                navigator.clipboard?.writeText('info@kallin.ai').then(() => {
-                                  alert('Email address copied to clipboard: info@kallin.ai');
-                                }).catch(() => {
-                                  alert('Please contact us at: info@kallin.ai');
-                                });
-                              }
-                            }
-                          }}
+                          onClick={() => { setContactService('Custom Integration'); setIsContactOpen(true); }}
                           className="w-full py-2 px-4 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90"
                           style={{ background: `linear-gradient(135deg, ${colors.colors.primary} 0%, ${colors.colors.primary}dd 100%)` }}>
                           Contact Sales
@@ -1228,6 +1187,13 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
           onSuccess={handlePaymentSuccess}
         />
       )}
+
+      {/* Contact Sales Modal */}
+      <ContactSalesModal
+        isOpen={isContactOpen}
+        onClose={() => setIsContactOpen(false)}
+        defaultService={contactService}
+      />
     </>
   );
 }

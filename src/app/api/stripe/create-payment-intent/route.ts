@@ -1,41 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
-
-// Serverless-compatible Stripe initialization
-function getStripe(): Stripe {
-  const secretKey = process.env.STRIPE_SECRET_KEY;
-  
-  if (!secretKey) {
-    console.error('STRIPE_SECRET_KEY environment variable is not set');
-    throw new Error('Stripe secret key is required but not configured');
-  }
-  
-  return new Stripe(secretKey, {
-    apiVersion: '2025-08-27.basil',
-    typescript: true,
-  });
-}
+import { createStripeInstance, validateStripeConfig } from '../../../../lib/stripe-server';
 
 export async function POST(request: NextRequest) {
   try {
-    // Detailed environment validation
-    console.log('Environment check:');
-    console.log('- STRIPE_SECRET_KEY exists:', !!process.env.STRIPE_SECRET_KEY);
-    console.log('- NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY exists:', !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
-    
-    if (!process.env.STRIPE_SECRET_KEY) {
-      console.error('STRIPE_SECRET_KEY not found in environment variables');
-      console.error('Available env vars:', Object.keys(process.env).filter(key => key.includes('STRIPE')));
+    // Validate Stripe configuration
+    const configValidation = validateStripeConfig();
+    if (!configValidation.isValid) {
+      console.error('Stripe configuration error:', configValidation.error);
       return NextResponse.json(
-        { error: 'Stripe configuration error: Missing secret key' },
-        { status: 500 }
-      );
-    }
-    
-    if (process.env.STRIPE_SECRET_KEY.includes('your_secret_key_here')) {
-      console.error('STRIPE_SECRET_KEY is using placeholder value');
-      return NextResponse.json(
-        { error: 'Stripe configuration error: Secret key not properly configured' },
+        { error: `Stripe configuration error: ${configValidation.error}` },
         { status: 500 }
       );
     }
@@ -57,9 +30,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Initialize Stripe
-    let stripeInstance: Stripe;
+    let stripe;
     try {
-      stripeInstance = getStripe();
+      stripe = createStripeInstance();
     } catch (error) {
       console.error('Failed to initialize Stripe:', error);
       return NextResponse.json(
@@ -104,7 +77,7 @@ export async function POST(request: NextRequest) {
     console.log('Creating payment intent with config:', config);
 
     // Create the payment intent
-    const paymentIntent = await stripeInstance.paymentIntents.create({
+    const paymentIntent = await stripe.paymentIntents.create({
       amount: config.amount,
       currency: 'usd',
       description: config.description,

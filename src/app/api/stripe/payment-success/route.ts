@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
 import { createStripeInstance, validateStripeConfig } from '../../../../lib/stripe-server';
 
 export async function POST(request: NextRequest) {
@@ -24,9 +23,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Initialize Stripe
-    let stripeInstance: Stripe;
+    let stripe;
     try {
-      stripeInstance = createStripeInstance();
+      stripe = createStripeInstance();
     } catch (error) {
       console.error('Failed to initialize Stripe:', error);
       return NextResponse.json(
@@ -36,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Retrieve the checkout session from Stripe
-    const session = await stripeInstance.checkout.sessions.retrieve(session_id);
+    const session = await stripe.checkout.sessions.retrieve(session_id);
 
     if (session.payment_status !== 'paid') {
       return NextResponse.json(

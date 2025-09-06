@@ -1,33 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
-
-// Serverless-compatible Stripe initialization
-function getStripe(): Stripe {
-  if (!process.env.STRIPE_SECRET_KEY) {
-    throw new Error('STRIPE_SECRET_KEY is not set in environment variables');
-  }
-  
-  return new Stripe(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: '2025-08-27.basil',
-    typescript: true,
-  });
-}
+import { createStripeInstance, validateStripeConfig } from '../../../../lib/stripe-server';
 
 export async function POST(request: NextRequest) {
   try {
-    // Validate environment first
-    if (!process.env.STRIPE_SECRET_KEY) {
-      console.error('STRIPE_SECRET_KEY not found in environment variables');
+    // Validate Stripe configuration
+    const configValidation = validateStripeConfig();
+    if (!configValidation.isValid) {
+      console.error('Stripe configuration error:', configValidation.error);
       return NextResponse.json(
-        { error: 'Stripe configuration error: Missing secret key' },
-        { status: 500 }
-      );
-    }
-
-    if (process.env.STRIPE_SECRET_KEY.includes('your_secret_key_here')) {
-      console.error('Stripe secret key is not properly configured - using placeholder');
-      return NextResponse.json(
-        { error: 'Stripe configuration error: Invalid secret key' },
+        { error: `Stripe configuration error: ${configValidation.error}` },
         { status: 500 }
       );
     }
@@ -50,9 +31,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Initialize Stripe
-    let stripeInstance: Stripe;
+    let stripe;
     try {
-      stripeInstance = getStripe();
+      stripe = createStripeInstance();
     } catch (error) {
       console.error('Failed to initialize Stripe:', error);
       return NextResponse.json(
@@ -64,7 +45,7 @@ export async function POST(request: NextRequest) {
     console.log('Creating Stripe checkout session with price ID:', priceId);
 
     // Create the checkout session
-    const session = await stripeInstance.checkout.sessions.create({
+    const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
         {
