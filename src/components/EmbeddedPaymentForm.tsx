@@ -9,6 +9,7 @@ import {
 import { useTheme } from '../contexts/ThemeContext';
 import { useToast } from '../contexts/ToastContext';
 import { useUser } from '../contexts/UserContext';
+import { getPlanConfig } from '../config/plans';
 import colors from '../../colors.json';
 
 interface EmbeddedPaymentFormProps {
@@ -87,19 +88,8 @@ export default function EmbeddedPaymentForm({
     }
 
     try {
-      // Plan configuration to map planId to minutes and plan_type
-      const planConfig: { [key: string]: { minutes: number; plan_type: string; amount: number } } = {
-        trial: { minutes: 100, plan_type: 'trial', amount: 25.00 },
-        starter: { minutes: 250, plan_type: 'starter', amount: 199.00 },
-        professional: { minutes: 450, plan_type: 'professional', amount: 469.00 },
-        'ai-voice': { minutes: 0, plan_type: 'ai-voice', amount: 25.00 },
-        minutes_100: { minutes: 100, plan_type: 'minutes', amount: 40.00 },
-        minutes_250: { minutes: 250, plan_type: 'minutes', amount: 75.00 },
-        minutes_500: { minutes: 500, plan_type: 'minutes', amount: 140.00 },
-        minutes_1000: { minutes: 1000, plan_type: 'minutes', amount: 260.00 },
-      };
-
-      const config = planConfig[planId];
+      // Get plan configuration from centralized source
+      const config = getPlanConfig(planId);
       if (!config) {
         console.error(`Unknown plan ID: ${planId}`);
         return;
@@ -112,7 +102,7 @@ export default function EmbeddedPaymentForm({
       const payload = {
         user_id: user.id,
         plan_type: config.plan_type,
-        amount_paid: config.amount,
+        amount_paid: config.price,
         transaction_id: paymentIntentId, // Use payment intent ID as transaction ID
         payment_intent_id: paymentIntentId,
         minutes: config.minutes,

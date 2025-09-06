@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createStripeInstance, validateStripeConfig } from '../../../../lib/stripe-server';
+import { getPlanConfig } from '../../../../config/plans';
+import { paymentSessions } from '../../../../lib/payment-sessions';
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,12 +35,30 @@ export async function POST(request: NextRequest) {
       userEmail
     });
 
-    if (!planId) {
-      console.error('Missing required parameters:', { planId });
+    if (!planId || !userId) {
+      console.error('Missing required parameters:', { planId, userId });
       return NextResponse.json(
-        { error: 'Missing required parameters: planId is required' },
+        { error: 'Missing required parameters: planId and userId are required' },
         { status: 400 }
       );
+    }
+
+    // Check if there's already an active payment session for this user/plan
+    const existingSession = paymentSessions.getExistingSession(userId, planId);
+    if (existingSession) {
+      console.log(`Returning existing payment session for user ${userId}, plan ${planId}`);
+      return NextResponse.json({
+        clientSecret: existingSession.clientSecret,
+        paymentIntentId: existingSession.paymentIntentId,
+        amount: getPlanConfig(planId)?.amountCents || 0,
+        description: getPlanConfig(planId)?.description || '',
+        planConfig: {
+          id: planId,
+          name: getPlanConfig(planId)?.name || '',
+          minutes: getPlanConfig(planId)?.minutes || 0,
+          plan_type: getPlanConfig(planId)?.plan_type || ''
+        }
+      });
     }
 
     // Initialize Stripe
@@ -53,63 +73,73 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Plan configuration with amounts in cents
-    const planConfig = {
-      trial: { amount: 2500, description: 'Trial Plan - 100 minutes' },
-      starter: { amount: 19900, description: 'Starter Plan - Monthly subscription' },
-      professional: { amount: 46900, description: 'Professional Plan - Monthly subscription' },
-      enterprise: { amount: 89900, description: 'Enterprise Plan - Monthly subscription' },
-      custom: { amount: 0, description: 'Custom Plan - Contact sales for pricing' },
-      'ai-voice': { amount: 2500, description: 'AI Voice Add-on - Monthly subscription' },
-      minutes_100: { amount: 4000, description: '100 Minutes Top-up' },
-      minutes_250: { amount: 7500, description: '250 Minutes Top-up' },
-      minutes_500: { amount: 14000, description: '500 Minutes Top-up' },
-      minutes_1000: { amount: 26000, description: '1000 Minutes Top-up' },
-    };
-
-    const config = planConfig[planId as keyof typeof planConfig];
+    // Get plan configuration from centralized source
+    const planConfig = getPlanConfig(planId);
     
-    if (!config) {
-      console.error(`Unknown plan ID: ${planId}. Available plans:`, Object.keys(planConfig));
+    if (!planConfig) {
+      console.error(`Unknown plan ID: ${planId}`);
       return NextResponse.json(
         { error: `Invalid plan selected: ${planId}` },
         { status: 400 }
       );
     }
 
-    // Handle custom and enterprise plans that require sales contact
-    if (planId === 'custom' || (planId === 'enterprise' && config.amount === 0)) {
+    // Handle enterprise plans that require sales contact
+    if (planId === 'enterprise') {
       console.log(`${planId} plan requires sales contact`);
       return NextResponse.json(
-        { error: 'This plan requires sales contact. Please contact our sales team.' },
+        { error: 'Enterprise plan requires sales contact. Please contact our sales team.' },
         { status: 400 }
       );
     }
 
-    console.log('Creating payment intent with config:', config);
+    // Prevent duplicate payment intents for the same user/plan combination
+    const idempotencyKey = `${userId}-${planId}-${Date.now()}`;
+    
+    console.log('Creating payment intent with idempotency key:', idempotencyKey);
 
-    // Create the payment intent
+    console.log('Creating payment intent with config:', planConfig);
+
+    // Create the payment intent with idempotency to prevent duplicates
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: config.amount,
+      amount: planConfig.amountCents,
       currency: 'usd',
-      description: config.description,
+      description: planConfig.description,
       metadata: {
         planId: planId,
         userId: userId || '',
         userEmail: userEmail || '',
+        planType: planConfig.plan_type,
+        minutes: planConfig.minutes.toString()
       },
       automatic_payment_methods: {
         enabled: true,
       },
+    }, {
+      idempotencyKey: idempotencyKey
     });
 
     console.log('Payment intent created successfully:', paymentIntent.id);
     
+    // Create a session to track this payment intent and prevent duplicates
+    paymentSessions.createSession(
+      userId, 
+      planId, 
+      paymentIntent.id, 
+      paymentIntent.client_secret || ''
+    );
+    
     return NextResponse.json({ 
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
-      amount: config.amount,
-      description: config.description
+      amount: planConfig.amountCents,
+      description: planConfig.description,
+      planConfig: {
+        id: planConfig.id,
+        name: planConfig.name,
+        minutes: planConfig.minutes,
+        plan_type: planConfig.plan_type
+      }
     });
 
   } catch (error) {
