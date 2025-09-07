@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     console.log('Received payment confirmation request:', payload);
 
     // Validate required fields
-    if (!payload.user_id || !payload.plan_type || typeof payload.minutes === 'undefined') {
+    if (!payload.user_id || typeof payload.minutes === 'undefined') {
       console.error('Missing required fields:', payload);
       return NextResponse.json(
         { error: 'Missing required fields' },

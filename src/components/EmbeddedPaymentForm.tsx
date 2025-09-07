@@ -67,7 +67,25 @@ export default function EmbeddedPaymentForm({
 
       if (error) {
         console.error('Payment confirmation error:', error);
-        if (error.type === 'card_error' || error.type === 'validation_error') {
+        
+        // Handle specific Stripe errors
+        if (error.code === 'payment_intent_unexpected_state') {
+          // Payment was already processed or is in an unexpected state
+          console.log('Payment intent is already processed, checking backend...');
+          
+          // Try to get the payment intent ID from the error
+          const paymentIntentId = error.payment_intent?.id;
+          if (paymentIntentId && error.payment_intent?.status === 'succeeded') {
+            // Payment actually succeeded, confirm with backend
+            const backendConfirmed = await confirmPaymentWithBackend(paymentIntentId);
+            if (backendConfirmed) {
+              showSuccess(`Payment successful! Welcome to the ${planName} plan.`);
+              onSuccess();
+              return;
+            }
+          }
+          showError('Payment was already processed. If you don\'t see your update, please contact support.');
+        } else if (error.type === 'card_error' || error.type === 'validation_error') {
           showError(error.message || 'Payment failed. Please check your payment details.');
         } else {
           showError('An unexpected error occurred. Please try again.');
