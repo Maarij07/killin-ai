@@ -112,16 +112,33 @@ export default function EmbeddedPaymentForm({
         return false;
       }
       
+      // Check if this is an add-on (don't pass plan_type for add-ons)
+      const isAddOn = config.plan_type === 'minutes' || config.id === 'ai-voice';
+      
       // Prepare the API payload
-      const payload = {
+      interface PaymentPayload {
+        user_id: string;
+        amount_paid: number;
+        transaction_id: string;
+        payment_intent_id: string;
+        minutes: number;
+        is_admin: boolean;
+        plan_type?: string;
+      }
+      
+      const payload: PaymentPayload = {
         user_id: user.id,
-        plan_type: config.plan_type,
         amount_paid: config.price,
         transaction_id: paymentIntentId,
         payment_intent_id: paymentIntentId,
         minutes: config.minutes,
         is_admin: false // This is a user payment, not admin action
       };
+      
+      // Only add plan_type for main plans, not for add-ons
+      if (!isAddOn) {
+        payload.plan_type = config.plan_type;
+      }
 
       console.log('Confirming payment with payload:', payload);
 
