@@ -788,35 +788,27 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                 {plan.id !== 'free' && (
                   <button
                     onClick={() => plan.id === 'enterprise' ? (() => { setContactService('Enterprise Solution'); setIsContactOpen(true); })() : handleSelectPlan(plan.id)}
-                    disabled={
-                      // Disable if:
-                      // 1. This is the current plan
-                      // 2. User has ANY plan (for BUY NOW buttons only)
-                      // 3. Currently loading
-                      normalizedUserPlan === plan.id || 
-                      loading || 
-                      (plan.id !== 'enterprise' && normalizedUserPlan !== 'free' && normalizedUserPlan !== null)
-                    }
+                    disabled={loading || normalizedUserPlan === plan.id}
                     className={`w-full py-4 px-6 rounded-2xl font-bold text-white text-lg uppercase tracking-wide transition-all duration-300 transform ${
-                      (normalizedUserPlan === plan.id || loading || (plan.id !== 'enterprise' && normalizedUserPlan !== 'free' && normalizedUserPlan !== null)) 
+                      (loading || normalizedUserPlan === plan.id) 
                         ? 'opacity-50 cursor-not-allowed hover:scale-100' 
                         : 'hover:opacity-90 hover:scale-105'
                     }`}
                     style={{
-                      background: (normalizedUserPlan === plan.id || loading || (plan.id !== 'enterprise' && normalizedUserPlan !== 'free' && normalizedUserPlan !== null))
+                      background: (loading || normalizedUserPlan === plan.id)
                         ? `linear-gradient(135deg, ${isDark ? colors.colors.grey[600] : colors.colors.grey[400]} 0%, ${isDark ? colors.colors.grey[700] : colors.colors.grey[500]}dd 100%)`
                         : `linear-gradient(135deg, ${plan.color} 0%, ${plan.color}dd 100%)`,
-                      boxShadow: (normalizedUserPlan === plan.id || loading || (plan.id !== 'enterprise' && normalizedUserPlan !== 'free' && normalizedUserPlan !== null))
+                      boxShadow: (loading || normalizedUserPlan === plan.id)
                         ? `0 10px 25px -5px ${isDark ? colors.colors.grey[600] : colors.colors.grey[400]}40`
                         : `0 10px 25px -5px ${plan.color}40`
                     }}
                   >
                     {loading && selectedPlan === plan.id 
                       ? 'PROCESSING...' 
-                      : normalizedUserPlan === plan.id 
-                        ? 'CURRENT PLAN' 
-                        : plan.id === 'enterprise' 
-                          ? 'CONTACT SALES' 
+                      : plan.id === 'enterprise' 
+                        ? 'CONTACT SALES' 
+                        : normalizedUserPlan === plan.id 
+                          ? 'CURRENT PLAN' 
                           : 'BUY NOW'
                     }
                   </button>
