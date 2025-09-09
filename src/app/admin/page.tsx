@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useToast } from '../../contexts/ToastContext';
+import { useUser } from '../../contexts/UserContext';
 import { logger } from '../../lib/logger';
 import TotalUsersChart from '../../components/charts/TotalUsersChart';
 import MinutesVsBudgetChart from '../../components/charts/MinutesVsBudgetChart';
@@ -31,6 +32,7 @@ const API_BASE_URL = 'https://server.kallin.ai/api';
 export default function AdminDashboard() {
   const { } = useTheme();
   const { showError } = useToast();
+  const { user } = useUser();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   // const [isLoading, setIsLoading] = useState(true); // unused in current implementation
@@ -40,10 +42,23 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
+        // Check if user is authenticated (handles both Firebase and API users)
+        if (!user) {
+          console.error('No user authenticated');
+          router.push('/admin/login');
+          return;
+        }
+
+        // Only API users have auth tokens to fetch regular users
+        // Firebase admin users don't need to see user data from the API
+        if (user.authType === 'firebase') {
+          console.log('Firebase admin user - skipping user data fetch');
+          return;
+        }
+
         const token = localStorage.getItem('auth_token');
         if (!token) {
-          console.error('No auth token found');
-          router.push('/login');
+          console.error('No auth token found for API user');
           return;
         }
 
@@ -82,7 +97,7 @@ export default function AdminDashboard() {
     };
 
     fetchUsers();
-  }, [showError, router]);
+  }, [user, showError, router]);
 
   const handleViewMoreUsers = () => {
     router.push('/admin/user-management');

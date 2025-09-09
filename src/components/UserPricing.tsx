@@ -10,6 +10,7 @@ import ContactSalesModal from './ContactSalesModal';
 import { useSearchParams } from 'next/navigation';
 import { useUser } from '../contexts/UserContext';
 import { useToast } from '../contexts/ToastContext';
+import { hasUsedFreeTrial, recordFreeTrialUsage, confirmFreeTrialWithBackend } from '../lib/freeTrialService';
 import colors from '../../colors.json';
 
 interface PricingPlan {
@@ -24,6 +25,22 @@ interface PricingPlan {
 }
 
 const pricingPlans: PricingPlan[] = [
+  {
+    id: 'free-trial',
+    name: 'Free Trial',
+    price: '0.00',
+    period: '50 mins',
+    description: 'Perfect free trial to test our AI phone assistance - no payment required!',
+    features: [
+      '50 minutes included',
+      'Basic voice assistant',
+      'Simple dashboard',
+      'Email support',
+      'One-time offer only'
+    ],
+    featured: false,
+    color: colors.colors.primary
+  },
   {
     id: 'trial',
     name: 'Trial',
@@ -143,6 +160,8 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
   const { showSuccess, showError } = useToast();
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(true);
+  const [hasUsedFreeTrialState, setHasUsedFreeTrialState] = useState<boolean>(false);
+  const [isCheckingFreeTrial, setIsCheckingFreeTrial] = useState(true);
 
   // Helper function to normalize plan name
   const getNormalizedPlan = (plan?: string | null) => {
@@ -235,6 +254,29 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
     }
   }, [user?.id, showError, createFallbackUserDetails]);
 
+  // Check free trial status when user loads
+  useEffect(() => {
+    const checkFreeTrialStatus = async () => {
+      if (user?.id) {
+        console.log('🔍 Checking free trial status for user:', user.id);
+        setIsCheckingFreeTrial(true);
+        try {
+          const hasUsed = await hasUsedFreeTrial(user.id);
+          setHasUsedFreeTrialState(hasUsed);
+          console.log('📋 Free trial status:', hasUsed ? 'USED' : 'AVAILABLE');
+        } catch (error) {
+          console.error('❌ Error checking free trial status:', error);
+          // Default to true (used) for safety if check fails
+          setHasUsedFreeTrialState(true);
+        } finally {
+          setIsCheckingFreeTrial(false);
+        }
+      }
+    };
+
+    checkFreeTrialStatus();
+  }, [user?.id]);
+
   // Initial fetch on component mount - only run when user ID changes
   useEffect(() => {
     if (user?.id) {
@@ -285,7 +327,78 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
     }
   }, [searchParams, user, showSuccess, showError]);
 
+  // Handle free trial activation (bypasses payment)
+  const handleFreeTrialActivation = async () => {
+    if (!user?.id || !user?.email) {
+      showError('User information not available. Please try logging in again.');
+      return;
+    }
+
+    console.log('🆓 Activating free trial for user:', user.id);
+    setSelectedPlan('free-trial');
+
+    try {
+      // Record free trial usage in Firebase
+      const recorded = await recordFreeTrialUsage(user.id, user.email);
+      
+      if (recorded) {
+        // Update local state to reflect the free trial has been used
+        setHasUsedFreeTrialState(true);
+        
+        // Call backend to activate free trial (50 minutes)
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'https://server.kallin.ai';
+        const response = await fetch(`${backendUrl}/api/stripe/confirm-payment`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_id: parseInt(user.id),
+            plan_type: 'free-trial',
+            amount_paid: 0.00,
+            transaction_id: `free-trial-${user.id}-${Date.now()}`,
+            payment_intent_id: `free-trial-${user.id}-${Date.now()}`,
+            minutes: 50,
+            is_admin: false
+          }),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log('✅ Free trial activated successfully:', result);
+          
+          // Confirm with Firebase that backend processed it
+          await confirmFreeTrialWithBackend(user.id);
+          
+          showSuccess('🎉 Free trial activated! You now have 50 minutes to test our AI assistant.');
+          
+          // Refresh user details to show updated minutes
+          setTimeout(async () => {
+            await fetchUserDetails(false);
+          }, 2000);
+        } else {
+          const errorData = await response.json();
+          console.error('❌ Backend activation failed:', errorData);
+          showError('Free trial activation failed. Please contact support.');
+        }
+      } else {
+        showError('You have already used your free trial.');
+      }
+    } catch (error) {
+      console.error('❌ Free trial activation error:', error);
+      showError('Failed to activate free trial. Please try again.');
+    } finally {
+      setSelectedPlan(null);
+    }
+  };
+
   const handleSelectPlan = async (planId: string) => {
+    // Handle free trial specially
+    if (planId === 'free-trial') {
+      await handleFreeTrialActivation();
+      return;
+    }
+
     // Prevent multiple selections while one is in progress
     if (selectedPlan && selectedPlan === planId) {
       console.log(`Plan ${planId} already selected, ignoring duplicate selection`);
@@ -792,29 +905,45 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                 {/* CTA Button - positioned at bottom - Only show for non-free plans */}
                 {plan.id !== 'free' && (
                   <button
-                    onClick={() => plan.id === 'enterprise' ? (() => { setContactService('Enterprise Solution'); setIsContactOpen(true); })() : handleSelectPlan(plan.id)}
-                    disabled={loading || normalizedUserPlan === plan.id}
+                    onClick={() => {
+                      if (plan.id === 'enterprise') {
+                        setContactService('Enterprise Solution');
+                        setIsContactOpen(true);
+                      } else if (plan.id === 'free-trial' && hasUsedFreeTrialState) {
+                        // Do nothing if free trial already used
+                        return;
+                      } else {
+                        handleSelectPlan(plan.id);
+                      }
+                    }}
+                    disabled={loading || normalizedUserPlan === plan.id || (plan.id === 'free-trial' && hasUsedFreeTrialState)}
                     className={`w-full py-4 px-6 rounded-2xl font-bold text-white text-lg uppercase tracking-wide transition-all duration-300 transform ${
-                      (loading || normalizedUserPlan === plan.id) 
+                      (loading || normalizedUserPlan === plan.id || (plan.id === 'free-trial' && hasUsedFreeTrialState)) 
                         ? 'opacity-50 cursor-not-allowed hover:scale-100' 
                         : 'hover:opacity-90 hover:scale-105'
                     }`}
                     style={{
-                      background: (loading || normalizedUserPlan === plan.id)
+                      background: (loading || normalizedUserPlan === plan.id || (plan.id === 'free-trial' && hasUsedFreeTrialState))
                         ? `linear-gradient(135deg, ${isDark ? colors.colors.grey[600] : colors.colors.grey[400]} 0%, ${isDark ? colors.colors.grey[700] : colors.colors.grey[500]}dd 100%)`
                         : `linear-gradient(135deg, ${plan.color} 0%, ${plan.color}dd 100%)`,
-                      boxShadow: (loading || normalizedUserPlan === plan.id)
+                      boxShadow: (loading || normalizedUserPlan === plan.id || (plan.id === 'free-trial' && hasUsedFreeTrialState))
                         ? `0 10px 25px -5px ${isDark ? colors.colors.grey[600] : colors.colors.grey[400]}40`
                         : `0 10px 25px -5px ${plan.color}40`
                     }}
                   >
-                    {loading && selectedPlan === plan.id 
-                      ? 'PROCESSING...' 
-                      : plan.id === 'enterprise' 
-                        ? 'CONTACT SALES' 
-                        : normalizedUserPlan === plan.id 
-                          ? 'CURRENT PLAN' 
-                          : 'BUY NOW'
+                    {isCheckingFreeTrial && plan.id === 'free-trial'
+                      ? 'CHECKING...'
+                      : loading && selectedPlan === plan.id 
+                        ? 'PROCESSING...' 
+                        : plan.id === 'enterprise' 
+                          ? 'CONTACT SALES' 
+                          : plan.id === 'free-trial' && hasUsedFreeTrialState
+                            ? 'ALREADY USED'
+                            : normalizedUserPlan === plan.id 
+                              ? 'CURRENT PLAN'
+                              : plan.id === 'free-trial'
+                                ? 'START FREE TRIAL'
+                                : 'BUY NOW'
                     }
                   </button>
                 )}
