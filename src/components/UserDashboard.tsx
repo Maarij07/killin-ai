@@ -42,10 +42,9 @@ export default function UserDashboard() {
       
       try {
         const token = localStorage.getItem('auth_token');
-        const response = await fetch('https://server.kallin.ai/api/auth/users', {
+        const response = await fetch('/api/auth/users', {
           headers: {
             'Authorization': `Bearer ${token}`,
-            // Production server - no special headers needed
           }
         });
         
