@@ -26,22 +26,6 @@ interface PricingPlan {
 
 const pricingPlans: PricingPlan[] = [
   {
-    id: 'free-trial',
-    name: 'Free Trial',
-    price: '0.00',
-    period: '50 mins',
-    description: 'Perfect free trial to test our AI phone assistance - no payment required!',
-    features: [
-      '50 minutes included',
-      'Basic voice assistant',
-      'Simple dashboard',
-      'Email support',
-      'One-time offer only'
-    ],
-    featured: false,
-    color: colors.colors.primary
-  },
-  {
     id: 'trial',
     name: 'Trial',
     price: '25.00',
@@ -335,7 +319,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
     }
 
     console.log('🆓 Activating free trial for user:', user.id);
-    setSelectedPlan('free-trial');
+    setSelectedPlan('trial');
 
     try {
       // Record free trial usage in Firebase
@@ -393,8 +377,8 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
   };
 
   const handleSelectPlan = async (planId: string) => {
-    // Handle free trial specially
-    if (planId === 'free-trial') {
+    // Handle trial plan free trial activation if user hasn't used it yet
+    if (planId === 'trial' && !hasUsedFreeTrialState) {
       await handleFreeTrialActivation();
       return;
     }
@@ -909,39 +893,39 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                       if (plan.id === 'enterprise') {
                         setContactService('Enterprise Solution');
                         setIsContactOpen(true);
-                      } else if (plan.id === 'free-trial' && hasUsedFreeTrialState) {
-                        // Do nothing if free trial already used
+                      } else if (plan.id === 'trial' && hasUsedFreeTrialState) {
+                        // Do nothing if free trial already used for trial plan
                         return;
                       } else {
                         handleSelectPlan(plan.id);
                       }
                     }}
-                    disabled={loading || normalizedUserPlan === plan.id || (plan.id === 'free-trial' && hasUsedFreeTrialState)}
+                    disabled={loading || normalizedUserPlan === plan.id || (plan.id === 'trial' && hasUsedFreeTrialState)}
                     className={`w-full py-4 px-6 rounded-2xl font-bold text-white text-lg uppercase tracking-wide transition-all duration-300 transform ${
-                      (loading || normalizedUserPlan === plan.id || (plan.id === 'free-trial' && hasUsedFreeTrialState)) 
+                      (loading || normalizedUserPlan === plan.id || (plan.id === 'trial' && hasUsedFreeTrialState)) 
                         ? 'opacity-50 cursor-not-allowed hover:scale-100' 
                         : 'hover:opacity-90 hover:scale-105'
                     }`}
                     style={{
-                      background: (loading || normalizedUserPlan === plan.id || (plan.id === 'free-trial' && hasUsedFreeTrialState))
+                      background: (loading || normalizedUserPlan === plan.id || (plan.id === 'trial' && hasUsedFreeTrialState))
                         ? `linear-gradient(135deg, ${isDark ? colors.colors.grey[600] : colors.colors.grey[400]} 0%, ${isDark ? colors.colors.grey[700] : colors.colors.grey[500]}dd 100%)`
                         : `linear-gradient(135deg, ${plan.color} 0%, ${plan.color}dd 100%)`,
-                      boxShadow: (loading || normalizedUserPlan === plan.id || (plan.id === 'free-trial' && hasUsedFreeTrialState))
+                      boxShadow: (loading || normalizedUserPlan === plan.id || (plan.id === 'trial' && hasUsedFreeTrialState))
                         ? `0 10px 25px -5px ${isDark ? colors.colors.grey[600] : colors.colors.grey[400]}40`
                         : `0 10px 25px -5px ${plan.color}40`
                     }}
                   >
-                    {isCheckingFreeTrial && plan.id === 'free-trial'
+                    {isCheckingFreeTrial && plan.id === 'trial'
                       ? 'CHECKING...'
                       : loading && selectedPlan === plan.id 
                         ? 'PROCESSING...' 
                         : plan.id === 'enterprise' 
                           ? 'CONTACT SALES' 
-                          : plan.id === 'free-trial' && hasUsedFreeTrialState
+                          : plan.id === 'trial' && hasUsedFreeTrialState
                             ? 'ALREADY USED'
                             : normalizedUserPlan === plan.id 
                               ? 'CURRENT PLAN'
-                              : plan.id === 'free-trial'
+                              : plan.id === 'trial' && !hasUsedFreeTrialState
                                 ? 'START FREE TRIAL'
                                 : 'BUY NOW'
                     }
