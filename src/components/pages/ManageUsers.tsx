@@ -618,7 +618,7 @@ export default function ManageUsers() {
           
           showSuccess(`Changes saved for ${manageModal.user.name}`);
           
-          // Refresh users data to reflect changes
+          // Refresh users data to reflect changes with VAPI sync
           const fetchUsers = async () => {
             try {
               const response = await fetch(`${API_BASE_URL}/auth/users`, {
@@ -629,7 +629,12 @@ export default function ManageUsers() {
               
               if (response.ok) {
                 const data = await response.json();
-                setUsers(data.users || data || []);
+                const usersData = data.users || data || [];
+                
+                // Re-sync with VAPI to maintain assistant status
+                const syncedUsers = await syncUsersWithVAPI(usersData);
+                setUsers(syncedUsers);
+                setLastSyncTime(new Date());
               }
             } catch (error) {
               console.error('Error refreshing users:', error);
