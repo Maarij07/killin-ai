@@ -42,10 +42,10 @@ export default function UserDashboard() {
       
       try {
         const token = localStorage.getItem('auth_token');
-        const response = await fetch('https://3758a6b3509d.ngrok-free.app/api/auth/users', {
+        const response = await fetch('https://server.kallin.ai/api/auth/users', {
           headers: {
             'Authorization': `Bearer ${token}`,
-            'ngrok-skip-browser-warning': 'true'
+            // Production server - no special headers needed
           }
         });
         

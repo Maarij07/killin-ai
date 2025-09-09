@@ -94,7 +94,7 @@ const dropdownStyles = `
   }
 `;
 
-const API_BASE_URL = 'https://3758a6b3509d.ngrok-free.app/api';
+const API_BASE_URL = 'https://server.kallin.ai/api';
 const VAPI_API_KEY = '4214a0ea-b594-435d-9abb-599c1f3a81ea';
 const VAPI_BASE_URL = 'https://api.vapi.ai';
 
@@ -140,7 +140,7 @@ export default function ManageUsers() {
         // Step 1: Fetch users from database
         const response = await fetch(`${API_BASE_URL}/auth/users`, {
           headers: {
-            'ngrok-skip-browser-warning': 'true'
+            // Production server - no special headers needed
           }
         });
         
@@ -600,7 +600,7 @@ export default function ManageUsers() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'ngrok-skip-browser-warning': 'true'
+            // Production server - no special headers needed
           },
           body: JSON.stringify(payload)
         });
@@ -623,7 +623,7 @@ export default function ManageUsers() {
             try {
               const response = await fetch(`${API_BASE_URL}/auth/users`, {
                 headers: {
-                  'ngrok-skip-browser-warning': 'true'
+                  // Production server - no special headers needed
                 }
               });
               
@@ -1004,7 +1004,7 @@ export default function ManageUsers() {
                     method: 'PUT',
                     headers: {
                       'Content-Type': 'application/json',
-                      'ngrok-skip-browser-warning': 'true',
+                      // Production server - no special headers needed
                       'Accept': 'application/json'
                     },
                     body: JSON.stringify({ prompt: updatedSystemPrompt }),

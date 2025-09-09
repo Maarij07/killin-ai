@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_BASE_URL = 'https://3758a6b3509d.ngrok-free.app/api';
+const API_BASE_URL = 'https://server.kallin.ai/api';
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'ngrok-skip-browser-warning': 'true'
+        // Production server - no ngrok headers needed
       },
       body: JSON.stringify(payload)
     });

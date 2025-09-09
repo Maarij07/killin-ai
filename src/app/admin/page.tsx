@@ -25,7 +25,7 @@ interface User {
   join_date: string;
 }
 
-const API_BASE_URL = 'https://3758a6b3509d.ngrok-free.app/api';
+const API_BASE_URL = 'https://server.kallin.ai/api';
 
 export default function AdminDashboard() {
   const { } = useTheme();
@@ -41,7 +41,7 @@ export default function AdminDashboard() {
       try {
         const response = await fetch(`${API_BASE_URL}/auth/users`, {
           headers: {
-            'ngrok-skip-browser-warning': 'true'
+            // Production server - no special headers needed
           }
         });
         

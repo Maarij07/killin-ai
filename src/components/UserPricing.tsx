@@ -199,10 +199,10 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
       const token = localStorage.getItem('auth_token');
       console.log('Fetching user details for user ID:', user.id);
       
-      const response = await fetch('https://3758a6b3509d.ngrok-free.app/api/auth/users', {
+      const response = await fetch('https://server.kallin.ai/api/auth/users', {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'ngrok-skip-browser-warning': 'true'
+          // Production server - no special headers needed
         }
       });
       

@@ -23,7 +23,7 @@ interface UserContextType {
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
-const API_BASE_URL = 'https://3758a6b3509d.ngrok-free.app/api';
+const API_BASE_URL = 'https://server.kallin.ai/api';
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -89,7 +89,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         fetch(`${API_BASE_URL}/auth/me`, {
           headers: {
             'Authorization': `Bearer ${token}`,
-            'ngrok-skip-browser-warning': 'true'
+            // Production server - no special headers needed
           }
         })
         .then(response => {
@@ -198,7 +198,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       const response = await fetch(`${API_BASE_URL}/auth/me`, {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'ngrok-skip-browser-warning': 'true'
+          // Production server - no special headers needed
         }
       });
       
@@ -237,7 +237,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true'
+          // Production server - no special headers needed
         },
         body: JSON.stringify({ username: usernameOrEmail, password }) // Send username field as API expects
       });
@@ -405,7 +405,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
-              'ngrok-skip-browser-warning': 'true'
+              // Production server - no special headers needed
             }
           }).catch(() => {}); // Ignore errors for logout
         }

@@ -125,12 +125,12 @@ async function confirmPaymentWithBackend(planId: string, userId: string, transac
 
     console.log('Confirming payment with backend:', paymentData);
 
-    const backendUrl = process.env.BACKEND_API_URL || 'https://3758a6b3509d.ngrok-free.app';
+    const backendUrl = process.env.BACKEND_API_URL || 'https://server.kallin.ai';
     const response = await fetch(`${backendUrl}/api/stripe/confirm-payment`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'ngrok-skip-browser-warning': 'true'
+        // Production server - no ngrok headers needed
       },
       body: JSON.stringify(paymentData),
     });
