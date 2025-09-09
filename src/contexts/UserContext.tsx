@@ -23,8 +23,8 @@ interface UserContextType {
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
-// Use local API proxy to avoid CORS issues
-const API_BASE_URL = '/api';
+// Call backend server directly
+const API_BASE_URL = 'https://server.kallin.ai/api';
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);

@@ -25,8 +25,8 @@ interface User {
   join_date: string;
 }
 
-// Use local API proxy to avoid CORS issues
-const API_BASE_URL = '/api';
+// Call backend server directly
+const API_BASE_URL = 'https://server.kallin.ai/api';
 
 export default function AdminDashboard() {
   const { } = useTheme();
