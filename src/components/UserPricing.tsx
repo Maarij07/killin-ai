@@ -170,6 +170,20 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
     return normalized;
   }, [userPlan]);
 
+  // Helper function to create fallback user details
+  const createFallbackUserDetails = useCallback(() => {
+    return {
+      id: parseInt(user?.id || '0'),
+      name: user?.name || '',
+      email: user?.email || '',
+      plan: 'Unknown',
+      status: 'active',
+      minutes_allowed: 0,
+      minutes_used: 0,
+      agent_id: 'N/A'
+    };
+  }, [user?.id, user?.name, user?.email]);
+
   // Function to fetch user details (extracted for reusability)
   const fetchUserDetails = useCallback(async (showLoading = true) => {
     if (!user?.id) {
@@ -205,16 +219,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
         } else {
           console.log('❌ User not found in users list, creating fallback');
           // Create a basic UserDetails object from context user data
-          setUserDetails({
-            id: parseInt(user.id),
-            name: user.name,
-            email: user.email,
-            plan: 'Unknown',
-            status: 'active',
-            minutes_allowed: 0,
-            minutes_used: 0,
-            agent_id: 'N/A'
-          });
+          setUserDetails(createFallbackUserDetails());
         }
       } else {
         console.error('❌ Failed to fetch users:', response.status, response.statusText);
@@ -228,14 +233,14 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
         setIsLoadingDetails(false);
       }
     }
-  }, [user?.id]); // Only depend on user ID, not the entire user object or showError
+  }, [user?.id, showError, createFallbackUserDetails]);
 
   // Initial fetch on component mount - only run when user ID changes
   useEffect(() => {
     if (user?.id) {
       fetchUserDetails();
     }
-  }, [user?.id]); // Only depend on user ID to prevent unnecessary refetches
+  }, [user?.id, fetchUserDetails]);
 
   // Handle success/cancel from Stripe
   useEffect(() => {

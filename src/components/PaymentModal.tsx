@@ -99,7 +99,7 @@ export default function PaymentModal({
       console.log('Modal opened, creating payment intent for plan:', planId);
       createPaymentIntent();
     }
-  }, [isOpen, planId]); // Removed createPaymentIntent from dependencies to prevent loops
+  }, [isOpen, planId, clientSecret, createPaymentIntent, loading]);
 
   const handleSuccess = () => {
     setClientSecret(''); // Clear the client secret
