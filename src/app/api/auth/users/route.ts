@@ -4,24 +4,48 @@ export async function GET(request: NextRequest) {
   try {
     console.log('Fetching users from backend...');
     
+    // Get authorization header from the request
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader) {
+      return NextResponse.json(
+        { error: 'Authorization header required' },
+        { 
+          status: 401,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          },
+        }
+      );
+    }
+    
     // Get the backend URL from environment variable or use default
     const backendUrl = process.env.BACKEND_API_URL || 'https://server.kallin.ai';
     
-    // Make the request to your backend server
+    // Make the request to your backend server with forwarded auth header
     const response = await fetch(`${backendUrl}/api/auth/users`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        // Add any authentication headers your backend expects
-        // 'Authorization': `Bearer ${token}`, // if needed
+        'Authorization': authHeader,
       },
     });
 
     if (!response.ok) {
       console.error('Backend API failed:', response.status, response.statusText);
+      const errorText = await response.text().catch(() => 'Unable to read error');
+      console.error('Backend error details:', errorText);
       return NextResponse.json(
-        { error: 'Failed to fetch users from backend' },
-        { status: response.status }
+        { error: 'Failed to fetch users from backend', details: errorText },
+        { 
+          status: response.status,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          },
+        }
       );
     }
 

@@ -25,7 +25,8 @@ interface User {
   join_date: string;
 }
 
-const API_BASE_URL = 'https://server.kallin.ai/api';
+// Use local API proxy to avoid CORS issues
+const API_BASE_URL = '/api';
 
 export default function AdminDashboard() {
   const { } = useTheme();
@@ -39,9 +40,16 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
+        const token = localStorage.getItem('auth_token');
+        if (!token) {
+          console.error('No auth token found');
+          router.push('/login');
+          return;
+        }
+
         const response = await fetch(`${API_BASE_URL}/auth/users`, {
           headers: {
-            // Production server - no special headers needed
+            'Authorization': `Bearer ${token}`
           }
         });
         
@@ -74,7 +82,7 @@ export default function AdminDashboard() {
     };
 
     fetchUsers();
-  }, [showError]);
+  }, [showError, router]);
 
   const handleViewMoreUsers = () => {
     router.push('/admin/user-management');
