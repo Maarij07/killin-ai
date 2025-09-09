@@ -241,12 +241,13 @@ export default function ManageUsers() {
 
         if (assistantMap.has(user.agent_id)) {
           const assistantData = assistantMap.get(user.agent_id);
-          const isInSync = user.prompt === assistantData.systemPrompt;
           
+          // Always consider synced when we successfully fetch from VAPI
+          // since we're updating the local data with the live VAPI data
           return {
             ...user,
             prompt: assistantData.systemPrompt, // Update with live VAPI data
-            assistant_status: isInSync ? ('synced' as const) : ('out_of_sync' as const),
+            assistant_status: 'synced' as const, // Always synced when VAPI fetch succeeds
             last_synced: assistantData.lastSynced
           };
         } else {
