@@ -7,7 +7,6 @@ import { useToast } from '../contexts/ToastContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
-import { IconButton } from '@mui/material';
 import colors from '../../colors.json';
 
 export default function UserLanding() {
@@ -165,28 +164,19 @@ export default function UserLanding() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
-                    <IconButton
+                    <button
+                      type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
-                      size="small"
-                      sx={{ 
-                        position: 'absolute',
-                        right: 8,
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        color: isDark ? '#9CA3AF' : '#9CA3AF',
-                        '&:hover': {
-                          color: isDark ? '#D1D5DB' : '#6B7280',
-                          backgroundColor: 'transparent'
-                        }
-                      }}
+                      className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded transition-colors ${
+                        isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-600'
+                      }`}
                     >
                       {showPassword ? (
                         <VisibilityOff sx={{ fontSize: { xs: '18px', sm: '20px' } }} />
                       ) : (
                         <Visibility sx={{ fontSize: { xs: '18px', sm: '20px' } }} />
                       )}
-                    </IconButton>
+                    </button>
                   </div>
                 </div>
               </div>

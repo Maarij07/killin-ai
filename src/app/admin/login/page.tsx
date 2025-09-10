@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useUser } from '../../../contexts/UserContext';
 import { useToast } from '../../../contexts/ToastContext';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
-import { IconButton } from '@mui/material';
 import colors from '../../../../colors.json';
 
 export default function AdminLogin() {
@@ -138,7 +138,7 @@ export default function AdminLogin() {
             {/* Welcome text */}
             <div className="text-center mb-8 sm:mb-10 pt-8 sm:pt-12 lg:pt-0 lg:text-left">
               <h2 className={`text-3xl sm:text-4xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'} mb-3 sm:mb-4`}>Welcome back!</h2>
-              <p className={`text-base sm:text-lg ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Access your Admin Panel to manage data</p>
+              <p className={`text-base sm:text-lg ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Access your Admin Panel to manage the system</p>
             </div>
 
             {/* Sign in form */}
@@ -192,28 +192,19 @@ export default function AdminLogin() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
-                    <IconButton
+                    <button
+                      type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
-                      size="small"
-                      sx={{ 
-                        position: 'absolute',
-                        right: 8,
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        color: isDark ? '#9CA3AF' : '#9CA3AF',
-                        '&:hover': {
-                          color: isDark ? '#D1D5DB' : '#6B7280',
-                          backgroundColor: 'transparent'
-                        }
-                      }}
+                      className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded transition-colors ${
+                        isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-600'
+                      }`}
                     >
                       {showPassword ? (
                         <VisibilityOff sx={{ fontSize: { xs: '18px', sm: '20px' } }} />
                       ) : (
                         <Visibility sx={{ fontSize: { xs: '18px', sm: '20px' } }} />
                       )}
-                    </IconButton>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -232,6 +223,18 @@ export default function AdminLogin() {
                 </button>
               </div>
             </form>
+
+            {/* User link */}
+            <div className="mt-6 text-center">
+              <Link
+                href="/"
+                className={`text-sm transition-colors hover:underline ${
+                  isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-700'
+                }`}
+              >
+                Are you a user? Sign in here
+              </Link>
+            </div>
           </div>
         </div>
 
