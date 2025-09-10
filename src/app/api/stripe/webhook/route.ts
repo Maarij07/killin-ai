@@ -4,6 +4,8 @@ import { createStripeInstance, validateStripeConfig } from '../../../../lib/stri
 import { getPlanConfig } from '../../../../config/plans';
 import { paymentSessions } from '../../../../lib/payment-sessions';
 
+// Firebase imports - lazy loading to avoid build-time issues
+
 export async function POST(request: NextRequest) {
   // Validate Stripe configuration
   const configValidation = validateStripeConfig();
@@ -164,6 +166,24 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       session.payment_intent as string
     );
     
+    // If this was a trial payment, record free trial usage in Firebase
+    if (planId === 'trial' && userId && session.customer_email) {
+      console.log('🆓 Recording free trial usage in Firebase for checkout session...');
+      try {
+        // Dynamic import to avoid build-time Firebase initialization
+        const { recordFreeTrialUsage, confirmFreeTrialWithBackend } = await import('../../../../lib/freeTrialService');
+        const recorded = await recordFreeTrialUsage(userId, session.customer_email);
+        if (recorded) {
+          await confirmFreeTrialWithBackend(userId);
+          console.log('✅ Free trial status recorded successfully in Firebase');
+        } else {
+          console.log('⚠️ Free trial was already used or failed to record');
+        }
+      } catch (firebaseError) {
+        console.error('❌ Failed to record free trial usage in Firebase:', firebaseError);
+      }
+    }
+    
     // Complete the payment session to prevent duplicates
     paymentSessions.completeSession(userId, planId);
   } catch (error) {
@@ -173,7 +193,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
 // Handle payment intent succeeded (for embedded flow)
 async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
-  const { planId, userId } = paymentIntent.metadata;
+  const { planId, userId, userEmail } = paymentIntent.metadata;
   
   if (!planId || !userId) {
     console.log('Payment intent succeeded but missing metadata:', paymentIntent.id);
@@ -189,6 +209,44 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
       paymentIntent.id, 
       paymentIntent.id
     );
+    
+    // If this was a trial payment, record free trial usage in Firebase
+    if (planId === 'trial' && userId && userEmail) {
+      console.log('🆓 Recording free trial usage in Firebase for payment intent...');
+      try {
+        // Dynamic import to avoid build-time Firebase initialization
+        const { recordFreeTrialUsage, confirmFreeTrialWithBackend } = await import('../../../../lib/freeTrialService');
+        const recorded = await recordFreeTrialUsage(userId, userEmail);
+        if (recorded) {
+          await confirmFreeTrialWithBackend(userId);
+          console.log('✅ Free trial status recorded successfully in Firebase');
+        } else {
+          console.log('⚠️ Free trial was already used or failed to record');
+        }
+      } catch (firebaseError) {
+        console.error('❌ Failed to record free trial usage in Firebase:', firebaseError);
+      }
+    } else if (planId === 'trial' && userId && !userEmail) {
+      console.log('⚠️ Payment intent for trial plan missing userEmail metadata');
+      // Try to fetch user details from backend to get email
+      try {
+        const response = await fetch(`${process.env.BACKEND_API_URL || 'https://server.kallin.ai'}/api/auth/user/${userId}`);
+        if (response.ok) {
+          const userData = await response.json();
+          if (userData.email) {
+            // Dynamic import to avoid build-time Firebase initialization
+            const { recordFreeTrialUsage, confirmFreeTrialWithBackend } = await import('../../../../lib/freeTrialService');
+            const recorded = await recordFreeTrialUsage(userId, userData.email);
+            if (recorded) {
+              await confirmFreeTrialWithBackend(userId);
+              console.log('✅ Free trial status recorded successfully in Firebase (with fetched email)');
+            }
+          }
+        }
+      } catch (fetchError) {
+        console.error('❌ Failed to fetch user email for Firebase recording:', fetchError);
+      }
+    }
     
     // Complete the payment session to prevent duplicates
     paymentSessions.completeSession(userId, planId);

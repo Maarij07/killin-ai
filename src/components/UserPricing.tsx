@@ -253,13 +253,35 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
     }
   }, [user?.id, showError, createFallbackUserDetails]);
 
-  // Check free trial status when user loads - DISABLED FOR NOW TO FIX UI
+  // Check free trial status when user loads
   useEffect(() => {
-    // TEMPORARILY DISABLED - Firebase check is causing issues
-    console.log('🔍 Firebase check disabled - button will show START TRIAL');
-    // Keep state as false to show START TRIAL
-    setHasUsedFreeTrialState(false);
-    setIsCheckingFreeTrial(false);
+    const checkFreeTrialStatus = async () => {
+      if (!user?.id) {
+        setHasUsedFreeTrialState(false);
+        setIsCheckingFreeTrial(false);
+        return;
+      }
+
+      console.log('🔍 Checking Firebase free trial status for user:', user.id);
+      setIsCheckingFreeTrial(true);
+      
+      try {
+        // Dynamic import for client-side only
+        const { hasUsedFreeTrial } = await import('../lib/freeTrialService');
+        const hasUsed = await hasUsedFreeTrial(user.id);
+        
+        console.log('🆓 Firebase free trial check result:', hasUsed ? 'USED' : 'AVAILABLE');
+        setHasUsedFreeTrialState(hasUsed);
+      } catch (error) {
+        console.error('❌ Error checking free trial status:', error);
+        // Default to available (false) on error for better UX
+        setHasUsedFreeTrialState(false);
+      } finally {
+        setIsCheckingFreeTrial(false);
+      }
+    };
+
+    checkFreeTrialStatus();
   }, [user?.id]);
 
   // Initial fetch on component mount - only run when user ID changes
