@@ -8,30 +8,56 @@ interface FreeTrialRecord {
   backendConfirmed: boolean;
 }
 
-const db = getFirestore();
 const COLLECTION_NAME = 'freeTrials';
 
 /**
  * Check if a user has already used their free trial
+ * With retry logic for Firebase initialization issues
  */
-export async function hasUsedFreeTrial(userId: string): Promise<boolean> {
+export async function hasUsedFreeTrial(userId: string, retryCount: number = 0): Promise<boolean> {
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY = 1000; // 1 second
+  
   try {
+    // Get Firestore instance (may help with initialization timing)
+    const db = getFirestore();
+    
     const docRef = doc(db, COLLECTION_NAME, userId);
     const docSnap = await getDoc(docRef);
     
     const hasUsed = docSnap.exists();
-    console.log(`Free trial check for user ${userId}:`, hasUsed ? 'USED' : 'AVAILABLE');
+    console.log(`✅ Free trial check for user ${userId}:`, hasUsed ? 'USED' : 'AVAILABLE');
     
     return hasUsed;
   } catch (error) {
-    console.error('Error checking free trial status:', error);
-    await logger.logSystemAction(
-      'FREE_TRIAL_CHECK_FAILED',
-      `Failed to check free trial status for user ${userId}: ${error}`,
-      'MEDIUM'
-    );
-    // Default to true (used) for safety if we can't check
-    return true;
+    console.error(`❌ Error checking free trial status (attempt ${retryCount + 1}/${MAX_RETRIES + 1}):`, error);
+    
+    // Check if it's a Firebase initialization error
+    const errorObj = error as { message?: string; code?: string };
+    const isInitError = errorObj?.message?.includes('Firebase') || 
+                       errorObj?.message?.includes('initialize') ||
+                       errorObj?.code === 'failed-precondition';
+    
+    // Retry logic for initialization errors
+    if (isInitError && retryCount < MAX_RETRIES) {
+      console.log(`⏳ Retrying free trial check in ${RETRY_DELAY}ms...`);
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+      return hasUsedFreeTrial(userId, retryCount + 1);
+    }
+    
+    // Log only after all retries have failed
+    if (retryCount >= MAX_RETRIES) {
+      await logger.logSystemAction(
+        'FREE_TRIAL_CHECK_FAILED',
+        `Failed to check free trial status for user ${userId} after ${MAX_RETRIES + 1} attempts: ${error}`,
+        'MEDIUM'
+      );
+    }
+    
+    // IMPORTANT: Default to false (available) for new users
+    // This prevents the bug where new accounts show as "already used"
+    console.log('⚠️ Defaulting to FREE TRIAL AVAILABLE due to check failure');
+    return false;
   }
 }
 
@@ -54,6 +80,8 @@ export async function recordFreeTrialUsage(userId: string, userEmail: string): P
       backendConfirmed: false // Will be updated to true after backend confirmation
     };
 
+    // Get Firestore instance
+    const db = getFirestore();
     const docRef = doc(db, COLLECTION_NAME, userId);
     await setDoc(docRef, freeTrialRecord);
 
@@ -82,6 +110,8 @@ export async function recordFreeTrialUsage(userId: string, userEmail: string): P
  */
 export async function confirmFreeTrialWithBackend(userId: string): Promise<boolean> {
   try {
+    // Get Firestore instance
+    const db = getFirestore();
     const docRef = doc(db, COLLECTION_NAME, userId);
     await setDoc(docRef, { backendConfirmed: true }, { merge: true });
 
@@ -103,6 +133,8 @@ export async function confirmFreeTrialWithBackend(userId: string): Promise<boole
  */
 export async function getFreeTrialRecord(userId: string): Promise<FreeTrialRecord | null> {
   try {
+    // Get Firestore instance
+    const db = getFirestore();
     const docRef = doc(db, COLLECTION_NAME, userId);
     const docSnap = await getDoc(docRef);
     

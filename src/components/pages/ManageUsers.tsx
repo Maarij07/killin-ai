@@ -1124,27 +1124,48 @@ export default function ManageUsers() {
       ) : (
       <>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="space-y-4">
+        {/* Title and Description */}
         <div>
-          <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          <h1 className={`text-xl sm:text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
             User Management
           </h1>
-          <p className={`mt-2 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            Manage user accounts, permissions, and access controls
+          <p className={`mt-1 sm:mt-2 text-xs sm:text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            <span className="hidden sm:inline">Manage user accounts, permissions, and access controls</span>
+            <span className="sm:hidden">Manage users & permissions</span>
             {lastSyncTime && (
-              <span className={`ml-2 text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                • Last synced: {lastSyncTime.toLocaleTimeString()}
+              <span className={`block sm:inline sm:ml-2 text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                <span className="hidden sm:inline">•</span> Last synced: {lastSyncTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             )}
           </p>
         </div>
         
-        <div className="flex items-center gap-4">
+        {/* Controls */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+          {/* Search Bar - Full width on mobile */}
+          <div className="relative flex-1 sm:order-2 sm:max-w-xs">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <MagnifyingGlassIcon className={`h-4 sm:h-5 w-4 sm:w-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+            </div>
+            <input
+              type="text"
+              placeholder="Search users..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={`block w-full pl-9 sm:pl-10 pr-3 py-2 sm:py-2.5 border rounded-lg text-sm shadow-sm ${
+                isDark
+                  ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-orange-500'
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-orange-500'
+              } focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-colors`}
+            />
+          </div>
+          
           {/* VAPI Sync Button */}
           <button
             onClick={handleVAPISync}
             disabled={isSyncing || isLoading}
-            className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border transition-colors ${
+            className={`inline-flex items-center justify-center px-3 sm:px-4 py-2 text-sm font-medium rounded-md border transition-colors sm:order-1 ${
               isSyncing || isLoading ? 'opacity-50 cursor-not-allowed' : ''
             }`}
             style={{
@@ -1161,55 +1182,38 @@ export default function ManageUsers() {
             }}
             title="Sync with VAPI to get latest assistant data"
           >
-            <ArrowPathIcon className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
-            {isSyncing ? 'Syncing...' : 'Sync VAPI'}
+            <ArrowPathIcon className={`h-4 w-4 mr-1.5 sm:mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">{isSyncing ? 'Syncing...' : 'Sync VAPI'}</span>
+            <span className="sm:hidden">{isSyncing ? 'Sync...' : 'Sync'}</span>
           </button>
-          
-          {/* Search Bar */}
-          <div className="relative w-80">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <MagnifyingGlassIcon className={`h-5 w-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
-            </div>
-            <input
-              type="text"
-              placeholder="Search users..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={`block w-full pl-10 pr-3 py-2.5 border rounded-lg text-sm shadow-sm ${
-                isDark
-                  ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-orange-500'
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-orange-500'
-              } focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-colors`}
-            />
-          </div>
         </div>
       </div>
 
-      {/* Users Table */}
-      <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border overflow-hidden`}>
+      {/* Desktop Table - Hidden on mobile */}
+      <div className={`hidden lg:block ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border overflow-hidden`}>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className={isDark ? 'bg-gray-700' : 'bg-gray-50'}>
               <tr>
-                <th className={`px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                <th className={`px-4 xl:px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
                   SR.
                 </th>
-                <th className={`px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                <th className={`px-4 xl:px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
                   NAME
                 </th>
-                <th className={`px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                <th className={`px-4 xl:px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
                   STATUS
                 </th>
-                <th className={`px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                <th className={`px-4 xl:px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
                   PLAN
                 </th>
-                <th className={`px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                <th className={`px-4 xl:px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
                   MINUTES
                 </th>
-                <th className={`px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                <th className={`hidden xl:table-cell px-4 xl:px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
                   ASSISTANT
                 </th>
-                <th className={`px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                <th className={`px-4 xl:px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
                   ACTIONS
                 </th>
               </tr>
@@ -1221,27 +1225,27 @@ export default function ManageUsers() {
                 
                 return (
                   <tr key={user.id} className={`${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors`}>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
+                    <td className={`px-4 xl:px-6 py-4 whitespace-nowrap text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
                       #{user.id}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="flex-shrink-0 h-8 w-8">
+                        <div className="flex-shrink-0 h-8 w-8 hidden sm:block">
                           <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: `${colors.colors.primary}20` }}>
                             <UserCircleIcon className="h-5 w-5" style={{ color: colors.colors.primary }} />
                           </div>
                         </div>
-                        <div className="ml-3">
+                        <div className="sm:ml-3">
                           <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
                             {user.name}
                           </div>
-                          <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                          <div className={`text-xs sm:text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                             {user.email}
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       <span 
                         className="inline-flex px-2 py-1 text-xs font-medium rounded-full border"
                         style={{
@@ -1253,7 +1257,7 @@ export default function ManageUsers() {
                         {user.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       <span 
                         className="inline-flex px-2 py-1 text-xs font-medium rounded-full border"
                         style={{
@@ -1265,10 +1269,10 @@ export default function ManageUsers() {
                         {getPlanDisplayName(user.plan)}
                       </span>
                     </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
+                    <td className={`px-4 xl:px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
                       <div className="flex flex-col">
-                        <span className="font-medium">{user.minutes_used}/{user.minutes_allowed}</span>
-                        <div className={`w-16 h-1 rounded-full mt-1 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                        <span className="font-medium text-xs lg:text-sm">{user.minutes_used}/{user.minutes_allowed}</span>
+                        <div className={`w-12 lg:w-16 h-1 rounded-full mt-1 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
                           <div 
                             className="h-1 rounded-full bg-orange-500"
                             style={{ width: `${Math.min((user.minutes_used / user.minutes_allowed) * 100, 100)}%` }}
@@ -1276,7 +1280,7 @@ export default function ManageUsers() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="hidden xl:table-cell px-4 xl:px-6 py-4 whitespace-nowrap">
                       {(() => {
                         const statusInfo = getAssistantStatusInfo(user.assistant_status);
                         return (
@@ -1303,8 +1307,8 @@ export default function ManageUsers() {
                         );
                       })()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <div className="flex items-center space-x-3">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap text-sm">
+                      <div className="flex items-center space-x-2 lg:space-x-3">
                         {/* Settings Button - VAPI Configuration - Show for users with agent_id, invisible placeholder for others */}
                         {user.agent_id ? (
                           <button
@@ -1357,7 +1361,7 @@ export default function ManageUsers() {
           </table>
         </div>
         
-        {/* Empty State */}
+        {/* Empty State - Desktop */}
         {filteredUsers.length === 0 && (
           <div className="text-center py-12">
             <MagnifyingGlassIcon className={`mx-auto h-12 w-12 ${isDark ? 'text-gray-600' : 'text-gray-400'}`} />
@@ -1367,6 +1371,153 @@ export default function ManageUsers() {
             <p className={`mt-1 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
               Try adjusting your search terms.
             </p>
+          </div>
+        )}
+      </div>
+
+      {/* Mobile Cards View - Visible only on mobile */}
+      <div className="lg:hidden space-y-3">
+        {filteredUsers.map((user) => {
+          const statusColors = getStatusColor(user.status);
+          const planColors = getPlanColor(user.plan);
+          const assistantStatusInfo = getAssistantStatusInfo(user.assistant_status);
+          
+          return (
+            <div key={user.id} className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border p-4 space-y-3`}>
+              {/* Header Row */}
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${colors.colors.primary}20` }}>
+                    <UserCircleIcon className="h-6 w-6" style={{ color: colors.colors.primary }} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className={`text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      {user.name}
+                    </p>
+                    <p className={`text-xs truncate ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      {user.email}
+                    </p>
+                    <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                      ID: #{user.id}
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Actions Dropdown Menu */}
+                <div className="flex space-x-2">
+                  {user.agent_id && (
+                    <button
+                      onClick={() => handleVapiSettings(user.id)}
+                      className={`p-2 rounded-md transition-colors ${
+                        isDark 
+                          ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
+                          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                      }`}
+                      title="VAPI Settings"
+                    >
+                      <Cog6ToothIcon className="h-5 w-5" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleEdit(user.id)}
+                    className={`p-2 rounded-md transition-colors ${
+                      isDark 
+                        ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                    }`}
+                    title="Edit"
+                  >
+                    <PencilIcon className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(user.id)}
+                    className={`p-2 rounded-md transition-colors ${
+                      isDark 
+                        ? 'text-gray-400 hover:text-red-400 hover:bg-gray-700' 
+                        : 'text-gray-500 hover:text-red-600 hover:bg-gray-100'
+                    }`}
+                    title="Delete"
+                  >
+                    <TrashIcon className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+              
+              {/* Status and Plan Row */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <span 
+                    className="inline-flex px-2 py-1 text-xs font-medium rounded-full border"
+                    style={{
+                      backgroundColor: statusColors.bg,
+                      color: statusColors.text,
+                      borderColor: statusColors.border
+                    }}
+                  >
+                    {user.status}
+                  </span>
+                  <span 
+                    className="inline-flex px-2 py-1 text-xs font-medium rounded-full border"
+                    style={{
+                      backgroundColor: planColors.bg,
+                      color: planColors.text,
+                      borderColor: planColors.border
+                    }}
+                  >
+                    {getPlanDisplayName(user.plan)}
+                  </span>
+                </div>
+                
+                {/* Assistant Status */}
+                {user.agent_id && (
+                  <div 
+                    className="flex items-center px-2 py-1 text-xs font-medium rounded-full border"
+                    style={{
+                      backgroundColor: assistantStatusInfo.bgColor,
+                      color: assistantStatusInfo.color,
+                      borderColor: assistantStatusInfo.color + '40'
+                    }}
+                  >
+                    <span className="mr-1">{assistantStatusInfo.icon}</span>
+                    {assistantStatusInfo.text}
+                  </div>
+                )}
+              </div>
+              
+              {/* Minutes Usage */}
+              <div className={`pt-2 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className={`text-xs font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Minutes Used</span>
+                  <span className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
+                    {user.minutes_used}/{user.minutes_allowed}
+                  </span>
+                </div>
+                <div className={`w-full h-2 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                  <div 
+                    className="h-2 rounded-full transition-all duration-300"
+                    style={{ 
+                      width: `${Math.min((user.minutes_used / user.minutes_allowed) * 100, 100)}%`,
+                      backgroundColor: colors.colors.primary
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        
+        {/* Empty State - Mobile */}
+        {filteredUsers.length === 0 && (
+          <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border p-8`}>
+            <div className="text-center">
+              <MagnifyingGlassIcon className={`mx-auto h-12 w-12 ${isDark ? 'text-gray-600' : 'text-gray-400'}`} />
+              <h3 className={`mt-2 text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
+                No users found
+              </h3>
+              <p className={`mt-1 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                Try adjusting your search terms.
+              </p>
+            </div>
           </div>
         )}
       </div>

@@ -560,23 +560,24 @@ export default function Admins() {
           <h1 className={`text-xl sm:text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
             Administrator Management
           </h1>
-          <p className={`mt-2 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            Manage administrator accounts, permissions, and system access levels
+          <p className={`mt-1 sm:mt-2 text-xs sm:text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            <span className="hidden sm:inline">Manage administrator accounts, permissions, and system access levels</span>
+            <span className="sm:hidden">Manage admin accounts & permissions</span>
           </p>
         </div>
         
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          {/* Search Bar */}
-          <div className="relative flex-1 max-w-md">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+          {/* Search Bar - Full width on mobile */}
+          <div className="relative flex-1 sm:max-w-md">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <MagnifyingGlassIcon className={`h-5 w-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+              <MagnifyingGlassIcon className={`h-4 sm:h-5 w-4 sm:w-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
             </div>
             <input
               type="text"
               placeholder="Search administrators..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`block w-full pl-10 pr-3 py-2.5 border rounded-lg text-sm shadow-sm ${
+              className={`block w-full pl-9 sm:pl-10 pr-3 py-2 sm:py-2.5 border rounded-lg text-sm shadow-sm ${
                 isDark
                   ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-orange-500'
                   : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-orange-500'
@@ -587,7 +588,7 @@ export default function Admins() {
           {/* Add Admin Button */}
           <button
             onClick={handleAddAdmin}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white transition-all duration-200 rounded-lg shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-orange-500/20 w-full sm:w-auto"
+            className="flex items-center justify-center gap-2 px-4 py-2 sm:py-2.5 text-sm font-medium text-white transition-all duration-200 rounded-lg shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-orange-500/20 w-full sm:w-auto"
             style={{ 
               backgroundColor: colors.colors.primary
             }}
@@ -595,7 +596,8 @@ export default function Admins() {
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.colors.primary}
           >
             <PlusIcon className="h-4 w-4" />
-            Add Admin
+            <span className="hidden sm:inline">Add Admin</span>
+            <span className="sm:hidden">Add</span>
           </button>
         </div>
       </div>
@@ -609,27 +611,29 @@ export default function Admins() {
           </div>
         </div>
       ) : (
-        <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border overflow-hidden`}>
+        <>
+        {/* Desktop Table - Hidden on mobile */}
+        <div className={`hidden lg:block ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border overflow-hidden`}>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className={isDark ? 'bg-gray-700' : 'bg-gray-50'}>
               <tr>
-                <th className={`hidden sm:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                <th className={`hidden xl:table-cell px-4 xl:px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
                   ID
                 </th>
-                <th className={`px-3 sm:px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                <th className={`px-4 xl:px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
                   NAME
                 </th>
-                <th className={`px-3 sm:px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                <th className={`px-4 xl:px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
                   STATUS
                 </th>
-                <th className={`px-3 sm:px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                <th className={`px-4 xl:px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
                   ROLE
                 </th>
-                <th className={`hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                <th className={`hidden xl:table-cell px-4 xl:px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
                   LAST LOGIN
                 </th>
-                <th className={`px-3 sm:px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
+                <th className={`px-4 xl:px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
                   ACTIONS
                 </th>
               </tr>
@@ -641,10 +645,10 @@ export default function Admins() {
                 
                 return (
                   <tr key={admin.id} className={`${admin.disabled ? 'opacity-50 bg-gray-50 dark:bg-gray-800' : ''} ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-all duration-200`}>
-                    <td className={`hidden sm:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
+                    <td className={`hidden xl:table-cell px-4 xl:px-6 py-4 whitespace-nowrap text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
                       {admin.id}
                     </td>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-8 w-8">
                           <div className={`h-8 w-8 rounded-full flex items-center justify-center ${admin.disabled ? 'opacity-50' : ''}`} style={{ backgroundColor: colors.colors.primary + '20' }}>
@@ -659,7 +663,7 @@ export default function Admins() {
                                 Disabled
                               </span>
                             )}
-                            <span className={`sm:hidden block text-xs font-normal ${isDark ? 'text-gray-400' : 'text-gray-500'} mt-0.5`}>
+                            <span className={`xl:hidden block text-xs font-normal ${isDark ? 'text-gray-400' : 'text-gray-500'} mt-0.5`}>
                               {admin.id}
                             </span>
                           </div>
@@ -669,7 +673,7 @@ export default function Admins() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       <span 
                         className="inline-flex px-2 py-1 text-xs font-medium rounded-full border"
                         style={{
@@ -681,7 +685,7 @@ export default function Admins() {
                         {admin.status}
                       </span>
                     </td>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       <span 
                         className="inline-flex px-2 py-1 text-xs font-medium rounded-full border"
                         style={{
@@ -692,15 +696,15 @@ export default function Admins() {
                       >
                         {admin.role}
                       </span>
-                      <div className={`md:hidden text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
+                      <div className={`xl:hidden text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
                         {formatLastLogin(admin.lastLogin)}
                       </div>
                     </td>
-                    <td className={`hidden md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
+                    <td className={`hidden xl:table-cell px-4 xl:px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
                       {formatLastLogin(admin.lastLogin)}
                     </td>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm">
-                      <div className="flex items-center space-x-2 sm:space-x-3">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap text-sm">
+                      <div className="flex items-center space-x-2 lg:space-x-3">
                         {/* Manage Button */}
                         <button
                           onClick={() => handleManage(admin.id)}
@@ -756,7 +760,7 @@ export default function Admins() {
           </table>
         </div>
         
-        {/* Empty State */}
+        {/* Empty State - Desktop */}
         {filteredAdmins.length === 0 && (
           <div className="text-center py-12">
             <MagnifyingGlassIcon className={`mx-auto h-12 w-12 ${isDark ? 'text-gray-600' : 'text-gray-400'}`} />
@@ -769,6 +773,143 @@ export default function Admins() {
           </div>
         )}
       </div>
+      
+      {/* Mobile Cards View - Visible only on mobile */}
+      <div className="lg:hidden space-y-3">
+        {filteredAdmins.map((admin) => {
+          const statusColors = getStatusColor(admin.status, admin.disabled);
+          const roleColors = getRoleColor(admin.role);
+          
+          return (
+            <div key={admin.id} className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border p-4 space-y-3 ${admin.disabled ? 'opacity-50' : ''}`}>
+              {/* Header Row */}
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className={`h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0 ${admin.disabled ? 'opacity-50' : ''}`} 
+                    style={{ backgroundColor: colors.colors.primary + '20' }}>
+                    <ShieldCheckIcon className="h-6 w-6" style={{ color: admin.disabled ? '#9CA3AF' : colors.colors.primary }} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className={`text-sm font-semibold truncate ${admin.disabled ? 'line-through' : ''} ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      {admin.name}
+                      {admin.disabled && (
+                        <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                          Disabled
+                        </span>
+                      )}
+                    </p>
+                    <p className={`text-xs truncate ${admin.disabled ? 'line-through' : ''} ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      {admin.email}
+                    </p>
+                    <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                      ID: {admin.id}
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Actions */}
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleManage(admin.id)}
+                    className={`p-2 rounded-md transition-colors ${
+                      isDark 
+                        ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                    }`}
+                    title="Manage"
+                  >
+                    <Cog6ToothIcon className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={() => handleEdit(admin.id)}
+                    className={`p-2 rounded-md transition-colors ${
+                      isDark 
+                        ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                    }`}
+                    title="Edit"
+                  >
+                    <PencilIcon className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={() => handleToggleDisable(admin.id)}
+                    className={`p-2 rounded-md transition-colors ${
+                      admin.disabled
+                        ? isDark 
+                          ? 'text-green-400 hover:text-green-300 hover:bg-gray-700' 
+                          : 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                        : isDark 
+                          ? 'text-orange-400 hover:text-orange-300 hover:bg-gray-700' 
+                          : 'text-orange-600 hover:text-orange-700 hover:bg-orange-50'
+                    }`}
+                    title={admin.disabled ? 'Enable' : 'Disable'}
+                  >
+                    {admin.disabled ? (
+                      <CheckCircleIcon className="h-5 w-5" />
+                    ) : (
+                      <NoSymbolIcon className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+              
+              {/* Status and Role Row */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <span 
+                    className="inline-flex px-2 py-1 text-xs font-medium rounded-full border"
+                    style={{
+                      backgroundColor: statusColors.bg,
+                      color: statusColors.text,
+                      borderColor: statusColors.border
+                    }}
+                  >
+                    {admin.status}
+                  </span>
+                  <span 
+                    className="inline-flex px-2 py-1 text-xs font-medium rounded-full border"
+                    style={{
+                      backgroundColor: roleColors.bg,
+                      color: roleColors.text,
+                      borderColor: roleColors.border
+                    }}
+                  >
+                    {admin.role}
+                  </span>
+                </div>
+                
+                {/* Permissions */}
+                <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  {admin.permissions}
+                </span>
+              </div>
+              
+              {/* Last Login */}
+              <div className={`pt-2 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <span className="font-medium">Last Login:</span> {formatLastLogin(admin.lastLogin)}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+        
+        {/* Empty State - Mobile */}
+        {filteredAdmins.length === 0 && (
+          <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border p-8`}>
+            <div className="text-center">
+              <MagnifyingGlassIcon className={`mx-auto h-12 w-12 ${isDark ? 'text-gray-600' : 'text-gray-400'}`} />
+              <h3 className={`mt-2 text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
+                No administrators found
+              </h3>
+              <p className={`mt-1 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                {searchTerm ? 'Try adjusting your search terms.' : 'Tap "Add" to create your first administrator.'}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+      </>
       )}
 
       {/* Add Admin Modal */}

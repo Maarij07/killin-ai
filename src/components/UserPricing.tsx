@@ -159,7 +159,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
   const { showSuccess, showError } = useToast();
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(true);
-  const [hasUsedFreeTrialState, setHasUsedFreeTrialState] = useState<boolean | null>(false);
+  const [hasUsedFreeTrialState, setHasUsedFreeTrialState] = useState<boolean | null>(null); // Start with null to indicate "not checked yet"
   const [isCheckingFreeTrial, setIsCheckingFreeTrial] = useState(false);
 
   // Helper function to normalize plan name
@@ -257,13 +257,17 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
   useEffect(() => {
     const checkFreeTrialStatus = async () => {
       if (!user?.id) {
-        setHasUsedFreeTrialState(false);
+        console.log('No user ID, skipping free trial check');
+        setHasUsedFreeTrialState(null);
         setIsCheckingFreeTrial(false);
         return;
       }
 
       console.log('🔍 Checking Firebase free trial status for user:', user.id);
       setIsCheckingFreeTrial(true);
+      
+      // Add a small delay to ensure Firebase is initialized
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       try {
         // Dynamic import for client-side only
@@ -274,7 +278,8 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
         setHasUsedFreeTrialState(hasUsed);
       } catch (error) {
         console.error('❌ Error checking free trial status:', error);
-        // Default to available (false) on error for better UX
+        // Default to available (false) on error for better UX for new users
+        console.log('⚠️ Defaulting free trial to AVAILABLE due to error');
         setHasUsedFreeTrialState(false);
       } finally {
         setIsCheckingFreeTrial(false);

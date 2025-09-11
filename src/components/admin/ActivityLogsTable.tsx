@@ -121,15 +121,15 @@ const ActivityLogsTable: React.FC<ActivityLogsTableProps> = ({ className = '' })
 
   return (
     <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border shadow-md ${className}`}>
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
           <h2 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'} flex items-center`}>
             <ClockIcon className="h-5 w-5 mr-2" style={{ color: colors.colors.primary }} />
             Activity Logs
           </h2>
           <button
             onClick={loadLogs}
-            className="px-4 py-2 text-white rounded-md transition-colors hover:opacity-90"
+            className="w-full sm:w-auto px-4 py-2 text-white rounded-md transition-colors hover:opacity-90"
             style={{ backgroundColor: colors.colors.primary }}
           >
             Refresh
@@ -137,7 +137,7 @@ const ActivityLogsTable: React.FC<ActivityLogsTableProps> = ({ className = '' })
         </div>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
           {/* Search */}
           <div className="relative">
             <MagnifyingGlassIcon className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${isDark ? 'text-gray-400' : 'text-gray-500'} h-4 w-4`} />
@@ -199,8 +199,8 @@ const ActivityLogsTable: React.FC<ActivityLogsTableProps> = ({ className = '' })
           </div>
         </div>
 
-        {/* Logs Table */}
-        <div className="overflow-x-auto">
+        {/* Desktop Table - hidden on small screens */}
+        <div className="hidden lg:block overflow-x-auto">
           <table className={`min-w-full divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-200'}`}>
             <thead className={isDark ? 'bg-gray-700' : 'bg-gray-50'}>
               <tr>
@@ -265,6 +265,53 @@ const ActivityLogsTable: React.FC<ActivityLogsTableProps> = ({ className = '' })
           </table>
         </div>
 
+        {/* Mobile/Tablet Cards - visible below lg */}
+        <div className="lg:hidden space-y-3">
+          {currentLogs.map((log) => (
+            <div key={log.id} className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg p-4`}>
+              {/* Header row */}
+              <div className="flex items-start justify-between">
+                <div className="min-w-0">
+                  <div className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'} truncate`}>
+                    {log.action.replace(/_/g, ' ')}
+                  </div>
+                  <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'} mt-0.5`}>
+                    {formatTimestamp(log.timestamp)}
+                  </div>
+                </div>
+                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getSeverityColor(log.severity)}`}>
+                  {log.severity}
+                </span>
+              </div>
+
+              {/* Admin */}
+              <div className="mt-3">
+                <div className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  <span className="font-medium">Admin:</span> {log.adminName}
+                </div>
+                <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'} truncate`}>
+                  {log.adminEmail}
+                </div>
+              </div>
+
+              {/* Category and details */}
+              <div className="mt-3 flex items-start justify-between gap-3">
+                <div className={`flex items-center text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                  <span style={{ color: colors.colors.primary }}>
+                    {getCategoryIcon(log.category)}
+                  </span>
+                  <span className="ml-2">{log.category.replace(/_/g, ' ')}</span>
+                </div>
+              </div>
+
+              <div className={`mt-2 text-sm ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
+                {log.details}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Empty states */}
         {filteredLogs.length === 0 && (
           <div className="text-center py-12">
             <ClockIcon 
@@ -284,11 +331,11 @@ const ActivityLogsTable: React.FC<ActivityLogsTableProps> = ({ className = '' })
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="mt-6 flex items-center justify-between">
-            <div className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+          <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className={`text-xs sm:text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
               Showing {indexOfFirstLog + 1} to {Math.min(indexOfLastLog, filteredLogs.length)} of {filteredLogs.length} results
             </div>
-            <div className="flex space-x-2">
+            <div className="flex items-center justify-between sm:justify-end gap-2">
               <button
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
