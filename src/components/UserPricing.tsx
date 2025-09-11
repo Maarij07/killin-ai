@@ -590,7 +590,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium" style={{ color: isDark ? colors.colors.grey[300] : colors.colors.grey[600] }}>Status:</span>
                             <div className="flex items-center gap-1">
-                              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                              <div className={`w-2 h-2 rounded-full animate-pulse ${userDetails.status === 'active' ? 'bg-green-400' : 'bg-red-400'}`}></div>
                               <span className="text-sm font-semibold capitalize" style={{ color: colors.colors.primary }}>{userDetails.status}</span>
                             </div>
                           </div>
