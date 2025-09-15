@@ -49,7 +49,7 @@ const pricingPlans: PricingPlan[] = [
     description: 'Perfect for small restaurants getting started with AI phone assistance.',
     features: [
       '250+ calls per month',
-      '1 Twilio number',
+      '1 Virtual number',
       '1 Voice assistant',
       '1 Dashboard',
       'Customer SMS notify',
@@ -66,7 +66,7 @@ const pricingPlans: PricingPlan[] = [
     description: 'Ideal for busy restaurants with high call volumes and premium requirements.',
     features: [
       '450+ calls per month',
-      '1 Twilio number',
+      '1 Virtual number',
       '1 Voice assistant',
       '1 Dashboard',
       'Customer SMS notify',
@@ -83,7 +83,7 @@ const pricingPlans: PricingPlan[] = [
     description: 'Complete solution for restaurant chains and high-volume establishments.',
     features: [
       '900+ calls per month',
-      '1 Twilio number',
+      '1 Virtual number',
       '1 Voice assistant',
       '1 Dashboard',
       'Customer SMS notify',
