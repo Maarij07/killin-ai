@@ -897,7 +897,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
         </div>
 
         {/* Topup Minutes Section - Only show if user has a matching plan */}
-        {(normalizedUserPlan === 'trial' || normalizedUserPlan === 'starter' || normalizedUserPlan === 'professional' || normalizedUserPlan === 'enterprise') && (
+        {(normalizedUserPlan === 'starter' || normalizedUserPlan === 'professional' || normalizedUserPlan === 'enterprise') && (
         <div className="mt-20 mb-16">
           <div className="text-center mb-8">
             <h2 className="text-2xl md:text-3xl font-bold mb-3" style={{ 
