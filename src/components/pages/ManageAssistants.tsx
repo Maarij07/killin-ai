@@ -835,7 +835,8 @@ export default function ManageAssistants() {
                         style={{
                           backgroundColor: isDark ? colors.colors.grey[700] : colors.colors.white,
                           borderColor: isDark ? colors.colors.grey[600] : colors.colors.grey[300],
-                          color: isDark ? colors.colors.white : colors.colors.grey[900]
+                          color: isDark ? colors.colors.white : colors.colors.grey[900],
+                          minHeight: '40vh' // Fixed minimum height at 40% of viewport height
                         }}
                         onFocus={(e) => {
                           e.currentTarget.style.borderColor = colors.colors.primary;
@@ -846,15 +847,16 @@ export default function ManageAssistants() {
                         placeholder="Enter system prompt"
                       />
                     ) : (
-                      <p 
-                        className="text-sm rounded-md p-3 whitespace-pre-wrap"
+                      <div 
+                        className="text-sm rounded-md p-3 whitespace-pre-wrap overflow-y-auto"
                         style={{
                           color: isDark ? colors.colors.grey[300] : colors.colors.grey[700],
-                          backgroundColor: isDark ? colors.colors.grey[700] : colors.colors.grey[100]
+                          backgroundColor: isDark ? colors.colors.grey[700] : colors.colors.grey[100],
+                          minHeight: '40vh' // Fixed minimum height at 40% of viewport height
                         }}
                       >
                         {systemPrompt}
-                      </p>
+                      </div>
                     )}
                   </div>
                 </div>
