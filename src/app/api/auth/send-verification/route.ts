@@ -20,8 +20,8 @@ export async function POST(req: NextRequest) {
     await sendVerificationEmail(email, code, username);
 
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    const msg = err?.message || 'Failed to send verification email';
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Failed to send verification email';
     return NextResponse.json({ success: false, message: msg }, { status: 500 });
   }
 }

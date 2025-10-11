@@ -17,8 +17,8 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    const msg = err?.message || 'Verification failed';
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Verification failed';
     return NextResponse.json({ success: false, message: msg }, { status: 500 });
   }
 }

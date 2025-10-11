@@ -213,10 +213,10 @@ export default function UserSignup() {
         })
       });
       
-      let data: any = null;
+      let data: { success?: boolean; message?: string } = {};
       const contentType = response.headers.get('content-type') || '';
       if (contentType.includes('application/json')) {
-        data = await response.json();
+        data = (await response.json()) as { success: boolean; message?: string };
       } else {
         const text = await response.text();
         data = { success: response.ok, message: text };
@@ -262,10 +262,10 @@ export default function UserSignup() {
         })
       });
       
-      let data: any = null;
+      let data: { success?: boolean; message?: string } = {};
       const contentType = response.headers.get('content-type') || '';
       if (contentType.includes('application/json')) {
-        data = await response.json();
+        data = (await response.json()) as { success: boolean; message?: string };
       } else {
         const text = await response.text();
         data = { success: response.ok, message: text };
