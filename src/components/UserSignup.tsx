@@ -320,7 +320,8 @@ export default function UserSignup() {
       } else {
         showError(data.message || 'Please check your restaurant information.');
       }
-    } catch (_error) {
+    } catch (error) {
+      console.error('Network error:', error);
       showError('Network error. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -358,7 +359,8 @@ export default function UserSignup() {
       } else {
         showError(data.message || 'Registration failed. Please try again.');
       }
-    } catch (_error) {
+    } catch (error) {
+      console.error('Network error:', error);
       showError('Network error. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -536,7 +538,7 @@ export default function UserSignup() {
                     Check Your Email
                   </h3>
                   <p className={`text-sm mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                    We've sent a verification code to<br/>
+                    We&apos;ve sent a verification code to<br/>
                     <strong>{signupData.email}</strong>
                   </p>
                 </div>
@@ -574,7 +576,7 @@ export default function UserSignup() {
                 {/* Resend Email Link */}
                 <div className="text-center">
                   <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Didn't receive the email?{' '}
+                    Didn&apos;t receive the email?{' '}
                     <button
                       type="button"
                       onClick={resendVerificationEmail}
