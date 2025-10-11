@@ -24,8 +24,7 @@ interface UserContextType {
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
-// Call backend server directly
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL + '/api' || 'https://server.kallin.ai/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api` : 'https://server.kallin.ai/api';
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);

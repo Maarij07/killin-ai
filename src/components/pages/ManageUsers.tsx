@@ -516,17 +516,63 @@ export default function ManageUsers() {
     }
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deleteModal.user) {
-      // Log user deletion
-      logger.logUserAction(
-        'USER_DELETED',
-        deleteModal.user.email,
-        `Admin deleted user: ${deleteModal.user.name} (ID: ${deleteModal.user.id})`
-      );
+      try {
+        console.log(`🗑️ Deleting user: ${deleteModal.user.name} (ID: ${deleteModal.user.id})`);
+        
+        // Call the delete API
+        const response = await fetch(`${API_BASE_URL}/auth/users/${deleteModal.user.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Accept': 'application/json',
+            // Production server - no special headers needed
+          }
+        });
+        
+        if (response.ok) {
+          console.log('✅ User deleted successfully from API');
+          
+          // Log successful user deletion
+          logger.logUserAction(
+            'USER_DELETED',
+            deleteModal.user.email,
+            `Admin successfully deleted user: ${deleteModal.user.name} (ID: ${deleteModal.user.id})`
+          );
+          
+          // Remove user from local state
+          setUsers(prevUsers => prevUsers.filter(u => u.id !== deleteModal.user!.id));
+          
+          showSuccess(`User ${deleteModal.user.name} has been deleted successfully`);
+          
+        } else {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          console.error('❌ Failed to delete user:', response.status, errorData);
+          
+          // Log API failure
+          logger.logUserAction(
+            'USER_DELETE_FAILED',
+            deleteModal.user.email,
+            `Admin failed to delete user: ${deleteModal.user.name} (ID: ${deleteModal.user.id}). API Error: ${response.status} - ${JSON.stringify(errorData)}`
+          );
+          
+          showError(`Failed to delete user: ${errorData.message || errorData.error || 'API request failed'}`);
+          return; // Don't close modal if API fails
+        }
+      } catch (error) {
+        console.error('❌ Error calling delete API:', error);
+        
+        // Log connection error
+        logger.logUserAction(
+          'USER_DELETE_API_ERROR',
+          deleteModal.user.email,
+          `Admin encountered error calling delete API for user: ${deleteModal.user.name} (ID: ${deleteModal.user.id}). Error: ${error}`
+        );
+        
+        showError(`Failed to connect to API: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        return; // Don't close modal if API fails
+      }
       
-      // Here you would implement the actual delete logic
-      showSuccess(`User ${deleteModal.user.name} has been deleted successfully`);
       setDeleteModal({ isOpen: false, user: null });
     }
   };

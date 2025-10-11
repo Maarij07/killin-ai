@@ -26,6 +26,11 @@ interface SignupData {
 export default function UserSignup() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const [emailVerificationSent, setEmailVerificationSent] = useState(false);
+  const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationError, setVerificationError] = useState('');
   const [signupData, setSignupData] = useState<SignupData>({
     username: '',
     email: '',
@@ -44,7 +49,7 @@ export default function UserSignup() {
   const { showError, showSuccess } = useToast();
   const { isDark, toggleTheme } = useTheme();
 
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL + '/api' || 'https://server.kallin.ai/api';
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api` : 'https://server.kallin.ai/api';
 
   // Validation functions
   const validateEmail = (email: string): boolean => {
@@ -71,6 +76,72 @@ export default function UserSignup() {
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  // Process menu image and extract menu items
+  const processMenuImage = async (file: File) => {
+    console.log('📸 Processing menu image:', file.name);
+    setIsProcessingImage(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('menu_image', file);
+      
+      const response = await fetch(`${API_BASE_URL}/upload/menu-image`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json'
+        },
+        body: formData
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Image processing successful:', data);
+        
+        // Extract menu items from API response
+        let extractedMenuItems = '';
+        if (data.menu_items) {
+          if (typeof data.menu_items === 'string') {
+            extractedMenuItems = data.menu_items;
+          } else if (Array.isArray(data.menu_items)) {
+            extractedMenuItems = data.menu_items.join('\n');
+          } else if (data.menu_items.items) {
+            extractedMenuItems = Array.isArray(data.menu_items.items) 
+              ? data.menu_items.items.join('\n')
+              : data.menu_items.items.toString();
+          }
+        } else if (data.items) {
+          extractedMenuItems = Array.isArray(data.items) 
+            ? data.items.join('\n')
+            : data.items.toString();
+        } else if (data.extracted_text) {
+          extractedMenuItems = data.extracted_text;
+        }
+        
+        if (extractedMenuItems) {
+          // Add extracted menu items to existing menu text
+          const currentMenuText = signupData.menu_text.trim();
+          const newMenuText = currentMenuText 
+            ? `${currentMenuText}\n\n--- Extracted from image ---\n${extractedMenuItems}`
+            : extractedMenuItems;
+          
+          updateSignupData('menu_text', newMenuText);
+          showSuccess('Menu items extracted from image and added to your menu!');
+        } else {
+          showError('No menu items could be extracted from the image. Please add them manually.');
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('❌ Image processing failed:', response.status, errorData);
+        showError(`Failed to process image: ${errorData.message || errorData.error || 'Please try again'}`);
+      }
+    } catch (error) {
+      console.error('❌ Error processing menu image:', error);
+      showError(`Failed to process image: ${error instanceof Error ? error.message : 'Network error'}`);
+    } finally {
+      setIsProcessingImage(false);
     }
   };
 
@@ -126,35 +197,104 @@ export default function UserSignup() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleStep1 = async () => {
-    if (!validateStep1()) return;
-    
+  // Send email verification
+  const sendEmailVerification = async () => {
+    console.log('📧 Sending email verification to:', signupData.email);
     setIsSubmitting(true);
+    setVerificationError('');
+    
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/signup/step1`, {
+      const response = await fetch(`${API_BASE_URL}/auth/send-verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          username: signupData.username,
           email: signupData.email,
-          password: signupData.password,
-          confirm_password: signupData.confirm_password
+          username: signupData.username
         })
       });
       
       const data = await response.json();
       
       if (response.ok && data.success) {
-        setCurrentStep(2);
-        showSuccess('Step 1 completed! Username and email are available.');
+        setEmailVerificationSent(true);
+        showSuccess(`Verification email sent to ${signupData.email}. Please check your inbox.`);
+        console.log('✅ Verification email sent successfully');
       } else {
-        showError(data.message || 'Username or email might already be taken.');
+        console.error('❌ Failed to send verification email:', data.message);
+        setVerificationError(data.message || 'Failed to send verification email. Please try again.');
+        showError(data.message || 'Failed to send verification email.');
       }
-    } catch (_error) {
-      showError('Network error. Please try again.');
+    } catch (error) {
+      console.error('❌ Error sending verification email:', error);
+      const errorMessage = 'Network error. Please check your connection and try again.';
+      setVerificationError(errorMessage);
+      showError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Verify email code
+  const verifyEmailCode = async () => {
+    if (!verificationCode.trim()) {
+      setVerificationError('Please enter the verification code.');
+      return;
+    }
+    
+    console.log('🔍 Verifying email code:', verificationCode);
+    setIsVerifyingEmail(true);
+    setVerificationError('');
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/verify-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: signupData.email,
+          verification_code: verificationCode.trim()
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        console.log('✅ Email verified successfully');
+        showSuccess('Email verified successfully! Proceeding to next step.');
+        // Proceed to step 2 after successful verification
+        setTimeout(() => {
+          setCurrentStep(2);
+        }, 1000);
+      } else {
+        console.error('❌ Email verification failed:', data.message);
+        setVerificationError(data.message || 'Invalid verification code. Please try again.');
+        showError(data.message || 'Invalid verification code.');
+      }
+    } catch (error) {
+      console.error('❌ Error verifying email:', error);
+      const errorMessage = 'Network error. Please try again.';
+      setVerificationError(errorMessage);
+      showError(errorMessage);
+    } finally {
+      setIsVerifyingEmail(false);
+    }
+  };
+
+  // Resend verification email
+  const resendVerificationEmail = async () => {
+    await sendEmailVerification();
+  };
+
+  const handleStep1 = async () => {
+    if (!validateStep1()) return;
+    
+    // If email verification hasn't been sent yet, send it
+    if (!emailVerificationSent) {
+      await sendEmailVerification();
+      return;
+    }
+    
+    // If verification was sent but not verified, verify the code
+    await verifyEmailCode();
   };
 
   const handleStep2 = async () => {
@@ -190,22 +330,7 @@ export default function UserSignup() {
   const handleStep3 = async () => {
     setIsSubmitting(true);
     try {
-      // First upload menu image if provided
-      if (signupData.menu_image) {
-        const formData = new FormData();
-        formData.append('menu_image', signupData.menu_image);
-        
-        const uploadResponse = await fetch(`${API_BASE_URL}/upload/menu-image`, {
-          method: 'POST',
-          headers: { 'Accept': 'application/json' },
-          body: formData
-        });
-        
-        // Menu image upload result is handled silently
-        // Main registration will proceed regardless of upload status
-      }
-      
-      // Then complete registration
+      // Complete registration (image processing already done when image was uploaded)
       const response = await fetch(`${API_BASE_URL}/auth/signup/step3`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -263,135 +388,210 @@ export default function UserSignup() {
       case 1:
         return (
           <div className="space-y-5">
-            {/* Username field */}
-            <div>
-              <label htmlFor="username" className={`block text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'} mb-2`}>
-                Username
-              </label>
-              <input
-                id="username"
-                type="text"
-                required
-                className={`appearance-none relative block w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:z-10 text-sm ${
-                  errors.username
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                    : isDark
-                      ? 'border-gray-600 focus:ring-orange-500 focus:border-orange-500 bg-gray-800 text-white placeholder-gray-400'
-                      : 'border-gray-300 focus:ring-orange-500 focus:border-orange-500 bg-white text-gray-900 placeholder-gray-500'
-                }`}
-                placeholder="Choose a username"
-                value={signupData.username}
-                onChange={(e) => updateSignupData('username', e.target.value)}
-              />
-              {errors.username && (
-                <p className="mt-1 text-sm text-red-600">{errors.username}</p>
-              )}
-            </div>
-
-            {/* Email field */}
-            <div>
-              <label htmlFor="email" className={`block text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'} mb-2`}>
-                Email Address
-              </label>
-              <input
-                id="email"
-                type="email"
-                required
-                className={`appearance-none relative block w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:z-10 text-sm ${
-                  errors.email
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                    : isDark
-                      ? 'border-gray-600 focus:ring-orange-500 focus:border-orange-500 bg-gray-800 text-white placeholder-gray-400'
-                      : 'border-gray-300 focus:ring-orange-500 focus:border-orange-500 bg-white text-gray-900 placeholder-gray-500'
-                }`}
-                placeholder="Enter your email address"
-                value={signupData.email}
-                onChange={(e) => updateSignupData('email', e.target.value)}
-              />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-              )}
-            </div>
-
-            {/* Password field */}
-            <div>
-              <label htmlFor="password" className={`block text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'} mb-2`}>
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  required
-                  className={`appearance-none relative block w-full px-4 py-3 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:z-10 text-sm ${
-                    errors.password
-                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                      : isDark 
-                        ? 'border-gray-600 bg-gray-800 placeholder-gray-400 text-white focus:ring-orange-500 focus:border-orange-500' 
-                        : 'border-gray-300 bg-white placeholder-gray-500 text-gray-900 focus:ring-orange-500 focus:border-orange-500'
-                  }`}
-                  placeholder="Create a strong password"
-                  value={signupData.password}
-                  onChange={(e) => updateSignupData('password', e.target.value)}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded transition-colors ${
-                    isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-600'
-                  }`}
-                >
-                  {showPassword ? (
-                    <VisibilityOff sx={{ fontSize: '18px' }} />
-                  ) : (
-                    <Visibility sx={{ fontSize: '18px' }} />
+            {!emailVerificationSent ? (
+              // Show normal signup form before email verification
+              <>
+                {/* Username field */}
+                <div>
+                  <label htmlFor="username" className={`block text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'} mb-2`}>
+                    Username
+                  </label>
+                  <input
+                    id="username"
+                    type="text"
+                    required
+                    className={`appearance-none relative block w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:z-10 text-sm ${
+                      errors.username
+                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                        : isDark
+                          ? 'border-gray-600 focus:ring-orange-500 focus:border-orange-500 bg-gray-800 text-white placeholder-gray-400'
+                          : 'border-gray-300 focus:ring-orange-500 focus:border-orange-500 bg-white text-gray-900 placeholder-gray-500'
+                    }`}
+                    placeholder="Choose a username"
+                    value={signupData.username}
+                    onChange={(e) => updateSignupData('username', e.target.value)}
+                  />
+                  {errors.username && (
+                    <p className="mt-1 text-sm text-red-600">{errors.username}</p>
                   )}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
-              )}
-            </div>
+                </div>
 
-            {/* Confirm Password field */}
-            <div>
-              <label htmlFor="confirmPassword" className={`block text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'} mb-2`}>
-                Confirm Password
-              </label>
-              <div className="relative">
-                <input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  required
-                  className={`appearance-none relative block w-full px-4 py-3 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:z-10 text-sm ${
-                    errors.confirm_password
-                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                      : isDark 
-                        ? 'border-gray-600 bg-gray-800 placeholder-gray-400 text-white focus:ring-orange-500 focus:border-orange-500' 
-                        : 'border-gray-300 bg-white placeholder-gray-500 text-gray-900 focus:ring-orange-500 focus:border-orange-500'
-                  }`}
-                  placeholder="Confirm your password"
-                  value={signupData.confirm_password}
-                  onChange={(e) => updateSignupData('confirm_password', e.target.value)}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded transition-colors ${
-                    isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-600'
-                  }`}
-                >
-                  {showConfirmPassword ? (
-                    <VisibilityOff sx={{ fontSize: '18px' }} />
-                  ) : (
-                    <Visibility sx={{ fontSize: '18px' }} />
+                {/* Email field */}
+                <div>
+                  <label htmlFor="email" className={`block text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'} mb-2`}>
+                    Email Address
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    required
+                    className={`appearance-none relative block w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:z-10 text-sm ${
+                      errors.email
+                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                        : isDark
+                          ? 'border-gray-600 focus:ring-orange-500 focus:border-orange-500 bg-gray-800 text-white placeholder-gray-400'
+                          : 'border-gray-300 focus:ring-orange-500 focus:border-orange-500 bg-white text-gray-900 placeholder-gray-500'
+                    }`}
+                    placeholder="Enter your email address"
+                    value={signupData.email}
+                    onChange={(e) => updateSignupData('email', e.target.value)}
+                  />
+                  {errors.email && (
+                    <p className="mt-1 text-sm text-red-600">{errors.email}</p>
                   )}
-                </button>
-              </div>
-              {errors.confirm_password && (
-                <p className="mt-1 text-sm text-red-600">{errors.confirm_password}</p>
-              )}
-            </div>
+                </div>
+
+                {/* Password field */}
+                <div>
+                  <label htmlFor="password" className={`block text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'} mb-2`}>
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      required
+                      className={`appearance-none relative block w-full px-4 py-3 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:z-10 text-sm ${
+                        errors.password
+                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                          : isDark 
+                            ? 'border-gray-600 bg-gray-800 placeholder-gray-400 text-white focus:ring-orange-500 focus:border-orange-500' 
+                            : 'border-gray-300 bg-white placeholder-gray-500 text-gray-900 focus:ring-orange-500 focus:border-orange-500'
+                      }`}
+                      placeholder="Create a strong password"
+                      value={signupData.password}
+                      onChange={(e) => updateSignupData('password', e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded transition-colors ${
+                        isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-600'
+                      }`}
+                    >
+                      {showPassword ? (
+                        <VisibilityOff sx={{ fontSize: '18px' }} />
+                      ) : (
+                        <Visibility sx={{ fontSize: '18px' }} />
+                      )}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+                  )}
+                </div>
+
+                {/* Confirm Password field */}
+                <div>
+                  <label htmlFor="confirmPassword" className={`block text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'} mb-2`}>
+                    Confirm Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      required
+                      className={`appearance-none relative block w-full px-4 py-3 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:z-10 text-sm ${
+                        errors.confirm_password
+                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                          : isDark 
+                            ? 'border-gray-600 bg-gray-800 placeholder-gray-400 text-white focus:ring-orange-500 focus:border-orange-500' 
+                            : 'border-gray-300 bg-white placeholder-gray-500 text-gray-900 focus:ring-orange-500 focus:border-orange-500'
+                      }`}
+                      placeholder="Confirm your password"
+                      value={signupData.confirm_password}
+                      onChange={(e) => updateSignupData('confirm_password', e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded transition-colors ${
+                        isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-600'
+                      }`}
+                    >
+                      {showConfirmPassword ? (
+                        <VisibilityOff sx={{ fontSize: '18px' }} />
+                      ) : (
+                        <Visibility sx={{ fontSize: '18px' }} />
+                      )}
+                    </button>
+                  </div>
+                  {errors.confirm_password && (
+                    <p className="mt-1 text-sm text-red-600">{errors.confirm_password}</p>
+                  )}
+                </div>
+              </>
+            ) : (
+              // Show email verification form after email is sent
+              <>
+                <div className={`text-center p-6 rounded-lg border ${
+                  isDark ? 'bg-gray-800 border-gray-700' : 'bg-blue-50 border-blue-200'
+                }`}>
+                  <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full" style={{ backgroundColor: `${colors.colors.primary}20` }}>
+                    <svg className="w-8 h-8" style={{ color: colors.colors.primary }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    Check Your Email
+                  </h3>
+                  <p className={`text-sm mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                    We've sent a verification code to<br/>
+                    <strong>{signupData.email}</strong>
+                  </p>
+                </div>
+
+                {/* Verification Code Input */}
+                <div>
+                  <label htmlFor="verificationCode" className={`block text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'} mb-2`}>
+                    Verification Code
+                  </label>
+                  <input
+                    id="verificationCode"
+                    type="text"
+                    required
+                    maxLength={6}
+                    className={`appearance-none relative block w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:z-10 text-sm text-center tracking-widest ${
+                      verificationError
+                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                        : isDark
+                          ? 'border-gray-600 focus:ring-orange-500 focus:border-orange-500 bg-gray-800 text-white placeholder-gray-400'
+                          : 'border-gray-300 focus:ring-orange-500 focus:border-orange-500 bg-white text-gray-900 placeholder-gray-500'
+                    }`}
+                    placeholder="Enter 6-digit code"
+                    value={verificationCode}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                      setVerificationCode(value);
+                      setVerificationError('');
+                    }}
+                  />
+                  {verificationError && (
+                    <p className="mt-1 text-sm text-red-600">{verificationError}</p>
+                  )}
+                </div>
+
+                {/* Resend Email Link */}
+                <div className="text-center">
+                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Didn't receive the email?{' '}
+                    <button
+                      type="button"
+                      onClick={resendVerificationEmail}
+                      disabled={isSubmitting}
+                      className={`font-medium transition-colors ${
+                        isSubmitting 
+                          ? 'opacity-50 cursor-not-allowed'
+                          : 'hover:underline'
+                      }`}
+                      style={{ color: colors.colors.primary }}
+                    >
+                      Resend Code
+                    </button>
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         );
       case 2:
@@ -518,24 +718,45 @@ export default function UserSignup() {
             <div>
               <label htmlFor="menu_image" className={`block text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'} mb-2`}>
                 Menu Image (Optional)
+                {isProcessingImage && (
+                  <span className="ml-2 text-xs text-orange-500 animate-pulse">
+                    Processing...
+                  </span>
+                )}
               </label>
               <input
                 id="menu_image"
                 type="file"
                 accept="image/*"
+                disabled={isProcessingImage}
                 className={`appearance-none relative block w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:z-10 text-sm ${
+                  isProcessingImage ? 'opacity-50 cursor-not-allowed' : ''
+                } ${
                   isDark
                     ? 'border-gray-600 focus:ring-orange-500 focus:border-orange-500 bg-gray-800 text-white'
                     : 'border-gray-300 focus:ring-orange-500 focus:border-orange-500 bg-white text-gray-900'
                 }`}
-                onChange={(e) => {
+                onChange={async (e) => {
                   const file = e.target.files?.[0];
-                  if (file) updateSignupData('menu_image', file);
+                  if (file) {
+                    updateSignupData('menu_image', file);
+                    // Process the image immediately to extract menu items
+                    await processMenuImage(file);
+                  }
                 }}
               />
-              <p className={`mt-1 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                Upload an image of your menu for better AI processing
-              </p>
+              {isProcessingImage ? (
+                <div className="mt-2 flex items-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-orange-500 border-t-transparent mr-2"></div>
+                  <p className="text-xs text-orange-500">
+                    Processing your menu image to extract items...
+                  </p>
+                </div>
+              ) : (
+                <p className={`mt-1 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Upload an image of your menu for automatic AI processing
+                </p>
+              )}
             </div>
           </div>
         );
@@ -680,13 +901,21 @@ export default function UserSignup() {
                 <button
                   type="button"
                   onClick={currentStep === 1 ? handleStep1 : currentStep === 2 ? handleStep2 : handleStep3}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isVerifyingEmail || (currentStep === 3 && isProcessingImage)}
                   className={`${currentStep === 1 ? 'w-full' : 'flex-1'} py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white transition-opacity disabled:opacity-50 disabled:cursor-not-allowed`}
                   style={{ backgroundColor: colors.colors.primary }}
                 >
                   {isSubmitting 
-                    ? (currentStep === 3 ? 'Creating Account...' : 'Validating...')
-                    : (currentStep === 3 ? 'Create Account' : 'Next Step')
+                    ? (currentStep === 3 ? 'Creating Account...' : emailVerificationSent ? 'Verifying...' : 'Sending Email...')
+                    : isProcessingImage && currentStep === 3
+                      ? 'Processing Image...'
+                      : isVerifyingEmail
+                        ? 'Verifying Code...'
+                        : currentStep === 1 && emailVerificationSent
+                          ? 'Verify Email'
+                          : currentStep === 1 && !emailVerificationSent
+                            ? 'Send Verification'
+                            : (currentStep === 3 ? 'Create Account' : 'Next Step')
                   }
                 </button>
               </div>
