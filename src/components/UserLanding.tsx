@@ -196,8 +196,20 @@ export default function UserLanding() {
               </div>
             </form>
 
-            {/* Admin link */}
+            {/* Signup link */}
             <div className="mt-6 text-center">
+              <a
+                href="/signup"
+                className={`text-sm transition-colors hover:underline ${
+                  isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-700'
+                }`}
+              >
+                Don&apos;t have an account? Sign up here
+              </a>
+            </div>
+
+            {/* Admin link */}
+            <div className="mt-4 text-center">
               <a
                 href="/admin/login"
                 className={`text-sm transition-colors hover:underline ${

@@ -19,12 +19,13 @@ interface UserContextType {
   isLoading: boolean;
   loginUser: (usernameOrEmail: string, password: string) => Promise<{ success: boolean; error?: string }>;
   loginAdmin: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signupUser: (username: string, email: string, name: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 // Call backend server directly
-const API_BASE_URL = 'https://server.kallin.ai/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL + '/api' || 'https://server.kallin.ai/api';
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -294,6 +295,70 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signupUser = async (username: string, email: string, name: string, password: string) => {
+    // User signup via API
+    console.log('UserContext - signupUser called with:', username, email, name);
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Production server - no special headers needed
+        },
+        body: JSON.stringify({ username, email, name, password })
+      });
+      
+      const data = await response.json();
+      console.log('UserContext - Signup API response:', data);
+      
+      if (response.ok && data.success && data.data && data.data.access_token) {
+        // Store token
+        localStorage.setItem('auth_token', data.data.access_token);
+        
+        // Set user data
+        const userData: User = {
+          id: data.data.user.id,
+          email: data.data.user.email,
+          name: data.data.user.name || name,
+          role: data.data.user.role || 'user',
+          authType: 'api'
+        };
+        console.log('UserContext - Setting new user data:', userData);
+        setUser(userData);
+        
+        // Save user data to localStorage for persistence
+        localStorage.setItem('user_data', JSON.stringify(userData));
+        
+        return { success: true };
+      } else {
+        // Handle API errors
+        let errorMessage = 'Unable to create account. Please try again.';
+        
+        if (data.message) {
+          errorMessage = data.message;
+        } else if (response.status === 400) {
+          errorMessage = 'Invalid information provided. Please check your details and try again.';
+        } else if (response.status === 409) {
+          errorMessage = 'An account with this username or email already exists.';
+        } else if (response.status >= 500) {
+          errorMessage = 'Server error. Please try again later.';
+        }
+        
+        return { success: false, error: errorMessage };
+      }
+    } catch (error: unknown) {
+      let errorMessage = 'Network error. Please check your connection and try again.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('fetch')) {
+          errorMessage = 'Unable to connect to the server. Please check your internet connection.';
+        }
+      }
+      
+      return { success: false, error: errorMessage };
+    }
+  };
+
   const loginAdmin = async (email: string, password: string) => {
     // Admin login via Firebase
     try {
@@ -424,7 +489,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <UserContext.Provider value={{ user, isLoading, loginUser, loginAdmin, logout }}>
+    <UserContext.Provider value={{ user, isLoading, loginUser, loginAdmin, signupUser, logout }}>
       {children}
     </UserContext.Provider>
   );
