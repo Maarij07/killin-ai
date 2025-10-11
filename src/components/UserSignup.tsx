@@ -204,7 +204,7 @@ export default function UserSignup() {
     setVerificationError('');
     
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/send-verification`, {
+      const response = await fetch(`/api/auth/send-verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -213,7 +213,14 @@ export default function UserSignup() {
         })
       });
       
-      const data = await response.json();
+      let data: any = null;
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        data = { success: response.ok, message: text };
+      }
       
       if (response.ok && data.success) {
         setEmailVerificationSent(true);
@@ -246,7 +253,7 @@ export default function UserSignup() {
     setVerificationError('');
     
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/verify-email`, {
+      const response = await fetch(`/api/auth/verify-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -255,7 +262,14 @@ export default function UserSignup() {
         })
       });
       
-      const data = await response.json();
+      let data: any = null;
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        data = { success: response.ok, message: text };
+      }
       
       if (response.ok && data.success) {
         console.log('✅ Email verified successfully');
