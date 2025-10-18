@@ -26,25 +26,9 @@ interface PricingPlan {
 
 const pricingPlans: PricingPlan[] = [
   {
-    id: 'trial',
-    name: 'Trial',
-    price: '25.00',
-    period: '100 mins',
-    description: 'Perfect trial package to test our AI phone assistance with generous minutes.',
-    features: [
-      '100 minutes included',
-      'Basic voice assistant',
-      'Simple dashboard',
-      'Email support',
-      'Great for testing'
-    ],
-    featured: false,
-    color: colors.colors.grey[600]
-  },
-  {
     id: 'starter',
     name: 'Starter',
-    price: '199.00',
+    price: '299.00',
     period: 'Per Month',
     description: 'Perfect for small restaurants getting started with AI phone assistance.',
     features: [
@@ -59,26 +43,9 @@ const pricingPlans: PricingPlan[] = [
     color: colors.colors.grey[500]
   },
   {
-    id: 'professional',
-    name: 'Professional',
-    price: '469.00',
-    period: 'Per Month',
-    description: 'Ideal for busy restaurants with high call volumes and premium requirements.',
-    features: [
-      '450+ calls per month',
-      '1 Virtual number',
-      '1 Voice assistant',
-      '1 Dashboard',
-      'Customer SMS notify',
-      '24/7 Support'
-    ],
-    featured: true,
-    color: colors.colors.primary
-  },
-  {
     id: 'enterprise',
     name: 'Enterprise',
-    price: '899.00+',
+    price: '499.00',
     period: 'Per Month',
     description: 'Complete solution for restaurant chains and high-volume establishments.',
     features: [
@@ -89,7 +56,7 @@ const pricingPlans: PricingPlan[] = [
       'Customer SMS notify',
       '24/7 Support'
     ],
-    featured: false,
+    featured: true,
     color: colors.colors.primary
   }
 ];
@@ -161,6 +128,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
   const [isLoadingDetails, setIsLoadingDetails] = useState(true);
   const [hasUsedFreeTrialState, setHasUsedFreeTrialState] = useState<boolean | null>(null); // Start with null to indicate "not checked yet"
   const [isCheckingFreeTrial, setIsCheckingFreeTrial] = useState(false);
+  const [customMinutes, setCustomMinutes] = useState<string>('');
 
   // Helper function to normalize plan name
   const getNormalizedPlan = (plan?: string | null) => {
@@ -713,6 +681,39 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                       </div>
                     </div>
                   </div>
+
+                  {/* Prompt Preview Box */}
+                  <div className="mt-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-base font-semibold tracking-tight" style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>
+                        Assistant Prompt
+                      </h4>
+                      <button
+                        onClick={() => copyToClipboard((userDetails as any).prompt || '')}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:opacity-90 focus:outline-none focus:ring-2"
+                        style={{ backgroundColor: colors.colors.primary, boxShadow: `0 0 0 0 rgba(0,0,0,0)` }}
+                      >
+                        Copy
+                      </button>
+                    </div>
+                    <div className="rounded-2xl p-4 text-sm whitespace-pre-wrap max-h-64 overflow-y-auto font-mono leading-6"
+                      style={{
+                        background: isDark 
+                          ? 'linear-gradient(180deg, #1f2937 0%, #111827 100%)'
+                          : 'linear-gradient(180deg, #ffffff 0%, #f3f4f6 100%)',
+                        border: isDark ? `1px solid ${colors.colors.grey[700]}` : `1px solid ${colors.colors.grey[200]}`,
+                        color: isDark ? colors.colors.grey[300] : colors.colors.grey[700]
+                      }}
+                    >
+                      {((userDetails as any).prompt && String((userDetails as any).prompt).trim().length > 0) ? (
+                        String((userDetails as any).prompt)
+                      ) : (
+                        <span className="italic" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[500] }}>
+                          No prompt available yet. Contact support if you need help setting up your assistant.
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -735,26 +736,26 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
           {pricingPlans.map((plan) => (
             <div
               key={plan.id}
-              className={`relative rounded-3xl transition-all duration-300 hover:scale-105 hover:shadow-2xl flex flex-col h-auto min-h-[550px] sm:min-h-[600px] overflow-hidden ${
+              className={`xl:col-span-2 relative rounded-3xl transition-all duration-300 hover:scale-105 hover:shadow-2xl flex flex-col h-auto min-h-[550px] sm:min-h-[600px] overflow-hidden ${
                 plan.featured ? 'lg:scale-105' : ''
               } ${
-                normalizedUserPlan === plan.id ? 'ring-4' : ''
+                (normalizedUserPlan === plan.id || plan.id === 'enterprise') ? 'ring-4' : ''
               }`}
               style={{
                 backgroundColor: 'transparent',
-                background: normalizedUserPlan === plan.id
+                background: (normalizedUserPlan === plan.id || plan.id === 'enterprise')
                   ? isDark 
                     ? `linear-gradient(135deg, ${colors.colors.primary}20 0%, ${colors.colors.primary}10 25%, ${colors.colors.primary}15 50%, ${colors.colors.primary}08 75%, ${colors.colors.primary}20 100%)`
                     : `linear-gradient(135deg, ${colors.colors.primary}15 0%, ${colors.colors.primary}08 25%, ${colors.colors.primary}12 50%, ${colors.colors.primary}06 75%, ${colors.colors.primary}15 100%)`
                   : isDark 
                     ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
                     : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
-                border: normalizedUserPlan === plan.id
+                border: (normalizedUserPlan === plan.id || plan.id === 'enterprise')
                   ? `3px solid ${colors.colors.primary}`
                   : isDark
                     ? `2px solid #4a5568`
                     : `2px solid #cbd5e0`,
-                boxShadow: normalizedUserPlan === plan.id
+                boxShadow: (normalizedUserPlan === plan.id || plan.id === 'enterprise')
                   ? isDark
                     ? `0 25px 50px -12px ${colors.colors.primary}60, inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 0 0 1px ${colors.colors.primary}30, 0 0 20px ${colors.colors.primary}40`
                     : `0 25px 50px -12px ${colors.colors.primary}40, inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 0 1px ${colors.colors.primary}20, 0 0 20px ${colors.colors.primary}30`
@@ -848,8 +849,8 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                 {plan.id !== 'free' && (
                   <button
                     onClick={() => {
-                      if (plan.id === 'enterprise') {
-                        setContactService('Enterprise Solution');
+                      if (plan.id === 'enterprise' || plan.id === 'starter') {
+                        setContactService(plan.id === 'enterprise' ? 'Enterprise Solution' : 'Starter Plan');
                         setIsContactOpen(true);
                       } else if (plan.id === 'trial' && hasUsedFreeTrialState === true) {
                         // Do nothing if free trial already used for trial plan
@@ -876,9 +877,9 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                     {isCheckingFreeTrial && plan.id === 'trial'
                       ? 'CHECKING...'
                       : loading && selectedPlan === plan.id 
-                        ? 'PROCESSING...' 
-                        : plan.id === 'enterprise' 
-                          ? 'CONTACT SALES' 
+                        ? 'PROCESSING...'
+                        : (plan.id === 'enterprise' || plan.id === 'starter')
+                          ? 'CONTACT SALES'
                           : plan.id === 'trial' && hasUsedFreeTrialState === true
                             ? 'ALREADY USED'
                             : normalizedUserPlan === plan.id 
@@ -913,229 +914,19 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
           </div>
 
           {/* Flex Layout - 70% Left, 30% Right */}
-          <div className="max-w-8xl mx-auto px-4">
+          <div className="max-w-7xl mx-auto px-4">
             <div className="flex flex-col lg:flex-row gap-6">
               
               {/* Left Side - 70% */}
               <div className="flex-1 lg:w-[70%]">
-                {/* Addon Minutes Container */}
-                <div className="relative overflow-hidden rounded-3xl mb-6 p-4 sm:p-6 lg:p-8 h-auto min-h-[400px] sm:min-h-[480px]"
-                  style={{
-                    background: `linear-gradient(135deg, ${colors.colors.primary}15 0%, ${colors.colors.primary}08 100%)`,
-                    border: `2px solid ${colors.colors.primary}30`
-                  }}>
-                  <div className="relative z-10 h-full">
-                    {/* Header */}
-                    <div className="text-left mb-4 sm:mb-6">
-                      <div className="inline-flex items-center px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-semibold text-white mb-3 sm:mb-4"
-                        style={{ backgroundColor: colors.colors.primary }}>
-                        Addon Minutes
-                      </div>
-                      <h3 className="text-2xl sm:text-3xl md:text-4xl font-black mb-2" style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>
-                        Choose Your Add-on
-                      </h3>
-                      <p className="text-sm sm:text-base opacity-80" style={{ color: isDark ? colors.colors.grey[300] : colors.colors.grey[600] }}>
-                        Select the perfect minutes package for your needs.
-                      </p>
-                    </div>
-                    
-                    {/* 4 Inner Cards Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 h-auto min-h-[180px] sm:min-h-[200px]">
-                      {/* 100 Minutes Card */}
-                      <div className="relative rounded-2xl p-4 group cursor-pointer hover:scale-105 transition-all duration-300 flex flex-col justify-between overflow-hidden"
-                        style={{
-                          backgroundColor: 'transparent',
-                          background: isDark 
-                            ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
-                            : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
-                          border: isDark
-                            ? `2px solid #4a5568`
-                            : `2px solid #cbd5e0`,
-                          boxShadow: isDark
-                            ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
-                            : '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.1)',
-                          transition: 'all 0.3s ease-in-out'
-                        }}>
-                        {/* Shimmer effect */}
-                        <div className="absolute inset-0 rounded-2xl opacity-30 pointer-events-none"
-                          style={{
-                            background: 'linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.1) 45%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0.1) 55%, transparent 100%)',
-                            animation: 'shimmer 3s ease-in-out infinite'
-                          }}>
-                        </div>
-                        <div className="text-center">
-                          <h4 className="text-2xl font-black mb-2" style={{ color: colors.colors.primary }}>100</h4>
-                          <p className="text-xs uppercase tracking-wide mb-3" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>Minutes</p>
-                          <div className="mb-3">
-                            <span 
-                              className="text-2xl font-black transition-all duration-300 bg-gradient-to-r bg-clip-text text-transparent"
-                              style={{
-                                backgroundImage: isDark
-                                  ? 'linear-gradient(135deg, #ffffff 0%, #cbd5e0 25%, #e2e8f0 50%, #f7fafc 75%, #ffffff 100%)'
-                                  : 'linear-gradient(135deg, #1a202c 0%, #2d3748 25%, #4a5568 50%, #718096 75%, #1a202c 100%)',
-                                transition: 'all 0.3s ease-in-out'
-                              }}>
-                              $40
-                            </span>
-                          </div>
-                        </div>
-                        <button 
-                          onClick={() => handleSelectPlan('minutes_100')}
-                          disabled={loading}
-                          className="w-full py-2 px-3 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90 disabled:opacity-50"
-                          style={{ background: `linear-gradient(135deg, ${colors.colors.primary} 0%, ${colors.colors.primary}dd 100%)` }}>
-                          {loading && selectedPlan === 'minutes_100' ? 'Processing...' : 'Buy Now'}
-                        </button>
-                      </div>
-                      
-                      {/* 250 Minutes Card */}
-                      <div className="relative rounded-2xl p-4 group cursor-pointer hover:scale-105 transition-all duration-300 flex flex-col justify-between overflow-hidden"
-                        style={{
-                          backgroundColor: 'transparent',
-                          background: isDark 
-                            ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
-                            : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
-                          border: isDark
-                            ? `2px solid #4a5568`
-                            : `2px solid #cbd5e0`,
-                          boxShadow: isDark
-                            ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
-                            : '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.1)',
-                          transition: 'all 0.3s ease-in-out'
-                        }}>
-                        {/* Shimmer effect */}
-                        <div className="absolute inset-0 rounded-2xl opacity-30 pointer-events-none"
-                          style={{
-                            background: 'linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.1) 45%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0.1) 55%, transparent 100%)',
-                            animation: 'shimmer 3s ease-in-out infinite'
-                          }}>
-                        </div>
-                        <div className="text-center">
-                          <h4 className="text-2xl font-black mb-2" style={{ color: colors.colors.primary }}>250</h4>
-                          <p className="text-xs uppercase tracking-wide mb-3" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>Minutes</p>
-                          <div className="mb-3">
-                            <span 
-                              className="text-2xl font-black transition-all duration-300 bg-gradient-to-r bg-clip-text text-transparent"
-                              style={{
-                                backgroundImage: isDark
-                                  ? 'linear-gradient(135deg, #ffffff 0%, #cbd5e0 25%, #e2e8f0 50%, #f7fafc 75%, #ffffff 100%)'
-                                  : 'linear-gradient(135deg, #1a202c 0%, #2d3748 25%, #4a5568 50%, #718096 75%, #1a202c 100%)',
-                                transition: 'all 0.3s ease-in-out'
-                              }}>
-                              $75
-                            </span>
-                          </div>
-                        </div>
-                        <button 
-                          onClick={() => handleSelectPlan('minutes_250')}
-                          disabled={loading}
-                          className="w-full py-2 px-3 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90 disabled:opacity-50"
-                          style={{ background: `linear-gradient(135deg, ${colors.colors.primary} 0%, ${colors.colors.primary}dd 100%)` }}>
-                          {loading && selectedPlan === 'minutes_250' ? 'Processing...' : 'Buy Now'}
-                        </button>
-                      </div>
-                      
-                      {/* 500 Minutes Card */}
-                      <div className="relative rounded-2xl p-4 group cursor-pointer hover:scale-105 transition-all duration-300 flex flex-col justify-between overflow-hidden"
-                        style={{
-                          backgroundColor: 'transparent',
-                          background: isDark 
-                            ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
-                            : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
-                          border: isDark
-                            ? `2px solid #4a5568`
-                            : `2px solid #cbd5e0`,
-                          boxShadow: isDark
-                            ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
-                            : '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.1)',
-                          transition: 'all 0.3s ease-in-out'
-                        }}>
-                        {/* Shimmer effect */}
-                        <div className="absolute inset-0 rounded-2xl opacity-30 pointer-events-none"
-                          style={{
-                            background: 'linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.1) 45%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0.1) 55%, transparent 100%)',
-                            animation: 'shimmer 3s ease-in-out infinite'
-                          }}>
-                        </div>
-                        <div className="text-center">
-                          <h4 className="text-2xl font-black mb-2" style={{ color: colors.colors.primary }}>500</h4>
-                          <p className="text-xs uppercase tracking-wide mb-3" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>Minutes</p>
-                          <div className="mb-3">
-                            <span 
-                              className="text-2xl font-black transition-all duration-300 bg-gradient-to-r bg-clip-text text-transparent"
-                              style={{
-                                backgroundImage: isDark
-                                  ? 'linear-gradient(135deg, #ffffff 0%, #cbd5e0 25%, #e2e8f0 50%, #f7fafc 75%, #ffffff 100%)'
-                                  : 'linear-gradient(135deg, #1a202c 0%, #2d3748 25%, #4a5568 50%, #718096 75%, #1a202c 100%)',
-                                transition: 'all 0.3s ease-in-out'
-                              }}>
-                              $140
-                            </span>
-                          </div>
-                        </div>
-                        <button 
-                          onClick={() => handleSelectPlan('minutes_500')}
-                          disabled={loading}
-                          className="w-full py-2 px-3 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90 disabled:opacity-50"
-                          style={{ background: `linear-gradient(135deg, ${colors.colors.primary} 0%, ${colors.colors.primary}dd 100%)` }}>
-                          {loading && selectedPlan === 'minutes_500' ? 'Processing...' : 'Buy Now'}
-                        </button>
-                      </div>
-                      
-                      {/* 1000 Minutes Card */}
-                      <div className="relative rounded-2xl p-4 group cursor-pointer hover:scale-105 transition-all duration-300 flex flex-col justify-between overflow-hidden"
-                        style={{
-                          backgroundColor: 'transparent',
-                          background: isDark 
-                            ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
-                            : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
-                          border: isDark
-                            ? `2px solid #4a5568`
-                            : `2px solid #cbd5e0`,
-                          boxShadow: isDark
-                            ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
-                            : '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.1)',
-                          transition: 'all 0.3s ease-in-out'
-                        }}>
-                        {/* Shimmer effect */}
-                        <div className="absolute inset-0 rounded-2xl opacity-30 pointer-events-none"
-                          style={{
-                            background: 'linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.1) 45%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0.1) 55%, transparent 100%)',
-                            animation: 'shimmer 3s ease-in-out infinite'
-                          }}>
-                        </div>
-                        <div className="text-center">
-                          <h4 className="text-2xl font-black mb-2" style={{ color: colors.colors.primary }}>1000</h4>
-                          <p className="text-xs uppercase tracking-wide mb-3" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>Minutes</p>
-                          <div className="mb-3">
-                            <span 
-                              className="text-2xl font-black transition-all duration-300 bg-gradient-to-r bg-clip-text text-transparent"
-                              style={{
-                                backgroundImage: isDark
-                                  ? 'linear-gradient(135deg, #ffffff 0%, #cbd5e0 25%, #e2e8f0 50%, #f7fafc 75%, #ffffff 100%)'
-                                  : 'linear-gradient(135deg, #1a202c 0%, #2d3748 25%, #4a5568 50%, #718096 75%, #1a202c 100%)',
-                                transition: 'all 0.3s ease-in-out'
-                              }}>
-                              $260
-                            </span>
-                          </div>
-                        </div>
-                        <button 
-                          onClick={() => handleSelectPlan('minutes_1000')}
-                          disabled={loading}
-                          className="w-full py-2 px-3 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90 disabled:opacity-50"
-                          style={{ background: `linear-gradient(135deg, ${colors.colors.primary} 0%, ${colors.colors.primary}dd 100%)` }}>
-                          {loading && selectedPlan === 'minutes_1000' ? 'Processing...' : 'Buy Now'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                {/* Add-on Grid (lower box) */}
+                <div className="mb-3">
+                  <h3 className="text-2xl sm:text-3xl font-black tracking-tight" style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>
+                    Choose Your Add-on
+                  </h3>
                 </div>
-
-                {/* Three Feature Cards Row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 h-auto min-h-[200px] sm:min-h-[240px]">
-                  
-                  {/* AI Voice Card */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {/* Restaurant Branding */}
                   <div className="relative rounded-2xl p-6 group cursor-pointer hover:scale-[1.02] transition-all duration-300"
                     style={{
                       background: `linear-gradient(135deg, ${colors.colors.primary}15 0%, ${colors.colors.primary}08 100%)`,
@@ -1143,46 +934,16 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                     }}>
                     <div className="flex flex-col justify-between h-full">
                       <div className="text-center">
-                        <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
-                          style={{ backgroundColor: colors.colors.primary }}>
-                          <MicrophoneIcon className="w-8 h-8 text-white" />
-                        </div>
-                        <h4 className="text-lg font-bold mb-3" style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>AI Voice</h4>
-                        <p className="text-sm opacity-80 mb-4" style={{ color: isDark ? colors.colors.grey[300] : colors.colors.grey[600] }}>
-                          Variety of Male/Female Voices
-                        </p>
-                      </div>
-                      <div className="text-center">
-                        <button 
-                          onClick={() => { setContactService('AI Voice Add-on'); setIsContactOpen(true); }}
-                          className="w-full py-2 px-4 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90"
-                          style={{ background: `linear-gradient(135deg, ${colors.colors.primary} 0%, ${colors.colors.primary}dd 100%)` }}>
-                          Contact Sales
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Restaurant Branding Card */}
-                  <div className="relative rounded-2xl p-6 group cursor-pointer hover:scale-[1.02] transition-all duration-300"
-                    style={{
-                      background: `linear-gradient(135deg, ${colors.colors.primary}15 0%, ${colors.colors.primary}08 100%)`,
-                      border: `2px solid ${colors.colors.primary}30`
-                    }}>
-                    <div className="flex flex-col justify-between h-full">
-                      <div className="text-center">
-                        <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
-                          style={{ backgroundColor: colors.colors.primary }}>
+                        <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: colors.colors.primary }}>
                           <BuildingStorefrontIcon className="w-8 h-8 text-white" />
                         </div>
-                        <h4 className="text-lg font-bold mb-3" style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>Restaurant Branding</h4>
+                        <h4 className="text-base sm:text-lg font-bold mb-3" style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>Restaurant Branding</h4>
                         <p className="text-sm opacity-80 mb-4" style={{ color: isDark ? colors.colors.grey[300] : colors.colors.grey[600] }}>
-                          Customize your AI assistant with your restaurant&apos;s brand and personality
+                          Customize your AI assistant with your restaurant's brand and personality
                         </p>
                       </div>
                       <div className="text-center">
-                        <button 
-                          onClick={() => { setContactService('Restaurant Branding'); setIsContactOpen(true); }}
+                        <button onClick={() => { setContactService('Restaurant Branding'); setIsContactOpen(true); }}
                           className="w-full py-2 px-4 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90"
                           style={{ background: `linear-gradient(135deg, ${colors.colors.primary} 0%, ${colors.colors.primary}dd 100%)` }}>
                           Contact Sales
@@ -1191,7 +952,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                     </div>
                   </div>
 
-                  {/* Add Custom Options Card */}
+                  {/* Add Custom Options */}
                   <div className="relative rounded-2xl p-6 group cursor-pointer hover:scale-[1.02] transition-all duration-300"
                     style={{
                       background: `linear-gradient(135deg, ${colors.colors.primary}15 0%, ${colors.colors.primary}08 100%)`,
@@ -1199,20 +960,85 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                     }}>
                     <div className="flex flex-col justify-between h-full">
                       <div className="text-center">
-                        <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
-                          style={{ backgroundColor: colors.colors.primary }}>
+                        <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: colors.colors.primary }}>
                           <CogIcon className="w-8 h-8 text-white" />
                         </div>
-                        <h4 className="text-lg font-bold mb-3" style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>Add Custom Options</h4>
+                        <h4 className="text-base sm:text-lg font-bold mb-3" style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>Add Custom Options</h4>
                         <p className="text-sm opacity-80 mb-4" style={{ color: isDark ? colors.colors.grey[300] : colors.colors.grey[600] }}>
                           Add call forwarding and other custom options for your agent
                         </p>
                       </div>
                       <div className="text-center">
-                        <button 
-                          onClick={() => { setContactService('Custom Integration'); setIsContactOpen(true); }}
+                        <button onClick={() => { setContactService('Custom Integration'); setIsContactOpen(true); }}
                           className="w-full py-2 px-4 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90"
                           style={{ background: `linear-gradient(135deg, ${colors.colors.primary} 0%, ${colors.colors.primary}dd 100%)` }}>
+                          Contact Sales
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* AI Voice */}
+                  <div className="relative rounded-2xl p-6 group cursor-pointer hover:scale-[1.02] transition-all duration-300"
+                    style={{
+                      background: `linear-gradient(135deg, ${colors.colors.primary}15 0%, ${colors.colors.primary}08 100%)`,
+                      border: `2px solid ${colors.colors.primary}30`
+                    }}>
+                    <div className="flex flex-col justify-between h-full">
+                      <div className="text-center">
+                        <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: colors.colors.primary }}>
+                          <MicrophoneIcon className="w-8 h-8 text-white" />
+                        </div>
+                        <h4 className="text-base sm:text-lg font-bold mb-3" style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>AI Voice</h4>
+                        <p className="text-sm opacity-80 mb-4" style={{ color: isDark ? colors.colors.grey[300] : colors.colors.grey[600] }}>
+                          Variety of Male/Female Voices
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <button onClick={() => { setContactService('AI Voice Assistant'); setIsContactOpen(true); }}
+                          className="w-full py-2 px-4 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90"
+                          style={{ background: `linear-gradient(135deg, ${colors.colors.primary} 0%, ${colors.colors.primary}dd 100%)` }}>
+                          Contact Sales
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Add Custom Minutes */}
+                  <div className="relative rounded-2xl p-6 group transition-all duration-300 hover:scale-[1.02]"
+                    style={{
+                      background: `linear-gradient(135deg, ${colors.colors.primary}15 0%, ${colors.colors.primary}08 100%)`,
+                      border: `2px solid ${colors.colors.primary}30`
+                    }}>
+                    <div className="flex flex-col justify-between h-full">
+                      <div className="text-center mb-3">
+                        <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: colors.colors.primary }}>
+                          <ClipboardDocumentIcon className="w-8 h-8 text-white" />
+                        </div>
+                        <h4 className="text-base sm:text-lg font-bold mb-2" style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>Add Custom Minutes</h4>
+                        <p className="text-sm opacity-80" style={{ color: isDark ? colors.colors.grey[300] : colors.colors.grey[600] }}>
+                          Enter the number of minutes you need
+                        </p>
+                      </div>
+                      <div>
+                        <input
+                          type="number"
+                          min={1}
+                          value={customMinutes}
+                          onChange={(e) => setCustomMinutes(e.target.value)}
+                          placeholder="e.g. 750"
+                          className="w-full px-3 py-3 rounded-xl mb-3 text-sm focus:outline-none focus:ring-2"
+                          style={{
+                            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : colors.colors.white,
+                            border: isDark ? `1px solid ${colors.colors.grey[600]}` : `1px solid ${colors.colors.grey[300]}`,
+                            color: isDark ? colors.colors.white : colors.colors.dark
+                          }}
+                        />
+                        <button
+                          onClick={() => { setContactService('Custom Minutes'); setIsContactOpen(true); }}
+                          className="w-full py-2 px-4 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90"
+                          style={{ background: `linear-gradient(135deg, ${colors.colors.primary} 0%, ${colors.colors.primary}dd 100%)` }}
+                        >
                           Contact Sales
                         </button>
                       </div>
@@ -1220,7 +1046,6 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                   </div>
                 </div>
               </div>
-
               {/* Right Side - 30% */}
               <div className="lg:w-[30%] flex flex-col gap-6">
                 
@@ -1247,7 +1072,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                     </div>
                   </div>
                 </div>
-
+                
                 {/* Never Miss A Call Again Card */}
                 <div className="relative rounded-2xl p-6 group cursor-pointer hover:scale-[1.01] transition-all duration-300 h-[540px] overflow-hidden"
                   style={{

@@ -41,8 +41,8 @@ export const PLAN_CONFIGS: Record<string, PlanConfig> = {
   starter: {
     id: 'starter',
     name: 'Starter',
-    price: 199.00,
-    amountCents: 19900,
+    price: 299.00,
+    amountCents: 29900,
     period: 'Per Month',
     description: 'Perfect for small restaurants getting started with AI phone assistance.',
     minutes: 250,
@@ -81,8 +81,8 @@ export const PLAN_CONFIGS: Record<string, PlanConfig> = {
   enterprise: {
     id: 'enterprise',
     name: 'Enterprise',
-    price: 899.00,
-    amountCents: 89900,
+    price: 499.00,
+    amountCents: 49900,
     period: 'Per Month',
     description: 'Complete solution for restaurant chains and high-volume establishments.',
     minutes: 900,

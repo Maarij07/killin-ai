@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useToast } from '../../contexts/ToastContext';
 import { logger } from '../../lib/logger';
-import { PencilIcon, UsersIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, UsersIcon, ArrowPathIcon, ClipboardDocumentIcon } from '@heroicons/react/24/outline';
 import colors from '../../../colors.json';
 
 interface User {
@@ -94,6 +94,15 @@ export default function ManageAssistants() {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+
+  const copyPromptToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(systemPrompt || '');
+      showSuccess('Prompt copied to clipboard');
+    } catch (e) {
+      showError('Failed to copy prompt');
+    }
+  };
 
   // Fetch users from API
   useEffect(() => {
@@ -714,6 +723,45 @@ export default function ManageAssistants() {
                       </div>
                     ) : null;
                   })()}
+                </div>
+
+                {/* Prompt Preview Section */}
+                <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border p-4 mb-6`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      Current User Prompt
+                    </h3>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                        {(systemPrompt || '').length} chars
+                      </span>
+                      <button
+                        type="button"
+                        onClick={copyPromptToClipboard}
+                        className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md text-white"
+                        style={{ backgroundColor: colors.colors.primary }}
+                        title="Copy prompt"
+                      >
+                        <ClipboardDocumentIcon className="h-4 w-4 mr-1" />
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+                  <div className="rounded-md p-3 text-sm whitespace-pre-wrap overflow-y-auto max-h-64"
+                    style={{
+                      color: isDark ? colors.colors.grey[300] : colors.colors.grey[700],
+                      background: isDark ? 'linear-gradient(180deg, #1f2937 0%, #111827 100%)' : 'linear-gradient(180deg, #ffffff 0%, #f9fafb 100%)',
+                      border: `1px solid ${isDark ? colors.colors.grey[700] : colors.colors.grey[200]}`
+                    }}
+                  >
+                    {systemPrompt && systemPrompt.trim().length > 0 ? (
+                      systemPrompt
+                    ) : (
+                      <span className={`italic ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                        No prompt available for this user.
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Assistant Configuration Section */}

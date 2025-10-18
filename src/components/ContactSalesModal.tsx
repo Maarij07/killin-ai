@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { XMarkIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { useTheme } from '../contexts/ThemeContext';
 import colors from '../../colors.json';
@@ -80,11 +80,12 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
     }, 1500);
   };
 
-  // Pre-fill default service when opening
-  if (isOpen && defaultService && formData.services === '') {
-    // set synchronously to avoid extra renders
-    formData.services = defaultService;
-  }
+  // Pre-fill default service when opening or when the trigger sets it
+  useEffect(() => {
+    if (isOpen && defaultService) {
+      setFormData(prev => ({ ...prev, services: defaultService }));
+    }
+  }, [isOpen, defaultService]);
 
   if (!isOpen) return null;
 
@@ -436,23 +437,27 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
                   onChange={handleInputChange}
                   className={`block w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 ${
                     isDark 
-                      ? 'border-gray-500 text-white' 
+                      ? 'border-gray-500 text-gray-100 bg-gray-800'
                       : 'bg-white border-gray-300 text-gray-900'
                   }`}
                   style={{
-                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'white',
-                    backdropFilter: isDark ? 'blur(10px)' : 'none'
+                    backgroundColor: isDark ? '#1f2937' : 'white',
+                    color: isDark ? '#f3f4f6' : undefined,
+                    backdropFilter: isDark ? 'blur(6px)' : 'none'
                   }}
                 >
-                  <option value="">Select a service...</option>
-                  <option value="AI Voice Assistant">AI Voice Assistant</option>
-                  <option value="Call Management System">Call Management System</option>
-                  <option value="Order Processing Automation">Order Processing Automation</option>
-                  <option value="Customer Service AI">Customer Service AI</option>
-                  <option value="Sales Automation">Sales Automation</option>
-                  <option value="Custom Integration">Custom Integration</option>
-                  <option value="Enterprise Solution">Enterprise Solution</option>
-                  <option value="Other">Other</option>
+                  <option className={`${isDark ? 'bg-gray-800 text-gray-100' : ''}`} value="">Select a service...</option>
+                  <option className={`${isDark ? 'bg-gray-800 text-gray-100' : ''}`} value="AI Voice Assistant">AI Voice Assistant</option>
+                  <option className={`${isDark ? 'bg-gray-800 text-gray-100' : ''}`} value="Restaurant Branding">Restaurant Branding</option>
+                  <option className={`${isDark ? 'bg-gray-800 text-gray-100' : ''}`} value="Call Management System">Call Management System</option>
+                  <option className={`${isDark ? 'bg-gray-800 text-gray-100' : ''}`} value="Order Processing Automation">Order Processing Automation</option>
+                  <option className={`${isDark ? 'bg-gray-800 text-gray-100' : ''}`} value="Customer Service AI">Customer Service AI</option>
+                  <option className={`${isDark ? 'bg-gray-800 text-gray-100' : ''}`} value="Sales Automation">Sales Automation</option>
+                  <option className={`${isDark ? 'bg-gray-800 text-gray-100' : ''}`} value="Custom Integration">Custom Integration</option>
+                  <option className={`${isDark ? 'bg-gray-800 text-gray-100' : ''}`} value="Starter Plan">Starter Plan</option>
+                  <option className={`${isDark ? 'bg-gray-800 text-gray-100' : ''}`} value="Custom Minutes">Custom Minutes</option>
+                  <option className={`${isDark ? 'bg-gray-800 text-gray-100' : ''}`} value="Enterprise Solution">Enterprise Solution</option>
+                  <option className={`${isDark ? 'bg-gray-800 text-gray-100' : ''}`} value="Other">Other</option>
                 </select>
               </div>
 
