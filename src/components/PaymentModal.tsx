@@ -160,30 +160,19 @@ export default function PaymentModal({
 
       {/* Modal */}
       <div 
-        className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto scrollbar-hide rounded-3xl shadow-2xl transform transition-all duration-300 scale-100"
+        className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto scrollbar-hide rounded-xl shadow-lg transform transition-all duration-300 scale-100"
         style={{ 
-          backgroundColor: 'transparent',
-          background: isDark 
-            ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
-            : colors.colors.white,
-          border: isDark
-            ? `2px solid #4a5568`
-            : `1px solid ${colors.colors.grey[200]}`,
+          backgroundColor: isDark ? colors.colors.grey[900] : colors.colors.white,
+          border: `1px solid ${isDark ? colors.colors.grey[700] : colors.colors.grey[200]}`,
           boxShadow: isDark
-            ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
-            : '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-          transition: 'all 0.3s ease-in-out'
+            ? '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+            : '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
         }}
       >
         {/* Header */}
         <div className="sticky top-0 z-10 p-6 pb-0"
           style={{ 
-            backgroundColor: isDark 
-              ? 'transparent'
-              : colors.colors.white,
-            background: isDark 
-              ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
-              : colors.colors.white,
+            backgroundColor: isDark ? colors.colors.grey[900] : colors.colors.white
           }}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold"
@@ -209,12 +198,7 @@ export default function PaymentModal({
         {/* Content */}
         <div className="p-6"
           style={{
-            backgroundColor: isDark 
-              ? 'transparent'
-              : colors.colors.white,
-            background: isDark 
-              ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
-              : colors.colors.white,
+            backgroundColor: isDark ? colors.colors.grey[900] : colors.colors.white
           }}>
           {loading ? (
             // Loading State

@@ -72,6 +72,7 @@ interface UserDetails {
   agent_id: string;
   twilio_phone_number?: string;
   created_at?: string;
+  prompt?: string;
   [key: string]: string | number | boolean | undefined;
 }
 
@@ -371,7 +372,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
 
   return (
     <>
-      {/* Add shimmer animation CSS */}
+      {/* Add shimmer animation and custom scrollbar CSS */}
       <style jsx>{`
         @keyframes shimmer {
           0% {
@@ -380,6 +381,31 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
           100% {
             transform: translateX(400%) rotate(45deg);
           }
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: ${isDark ? colors.colors.grey[800] : colors.colors.grey[100]};
+          border-radius: 4px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: ${colors.colors.primary};
+          border-radius: 4px;
+          transition: opacity 0.2s;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: ${colors.colors.primary}dd;
+        }
+        
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: ${colors.colors.primary} ${isDark ? colors.colors.grey[800] : colors.colors.grey[100]};
         }
       `}</style>
       
@@ -391,17 +417,6 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
           transition: 'background 0.3s ease-in-out'
         }}>
 
-      {/* Aesthetic blobs with your color theme */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-10 left-10 w-96 h-96 rounded-full opacity-10 blur-3xl"
-          style={{ backgroundColor: colors.colors.primary }}></div>
-        <div className="absolute bottom-40 right-10 w-72 h-72 rounded-full opacity-5 blur-2xl"
-          style={{ backgroundColor: colors.colors.primary }}></div>
-        <div className="absolute top-1/3 right-1/4 w-64 h-64 rounded-full opacity-5 blur-xl transition-colors duration-300"
-          style={{ backgroundColor: isDark ? colors.colors.grey[600] : colors.colors.grey[400] }}></div>
-        <div className="absolute bottom-1/4 left-1/3 w-80 h-80 rounded-full opacity-5 blur-2xl transition-colors duration-300"
-          style={{ backgroundColor: isDark ? colors.colors.grey[700] : colors.colors.grey[300] }}></div>
-      </div>
 
       <div className="relative z-10 container mx-auto px-2 sm:px-4 py-8 sm:py-12">
         {/* User Summary Section */}
@@ -422,17 +437,17 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
 
             {/* Skeleton Summary Container */}
             <div className="max-w-7xl mx-auto px-4">
-              <div className="relative overflow-hidden rounded-3xl p-4 sm:p-6 lg:p-8 h-auto"
+              <div className="relative overflow-hidden rounded-xl p-4 sm:p-6 lg:p-8 h-auto shadow-sm"
                 style={{
-                  background: `linear-gradient(135deg, ${colors.colors.primary}15 0%, ${colors.colors.primary}08 100%)`,
-                  border: `2px solid ${colors.colors.primary}30`
+                  backgroundColor: isDark ? colors.colors.grey[800] : colors.colors.white,
+                  border: `1px solid ${isDark ? colors.colors.grey[700] : colors.colors.grey[200]}`
                 }}>
                 <div className="relative z-10 h-full">
                   {/* Skeleton Header */}
                   <div className="text-left mb-4 sm:mb-6">
-                    <div className="inline-flex items-center px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-semibold text-white mb-3 sm:mb-4"
-                      style={{ backgroundColor: colors.colors.primary }}>
-                      User Summary
+                    <div className="inline-flex items-center px-3 sm:px-4 py-1 rounded text-xs sm:text-sm font-medium mb-3 sm:mb-4"
+                      style={{ color: colors.colors.primary }}>
+                      USER SUMMARY
                     </div>
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
                       <div>
@@ -517,17 +532,17 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
 
             {/* Orange Summary Container */}
             <div className="max-w-7xl mx-auto px-4">
-              <div className="relative overflow-hidden rounded-3xl p-4 sm:p-6 lg:p-8 h-auto"
+              <div className="relative overflow-hidden rounded-xl p-4 sm:p-6 lg:p-8 h-auto shadow-sm"
                 style={{
-                  background: `linear-gradient(135deg, ${colors.colors.primary}15 0%, ${colors.colors.primary}08 100%)`,
-                  border: `2px solid ${colors.colors.primary}30`
+                  backgroundColor: isDark ? colors.colors.grey[800] : colors.colors.white,
+                  border: `1px solid ${isDark ? colors.colors.grey[700] : colors.colors.grey[200]}`
                 }}>
                 <div className="relative z-10 h-full">
                   {/* Header */}
                   <div className="text-left mb-4 sm:mb-6">
-                    <div className="inline-flex items-center px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-semibold text-white mb-3 sm:mb-4"
-                      style={{ backgroundColor: colors.colors.primary }}>
-                      User Summary
+                    <div className="inline-flex items-center px-3 sm:px-4 py-1 rounded text-xs sm:text-sm font-medium mb-3 sm:mb-4"
+                      style={{ color: colors.colors.primary }}>
+                      USER SUMMARY
                     </div>
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
                       <div>
@@ -570,19 +585,10 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                   {/* 4 Summary Cards Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 h-auto">
                     {/* Total Minutes Card */}
-                    <div className="relative rounded-2xl p-4 group cursor-default transition-all duration-300 flex flex-col justify-between overflow-hidden"
+                    <div className="relative rounded-lg p-4 group cursor-default transition-all duration-300 flex flex-col justify-between overflow-hidden"
                       style={{
-                        backgroundColor: 'transparent',
-                        background: isDark 
-                          ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
-                          : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
-                        border: isDark
-                          ? `2px solid #4a5568`
-                          : `2px solid #cbd5e0`,
-                        boxShadow: isDark
-                          ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
-                          : '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.1)',
-                        transition: 'all 0.3s ease-in-out'
+                        backgroundColor: isDark ? colors.colors.grey[900] : colors.colors.grey[50],
+                        border: `1px solid ${isDark ? colors.colors.grey[700] : colors.colors.grey[200]}`
                       }}>
                       <div className="text-center">
                         <h4 className="text-2xl font-black mb-2" style={{ color: colors.colors.primary }}>
@@ -598,19 +604,10 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                     </div>
                     
                     {/* Used Minutes Card */}
-                    <div className="relative rounded-2xl p-4 group cursor-default transition-all duration-300 flex flex-col justify-between overflow-hidden"
+                    <div className="relative rounded-lg p-4 group cursor-default transition-all duration-300 flex flex-col justify-between overflow-hidden"
                       style={{
-                        backgroundColor: 'transparent',
-                        background: isDark 
-                          ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
-                          : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
-                        border: isDark
-                          ? `2px solid #4a5568`
-                          : `2px solid #cbd5e0`,
-                        boxShadow: isDark
-                          ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
-                          : '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.1)',
-                        transition: 'all 0.3s ease-in-out'
+                        backgroundColor: isDark ? colors.colors.grey[900] : colors.colors.grey[50],
+                        border: `1px solid ${isDark ? colors.colors.grey[700] : colors.colors.grey[200]}`
                       }}>
                       <div className="text-center">
                         <h4 className="text-2xl font-black mb-2" style={{ color: colors.colors.primary }}>
@@ -626,19 +623,10 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                     </div>
                     
                     {/* Virtual Phone Card */}
-                    <div className="relative rounded-2xl p-4 group cursor-default transition-all duration-300 flex flex-col justify-between overflow-hidden"
+                    <div className="relative rounded-lg p-4 group cursor-default transition-all duration-300 flex flex-col justify-between overflow-hidden"
                       style={{
-                        backgroundColor: 'transparent',
-                        background: isDark 
-                          ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
-                          : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
-                        border: isDark
-                          ? `2px solid #4a5568`
-                          : `2px solid #cbd5e0`,
-                        boxShadow: isDark
-                          ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
-                          : '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.1)',
-                        transition: 'all 0.3s ease-in-out'
+                        backgroundColor: isDark ? colors.colors.grey[900] : colors.colors.grey[50],
+                        border: `1px solid ${isDark ? colors.colors.grey[700] : colors.colors.grey[200]}`
                       }}>
                       <div className="text-center">
                         <h4 className="text-lg font-black mb-2" style={{ color: colors.colors.primary }}>
@@ -654,19 +642,10 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                     </div>
                     
                     {/* Plan Type Card */}
-                    <div className="relative rounded-2xl p-4 group cursor-default transition-all duration-300 flex flex-col justify-between overflow-hidden"
+                    <div className="relative rounded-lg p-4 group cursor-default transition-all duration-300 flex flex-col justify-between overflow-hidden"
                       style={{
-                        backgroundColor: 'transparent',
-                        background: isDark 
-                          ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
-                          : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
-                        border: isDark
-                          ? `2px solid #4a5568`
-                          : `2px solid #cbd5e0`,
-                        boxShadow: isDark
-                          ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
-                          : '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.1)',
-                        transition: 'all 0.3s ease-in-out'
+                        backgroundColor: isDark ? colors.colors.grey[900] : colors.colors.grey[50],
+                        border: `1px solid ${isDark ? colors.colors.grey[700] : colors.colors.grey[200]}`
                       }}>
                       <div className="text-center">
                         <h4 className="text-2xl font-black mb-2 capitalize" style={{ color: colors.colors.primary }}>
@@ -689,14 +668,14 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                         Assistant Prompt
                       </h4>
                       <button
-                        onClick={() => copyToClipboard((userDetails as any).prompt || '')}
+                        onClick={() => copyToClipboard(String(userDetails.prompt || ''), 'Assistant Prompt')}
                         className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:opacity-90 focus:outline-none focus:ring-2"
                         style={{ backgroundColor: colors.colors.primary, boxShadow: `0 0 0 0 rgba(0,0,0,0)` }}
                       >
                         Copy
                       </button>
                     </div>
-                    <div className="rounded-2xl p-4 text-sm whitespace-pre-wrap max-h-64 overflow-y-auto font-mono leading-6"
+                    <div className="rounded-2xl p-4 text-sm whitespace-pre-wrap max-h-64 overflow-y-auto font-mono leading-6 custom-scrollbar"
                       style={{
                         background: isDark 
                           ? 'linear-gradient(180deg, #1f2937 0%, #111827 100%)'
@@ -705,8 +684,8 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                         color: isDark ? colors.colors.grey[300] : colors.colors.grey[700]
                       }}
                     >
-                      {((userDetails as any).prompt && String((userDetails as any).prompt).trim().length > 0) ? (
-                        String((userDetails as any).prompt)
+                      {(userDetails.prompt && String(userDetails.prompt).trim().length > 0) ? (
+                        String(userDetails.prompt)
                       ) : (
                         <span className="italic" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[500] }}>
                           No prompt available yet. Contact support if you need help setting up your assistant.
@@ -714,10 +693,44 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                       )}
                     </div>
                   </div>
+
+                  {/* Action Buttons */}
+                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      onClick={() => { setContactService('Edit Menu'); setIsContactOpen(true); }}
+                      className="w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-300 hover:opacity-90"
+                      style={{ 
+                        backgroundColor: colors.colors.primary,
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                      }}
+                    >
+                      Edit Menu
+                    </button>
+                    <button
+                      onClick={() => { setContactService('Edit Daily Specials'); setIsContactOpen(true); }}
+                      className="w-full py-3 px-4 rounded-lg font-semibold transition-all duration-300"
+                      style={{ 
+                        backgroundColor: isDark ? colors.colors.grey[800] : colors.colors.white,
+                        border: `1px solid ${colors.colors.primary}`,
+                        color: colors.colors.primary,
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = colors.colors.primary;
+                        e.currentTarget.style.color = colors.colors.white;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = isDark ? colors.colors.grey[800] : colors.colors.white;
+                        e.currentTarget.style.color = colors.colors.primary;
+                      }}
+                    >
+                      Edit Your Daily Specials
+                    </button>
+                  </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
         )}
 
         {/* Header */}
@@ -939,7 +952,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                         </div>
                         <h4 className="text-base sm:text-lg font-bold mb-3" style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>Restaurant Branding</h4>
                         <p className="text-sm opacity-80 mb-4" style={{ color: isDark ? colors.colors.grey[300] : colors.colors.grey[600] }}>
-                          Customize your AI assistant with your restaurant's brand and personality
+                          Customize your AI assistant with your restaurant&apos;s brand and personality
                         </p>
                       </div>
                       <div className="text-center">

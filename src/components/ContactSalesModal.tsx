@@ -100,30 +100,19 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
       
       {/* Modal */}
       <div 
-        className="relative w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl transform transition-all duration-300 scale-100 flex flex-col"
+        className="relative w-full max-w-2xl max-h-[90vh] rounded-xl shadow-lg transform transition-all duration-300 scale-100 flex flex-col"
         style={{ 
-          backgroundColor: 'transparent',
-          background: isDark 
-            ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
-            : colors.colors.white,
-          border: isDark
-            ? `2px solid #4a5568`
-            : `1px solid ${colors.colors.grey[200]}`,
+          backgroundColor: isDark ? colors.colors.grey[900] : colors.colors.white,
+          border: `1px solid ${isDark ? colors.colors.grey[700] : colors.colors.grey[200]}`,
           boxShadow: isDark
-            ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
-            : '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-          transition: 'all 0.3s ease-in-out'
+            ? '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+            : '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
         }}
       >
         {/* Header */}
-        <div className="sticky top-0 z-10 p-6 pb-0 rounded-t-3xl"
+        <div className="sticky top-0 z-10 p-6 pb-0 rounded-t-xl"
           style={{ 
-            backgroundColor: isDark 
-              ? 'transparent'
-              : colors.colors.white,
-            background: isDark 
-              ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
-              : colors.colors.white,
+            backgroundColor: isDark ? colors.colors.grey[900] : colors.colors.white
           }}>
           <div className={`flex items-center justify-between mb-4`}>
             <div>
@@ -133,9 +122,9 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
                 Contact Sales
               </h2>
               <p className={`mt-1 text-sm ${
-                isDark ? 'text-gray-300' : 'text-gray-600'
+                isDark ? 'text-gray-400' : 'text-gray-600'
               }`}>
-                Book a demo to see how Loman answers every call, takes orders, and boosts revenue, all without adding staff.
+                Book a demo to see how Kallin answers every call, takes orders, and boosts revenue.
               </p>
             </div>
             <button
@@ -155,14 +144,9 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
         </div>
 
         {/* Form */}
-        <div className="flex-1 overflow-y-auto scrollbar-hide rounded-b-3xl"
+        <div className="flex-1 overflow-y-auto scrollbar-hide rounded-b-xl"
           style={{
-            backgroundColor: isDark 
-              ? 'transparent'
-              : colors.colors.white,
-            background: isDark 
-              ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
-              : colors.colors.white,
+            backgroundColor: isDark ? colors.colors.grey[900] : colors.colors.white
           }}>
           <form onSubmit={handleSubmit} className="p-6">
             <div className="space-y-6">
