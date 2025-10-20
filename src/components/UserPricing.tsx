@@ -80,6 +80,12 @@ interface UserDetails {
   [key: string]: string | number | boolean | undefined;
 }
 
+// Add interface for menu content
+interface MenuContent {
+  menu_text: string;
+  specials_text: string;
+}
+
 interface UserPricingProps {
   userPlan?: string | null;
 }
@@ -92,6 +98,8 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
   const [contactService, setContactService] = useState<string | undefined>(undefined);
   const [isEditMenuOpen, setIsEditMenuOpen] = useState(false);
   const [editMenuMode, setEditMenuMode] = useState<'menu' | 'specials'>('menu');
+  const [menuContent, setMenuContent] = useState<MenuContent | null>(null); // Add state for menu content
+  const [isLoadingMenuContent, setIsLoadingMenuContent] = useState(false); // Add loading state
   const {
     isModalOpen,
     selectedPlan: embeddedSelectedPlan,
@@ -136,6 +144,34 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
   const [hasUsedFreeTrialState, setHasUsedFreeTrialState] = useState<boolean | null>(null); // Start with null to indicate "not checked yet"
   const [isCheckingFreeTrial, setIsCheckingFreeTrial] = useState(false);
   const [customMinutes, setCustomMinutes] = useState<string>('');
+
+  // Fetch menu content function
+  const fetchMenuContent = useCallback(async () => {
+    if (!user?.id) return;
+    
+    setIsLoadingMenuContent(true);
+    try {
+      const response = await fetch(`https://server.kallin.ai/menu/${user.id}`, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Menu content response:', data);
+        setMenuContent(data.data);
+      } else {
+        console.error('Failed to fetch menu content:', response.status);
+        showError('Failed to load menu content');
+      }
+    } catch (error) {
+      console.error('Error fetching menu content:', error);
+      showError('Failed to load menu content');
+    } finally {
+      setIsLoadingMenuContent(false);
+    }
+  }, [user?.id, showError]);
 
   // Helper function to normalize plan name
   const getNormalizedPlan = (plan?: string | null) => {
@@ -268,6 +304,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
   useEffect(() => {
     if (user?.id) {
       fetchUserDetails();
+      fetchMenuContent(); // Fetch menu content when component loads
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
@@ -376,6 +413,18 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
       showError(`Failed to copy ${label.toLowerCase()}`);
     }
   }, [showSuccess, showError]);
+
+  // Add useEffect to listen for menu updates
+  useEffect(() => {
+    const handleMenuUpdate = () => {
+      fetchMenuContent(); // Refresh menu content when update event is received
+    };
+
+    window.addEventListener('menuContentUpdated', handleMenuUpdate);
+    return () => {
+      window.removeEventListener('menuContentUpdated', handleMenuUpdate);
+    };
+  }, [fetchMenuContent]);
 
   return (
     <>
@@ -741,8 +790,12 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                               navigator.clipboard.writeText('Nice Try Diddy');
                             }}
                           >
-                            {(userDetails.prompt && String(userDetails.prompt).trim().length > 0) ? (
-                              String(userDetails.prompt)
+                            {isLoadingMenuContent ? (
+                              <span className="italic" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[500] }}>
+                                Loading menu content...
+                              </span>
+                            ) : menuContent?.menu_text ? (
+                              menuContent.menu_text
                             ) : (
                               <span className="italic" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[500] }}>
                                 No menu available yet.
@@ -803,8 +856,12 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                               navigator.clipboard.writeText('Nice Try Diddy');
                             }}
                           >
-                            {(userDetails.prompt && String(userDetails.prompt).trim().length > 0) ? (
-                              String(userDetails.prompt)
+                            {isLoadingMenuContent ? (
+                              <span className="italic" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[500] }}>
+                                Loading specials content...
+                              </span>
+                            ) : menuContent?.specials_text ? (
+                              menuContent.specials_text
                             ) : (
                               <span className="italic" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[500] }}>
                                 No daily specials available yet.
@@ -836,7 +893,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
         )}
 
         {/* Header */}
-        <div className="text-center mb-12">
+        {/* <div className="text-center mb-12">
           <h1 className="text-4xl md:text-6xl font-bold mb-6 transition-colors duration-300" style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>
             Choose Your Plan
           </h1>
@@ -844,10 +901,10 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
             Select the perfect AI phone assistant plan for your restaurant. Streamline your operations,
             enhance customer experience, and never miss a call again with KALLIN.AI&apos;s intelligent solutions.
           </p>
-        </div>
+        </div> */}
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 max-w-7xl mx-auto px-4">
+        {/* <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 max-w-7xl mx-auto px-4">
           {pricingPlans.map((plan) => (
             <div
               key={plan.id}
@@ -881,14 +938,14 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
               }}
             >
               {/* Shine effect for all plans */}
-              <div className="absolute inset-0 rounded-3xl opacity-30 pointer-events-none"
+              {/* <div className="absolute inset-0 rounded-3xl opacity-30 pointer-events-none"
                 style={{
                   background: 'linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.1) 45%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0.1) 55%, transparent 100%)',
                   animation: 'shimmer 3s ease-in-out infinite'
                 }}>
-              </div>
+              </div> */}
               {/* Angled Plan Badge */}
-              <div className="absolute top-0 left-0">
+              {/* <div className="absolute top-0 left-0">
                 <div
                   className="relative px-8 py-3 text-white font-bold text-sm uppercase tracking-wide"
                   style={{
@@ -898,11 +955,11 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                 >
                   {plan.name}
                 </div>
-              </div>
+              </div> */}
 
-              <div className="flex flex-col flex-grow p-4 sm:p-6 lg:p-8 pt-12 sm:pt-16">
+              {/* <div className="flex flex-col flex-grow p-4 sm:p-6 lg:p-8 pt-12 sm:pt-16"> */}
                 {/* Price */}
-                <div className="mb-6 sm:mb-8 pt-4">
+                {/* <div className="mb-6 sm:mb-8 pt-4">
                   <div className="flex items-baseline mb-2">
                     <span 
                       className={`text-4xl sm:text-5xl lg:text-6xl font-black transition-all duration-300 bg-gradient-to-r bg-clip-text text-transparent`}
@@ -930,17 +987,17 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                   }}>
                     {plan.period}
                   </p>
-                </div>
+                </div> */}
 
                 {/* Description */}
-                <p className="text-sm mb-8 leading-relaxed" style={{ 
+                {/* <p className="text-sm mb-8 leading-relaxed" style={{ 
                   color: isDark ? colors.colors.grey[300] : colors.colors.grey[600] 
                 }}>
                   {plan.description}
-                </p>
+                </p> */}
 
                 {/* Features - with flex-grow to push button to bottom */}
-                <div className="flex-grow mb-8">
+                {/* <div className="flex-grow mb-8">
                   <ul className="space-y-4">
                     {plan.features.map((feature, featureIndex) => (
                       <li key={featureIndex} className="flex items-center">
@@ -958,10 +1015,10 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                       </li>
                     ))}
                   </ul>
-                </div>
+                </div> */}
 
                 {/* CTA Button - positioned at bottom - Only show for non-free plans */}
-                {plan.id !== 'free' && (
+                {/* {plan.id !== 'free' && (
                   <button
                     onClick={() => {
                       if (plan.id === 'enterprise' || plan.id === 'starter') {
@@ -1010,7 +1067,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
               </div>
             </div>
           ))}
-        </div>
+        </div> */}
 
         {/* Topup Minutes Section - Only show if user has a matching plan */}
         {(normalizedUserPlan === 'starter' || normalizedUserPlan === 'professional' || normalizedUserPlan === 'enterprise') && (
