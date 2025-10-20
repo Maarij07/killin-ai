@@ -7,6 +7,7 @@ import { CheckIcon, MicrophoneIcon, BuildingStorefrontIcon, CogIcon, PhoneIcon, 
 import { useEmbeddedPayment } from '../hooks/useEmbeddedPayment';
 import PaymentModal from './PaymentModal';
 import ContactSalesModal from './ContactSalesModal';
+import EditMenuModal from './EditMenuModal';
 import { useSearchParams } from 'next/navigation';
 import { useUser } from '../contexts/UserContext';
 import { useToast } from '../contexts/ToastContext';
@@ -86,6 +87,8 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
   const [loading] = useState(false);
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [contactService, setContactService] = useState<string | undefined>(undefined);
+  const [isEditMenuOpen, setIsEditMenuOpen] = useState(false);
+  const [editMenuMode, setEditMenuMode] = useState<'menu' | 'specials'>('menu');
   const {
     isModalOpen,
     selectedPlan: embeddedSelectedPlan,
@@ -263,7 +266,8 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
     if (user?.id) {
       fetchUserDetails();
     }
-  }, [user?.id, fetchUserDetails]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   // Handle success/cancel from Stripe
   useEffect(() => {
@@ -359,8 +363,8 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
     }
   };
 
-  // Copy to clipboard function - prevent event propagation
-  const copyToClipboard = async (text: string, label: string) => {
+  // Copy to clipboard function - wrapped in useCallback to prevent re-renders
+  const copyToClipboard = useCallback(async (text: string, label: string) => {
     try {
       await navigator.clipboard.writeText(text);
       showSuccess(`${label} copied to clipboard!`);
@@ -368,7 +372,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
       console.error('Failed to copy:', err);
       showError(`Failed to copy ${label.toLowerCase()}`);
     }
-  };
+  }, [showSuccess, showError]);
 
   return (
     <>
@@ -530,12 +534,20 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
               </p>
             </div>
 
-            {/* Orange Summary Container */}
+            {/* Summary Container with Metallic Grey */}
             <div className="max-w-7xl mx-auto px-4">
               <div className="relative overflow-hidden rounded-xl p-4 sm:p-6 lg:p-8 h-auto shadow-sm"
                 style={{
-                  backgroundColor: isDark ? colors.colors.grey[800] : colors.colors.white,
-                  border: `1px solid ${isDark ? colors.colors.grey[700] : colors.colors.grey[200]}`
+                  backgroundColor: 'transparent',
+                  background: isDark 
+                    ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                    : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                  border: isDark
+                    ? `2px solid #4a5568`
+                    : `2px solid #cbd5e0`,
+                  boxShadow: isDark
+                    ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+                    : '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.1)'
                 }}>
                 <div className="relative z-10 h-full">
                   {/* Header */}
@@ -560,7 +572,10 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                               {userDetails.agent_id}
                             </span>
                             <button
-                              onClick={() => copyToClipboard(userDetails.agent_id, 'Agent ID')}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                copyToClipboard(userDetails.agent_id, 'Agent ID');
+                              }}
                               className="p-1 rounded transition-colors duration-200 hover:bg-gray-200 dark:hover:bg-gray-700"
                               style={{ 
                                 color: colors.colors.primary
@@ -587,8 +602,16 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                     {/* Total Minutes Card */}
                     <div className="relative rounded-lg p-4 group cursor-default transition-all duration-300 flex flex-col justify-between overflow-hidden"
                       style={{
-                        backgroundColor: isDark ? colors.colors.grey[900] : colors.colors.grey[50],
-                        border: `1px solid ${isDark ? colors.colors.grey[700] : colors.colors.grey[200]}`
+                        backgroundColor: 'transparent',
+                        background: isDark 
+                          ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                          : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                        border: isDark
+                          ? `2px solid #4a5568`
+                          : `2px solid #cbd5e0`,
+                        boxShadow: isDark
+                          ? '0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                          : '0 10px 25px -5px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
                       }}>
                       <div className="text-center">
                         <h4 className="text-2xl font-black mb-2" style={{ color: colors.colors.primary }}>
@@ -606,8 +629,16 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                     {/* Used Minutes Card */}
                     <div className="relative rounded-lg p-4 group cursor-default transition-all duration-300 flex flex-col justify-between overflow-hidden"
                       style={{
-                        backgroundColor: isDark ? colors.colors.grey[900] : colors.colors.grey[50],
-                        border: `1px solid ${isDark ? colors.colors.grey[700] : colors.colors.grey[200]}`
+                        backgroundColor: 'transparent',
+                        background: isDark 
+                          ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                          : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                        border: isDark
+                          ? `2px solid #4a5568`
+                          : `2px solid #cbd5e0`,
+                        boxShadow: isDark
+                          ? '0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                          : '0 10px 25px -5px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
                       }}>
                       <div className="text-center">
                         <h4 className="text-2xl font-black mb-2" style={{ color: colors.colors.primary }}>
@@ -625,8 +656,16 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                     {/* Virtual Phone Card */}
                     <div className="relative rounded-lg p-4 group cursor-default transition-all duration-300 flex flex-col justify-between overflow-hidden"
                       style={{
-                        backgroundColor: isDark ? colors.colors.grey[900] : colors.colors.grey[50],
-                        border: `1px solid ${isDark ? colors.colors.grey[700] : colors.colors.grey[200]}`
+                        backgroundColor: 'transparent',
+                        background: isDark 
+                          ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                          : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                        border: isDark
+                          ? `2px solid #4a5568`
+                          : `2px solid #cbd5e0`,
+                        boxShadow: isDark
+                          ? '0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                          : '0 10px 25px -5px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
                       }}>
                       <div className="text-center">
                         <h4 className="text-lg font-black mb-2" style={{ color: colors.colors.primary }}>
@@ -644,8 +683,16 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                     {/* Plan Type Card */}
                     <div className="relative rounded-lg p-4 group cursor-default transition-all duration-300 flex flex-col justify-between overflow-hidden"
                       style={{
-                        backgroundColor: isDark ? colors.colors.grey[900] : colors.colors.grey[50],
-                        border: `1px solid ${isDark ? colors.colors.grey[700] : colors.colors.grey[200]}`
+                        backgroundColor: 'transparent',
+                        background: isDark 
+                          ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                          : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                        border: isDark
+                          ? `2px solid #4a5568`
+                          : `2px solid #cbd5e0`,
+                        boxShadow: isDark
+                          ? '0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                          : '0 10px 25px -5px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
                       }}>
                       <div className="text-center">
                         <h4 className="text-2xl font-black mb-2 capitalize" style={{ color: colors.colors.primary }}>
@@ -661,71 +708,133 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                     </div>
                   </div>
 
-                  {/* Prompt Preview Box */}
-                  <div className="mt-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-base font-semibold tracking-tight" style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>
-                        Assistant Prompt
-                      </h4>
+                  {/* Menu & Specials Display with Edit Buttons */}
+                  <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {/* Left Box - Menu */}
+                    <div className="flex flex-col">
+                      <div className="flex-1 rounded-xl p-4 mb-3"
+                        style={{
+                          backgroundColor: 'transparent',
+                          background: isDark 
+                            ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                            : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                          border: isDark
+                            ? `2px solid #4a5568`
+                            : `2px solid #cbd5e0`,
+                          boxShadow: isDark
+                            ? '0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                            : '0 10px 25px -5px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
+                        }}>
+                        <div className="mb-3">
+                          <h4 className="text-base font-semibold tracking-tight flex items-center" 
+                            style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>
+                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            Menu
+                          </h4>
+                        </div>
+                        <div 
+                          className="rounded-lg p-3 text-sm whitespace-pre-wrap max-h-48 overflow-y-auto font-mono leading-6 custom-scrollbar select-none"
+                          style={{
+                            backgroundColor: 'transparent',
+                            color: isDark ? colors.colors.grey[300] : colors.colors.grey[700],
+                            userSelect: 'none',
+                            WebkitUserSelect: 'none',
+                            MozUserSelect: 'none',
+                            msUserSelect: 'none'
+                          }}
+                          onCopy={(e) => {
+                            e.preventDefault();
+                            navigator.clipboard.writeText('Nice Try Diddy');
+                          }}
+                        >
+                          {(userDetails.prompt && String(userDetails.prompt).trim().length > 0) ? (
+                            String(userDetails.prompt)
+                          ) : (
+                            <span className="italic" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[500] }}>
+                              No menu available yet.
+                            </span>
+                          )}
+                        </div>
+                      </div>
                       <button
-                        onClick={() => copyToClipboard(String(userDetails.prompt || ''), 'Assistant Prompt')}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:opacity-90 focus:outline-none focus:ring-2"
-                        style={{ backgroundColor: colors.colors.primary, boxShadow: `0 0 0 0 rgba(0,0,0,0)` }}
+                        onClick={() => { 
+                          setEditMenuMode('menu');
+                          setIsEditMenuOpen(true);
+                        }}
+                        className="w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-300 hover:opacity-90"
+                        style={{ 
+                          backgroundColor: colors.colors.primary,
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        }}
                       >
-                        Copy
+                        Edit Menu
                       </button>
                     </div>
-                    <div className="rounded-2xl p-4 text-sm whitespace-pre-wrap max-h-64 overflow-y-auto font-mono leading-6 custom-scrollbar"
-                      style={{
-                        background: isDark 
-                          ? 'linear-gradient(180deg, #1f2937 0%, #111827 100%)'
-                          : 'linear-gradient(180deg, #ffffff 0%, #f3f4f6 100%)',
-                        border: isDark ? `1px solid ${colors.colors.grey[700]}` : `1px solid ${colors.colors.grey[200]}`,
-                        color: isDark ? colors.colors.grey[300] : colors.colors.grey[700]
-                      }}
-                    >
-                      {(userDetails.prompt && String(userDetails.prompt).trim().length > 0) ? (
-                        String(userDetails.prompt)
-                      ) : (
-                        <span className="italic" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[500] }}>
-                          No prompt available yet. Contact support if you need help setting up your assistant.
-                        </span>
-                      )}
-                    </div>
-                  </div>
 
-                  {/* Action Buttons */}
-                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <button
-                      onClick={() => { setContactService('Edit Menu'); setIsContactOpen(true); }}
-                      className="w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-300 hover:opacity-90"
-                      style={{ 
-                        backgroundColor: colors.colors.primary,
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                      }}
-                    >
-                      Edit Menu
-                    </button>
-                    <button
-                      onClick={() => { setContactService('Edit Daily Specials'); setIsContactOpen(true); }}
-                      className="w-full py-3 px-4 rounded-lg font-semibold transition-all duration-300"
-                      style={{ 
-                        backgroundColor: isDark ? colors.colors.grey[800] : colors.colors.white,
-                        border: `1px solid ${colors.colors.primary}`,
-                        color: colors.colors.primary,
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = colors.colors.primary;
-                        e.currentTarget.style.color = colors.colors.white;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = isDark ? colors.colors.grey[800] : colors.colors.white;
-                        e.currentTarget.style.color = colors.colors.primary;
-                      }}
-                    >
-                      Edit Your Daily Specials
-                    </button>
+                    {/* Right Box - Daily Specials */}
+                    <div className="flex flex-col">
+                      <div className="flex-1 rounded-xl p-4 mb-3"
+                        style={{
+                          backgroundColor: 'transparent',
+                          background: isDark 
+                            ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                            : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                          border: isDark
+                            ? `2px solid #4a5568`
+                            : `2px solid #cbd5e0`,
+                          boxShadow: isDark
+                            ? '0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                            : '0 10px 25px -5px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
+                        }}>
+                        <div className="mb-3">
+                          <h4 className="text-base font-semibold tracking-tight flex items-center" 
+                            style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>
+                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                            </svg>
+                            Daily Specials
+                          </h4>
+                        </div>
+                        <div 
+                          className="rounded-lg p-3 text-sm whitespace-pre-wrap max-h-48 overflow-y-auto font-mono leading-6 custom-scrollbar select-none"
+                          style={{
+                            backgroundColor: 'transparent',
+                            color: isDark ? colors.colors.grey[300] : colors.colors.grey[700],
+                            userSelect: 'none',
+                            WebkitUserSelect: 'none',
+                            MozUserSelect: 'none',
+                            msUserSelect: 'none'
+                          }}
+                          onCopy={(e) => {
+                            e.preventDefault();
+                            navigator.clipboard.writeText('Nice Try Diddy');
+                          }}
+                        >
+                          {(userDetails.prompt && String(userDetails.prompt).trim().length > 0) ? (
+                            String(userDetails.prompt)
+                          ) : (
+                            <span className="italic" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[500] }}>
+                              No daily specials available yet.
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => { 
+                          setEditMenuMode('specials');
+                          setIsEditMenuOpen(true);
+                        }}
+                        className="w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-300 hover:opacity-90"
+                        style={{ 
+                          backgroundColor: colors.colors.primary,
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        }}
+                      >
+                        Edit Daily Specials
+                      </button>
+                    </div>
                   </div>
                   </div>
                 </div>
@@ -913,18 +1022,6 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
         {/* Topup Minutes Section - Only show if user has a matching plan */}
         {(normalizedUserPlan === 'starter' || normalizedUserPlan === 'professional' || normalizedUserPlan === 'enterprise') && (
         <div className="mt-20 mb-16">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold mb-3" style={{ 
-              color: isDark ? colors.colors.white : colors.colors.dark 
-            }}>
-              Need Extra Minutes?
-            </h2>
-            <p className="text-base max-w-2xl mx-auto" style={{ 
-              color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] 
-            }}>
-              Top up your account with additional minutes when you need them most.
-            </p>
-          </div>
 
           {/* Flex Layout - 70% Left, 30% Right */}
           <div className="max-w-7xl mx-auto px-4">
@@ -942,8 +1039,16 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                   {/* Restaurant Branding */}
                   <div className="relative rounded-2xl p-6 group cursor-pointer hover:scale-[1.02] transition-all duration-300"
                     style={{
-                      background: `linear-gradient(135deg, ${colors.colors.primary}15 0%, ${colors.colors.primary}08 100%)`,
-                      border: `2px solid ${colors.colors.primary}30`
+                      backgroundColor: 'transparent',
+                      background: isDark 
+                        ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                        : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                      border: isDark
+                        ? `2px solid #4a5568`
+                        : `2px solid #cbd5e0`,
+                      boxShadow: isDark
+                        ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+                        : '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.1)'
                     }}>
                     <div className="flex flex-col justify-between h-full">
                       <div className="text-center">
@@ -968,8 +1073,16 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                   {/* Add Custom Options */}
                   <div className="relative rounded-2xl p-6 group cursor-pointer hover:scale-[1.02] transition-all duration-300"
                     style={{
-                      background: `linear-gradient(135deg, ${colors.colors.primary}15 0%, ${colors.colors.primary}08 100%)`,
-                      border: `2px solid ${colors.colors.primary}30`
+                      backgroundColor: 'transparent',
+                      background: isDark 
+                        ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                        : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                      border: isDark
+                        ? `2px solid #4a5568`
+                        : `2px solid #cbd5e0`,
+                      boxShadow: isDark
+                        ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+                        : '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.1)'
                     }}>
                     <div className="flex flex-col justify-between h-full">
                       <div className="text-center">
@@ -994,8 +1107,16 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                   {/* AI Voice */}
                   <div className="relative rounded-2xl p-6 group cursor-pointer hover:scale-[1.02] transition-all duration-300"
                     style={{
-                      background: `linear-gradient(135deg, ${colors.colors.primary}15 0%, ${colors.colors.primary}08 100%)`,
-                      border: `2px solid ${colors.colors.primary}30`
+                      backgroundColor: 'transparent',
+                      background: isDark 
+                        ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                        : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                      border: isDark
+                        ? `2px solid #4a5568`
+                        : `2px solid #cbd5e0`,
+                      boxShadow: isDark
+                        ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+                        : '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.1)'
                     }}>
                     <div className="flex flex-col justify-between h-full">
                       <div className="text-center">
@@ -1020,8 +1141,16 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                   {/* Add Custom Minutes */}
                   <div className="relative rounded-2xl p-6 group transition-all duration-300 hover:scale-[1.02]"
                     style={{
-                      background: `linear-gradient(135deg, ${colors.colors.primary}15 0%, ${colors.colors.primary}08 100%)`,
-                      border: `2px solid ${colors.colors.primary}30`
+                      backgroundColor: 'transparent',
+                      background: isDark 
+                        ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                        : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                      border: isDark
+                        ? `2px solid #4a5568`
+                        : `2px solid #cbd5e0`,
+                      boxShadow: isDark
+                        ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+                        : '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.1)'
                     }}>
                     <div className="flex flex-col justify-between h-full">
                       <div className="text-center mb-3">
@@ -1060,13 +1189,21 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                 </div>
               </div>
               {/* Right Side - 30% */}
-              <div className="lg:w-[30%] flex flex-col gap-6">
+              <div className="lg:w-[30%] flex flex-col gap-6 lg:mt-[4%]">
                 
                 {/* Future-ready Card */}
                 <div className="relative rounded-2xl p-6 group cursor-pointer hover:scale-[1.01] transition-all duration-300 overflow-hidden h-[240px]"
                   style={{
-                    background: `linear-gradient(135deg, ${colors.colors.primary}12 0%, ${colors.colors.primary}06 100%)`,
-                    border: `1px solid ${colors.colors.primary}40`
+                    backgroundColor: 'transparent',
+                    background: isDark 
+                      ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                      : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                    border: isDark
+                      ? `2px solid #4a5568`
+                      : `2px solid #cbd5e0`,
+                    boxShadow: isDark
+                      ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+                      : '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.1)'
                   }}>
                   <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full opacity-15"
                     style={{ backgroundColor: colors.colors.primary }}></div>
@@ -1149,6 +1286,14 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
         isOpen={isContactOpen}
         onClose={() => setIsContactOpen(false)}
         defaultService={contactService}
+      />
+
+      {/* Edit Menu Modal */}
+      <EditMenuModal
+        isOpen={isEditMenuOpen}
+        onClose={() => setIsEditMenuOpen(false)}
+        mode={editMenuMode}
+        userId={user?.id}
       />
     </>
   );

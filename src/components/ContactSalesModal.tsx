@@ -7,9 +7,11 @@ import colors from '../../colors.json';
 
 // Country codes data
 const countryCodes = [
-  { code: '+92', country: 'Pakistan', flag: '🇵🇰' },
   { code: '+1', country: 'United States', flag: '🇺🇸' },
   { code: '+44', country: 'United Kingdom', flag: '🇬🇧' },
+  { code: '+1', country: 'Canada', flag: '🇨🇦' },
+  { code: '+61', country: 'Australia', flag: '🇦🇺' },
+  { code: '+92', country: 'Pakistan', flag: '🇵🇰' },
   { code: '+91', country: 'India', flag: '🇮🇳' },
   { code: '+86', country: 'China', flag: '🇨🇳' },
   { code: '+81', country: 'Japan', flag: '🇯🇵' },
@@ -19,7 +21,6 @@ const countryCodes = [
   { code: '+34', country: 'Spain', flag: '🇪🇸' },
   { code: '+7', country: 'Russia', flag: '🇷🇺' },
   { code: '+55', country: 'Brazil', flag: '🇧🇷' },
-  { code: '+61', country: 'Australia', flag: '🇦🇺' },
   { code: '+65', country: 'Singapore', flag: '🇸🇬' },
   { code: '+971', country: 'UAE', flag: '🇦🇪' },
 ];
@@ -43,7 +44,7 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
     services: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedCountry, setSelectedCountry] = useState(countryCodes[0]); // Default to Pakistan
+  const [selectedCountry, setSelectedCountry] = useState(countryCodes[0]); // Default to United States
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -93,8 +94,12 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 backdrop-blur-sm transition-opacity duration-300"
-        style={{ backgroundColor: isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.5)' }}
+        className="absolute inset-0 transition-opacity duration-300"
+        style={{ 
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          backgroundColor: isDark ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.3)'
+        }}
         onClick={onClose}
       />
       
@@ -102,17 +107,22 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
       <div 
         className="relative w-full max-w-2xl max-h-[90vh] rounded-xl shadow-lg transform transition-all duration-300 scale-100 flex flex-col"
         style={{ 
-          backgroundColor: isDark ? colors.colors.grey[900] : colors.colors.white,
-          border: `1px solid ${isDark ? colors.colors.grey[700] : colors.colors.grey[200]}`,
+          backgroundColor: 'transparent',
+          background: isDark 
+            ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+            : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+          border: isDark
+            ? `2px solid #4a5568`
+            : `2px solid #cbd5e0`,
           boxShadow: isDark
-            ? '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-            : '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+            ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+            : '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.1)'
         }}
       >
         {/* Header */}
         <div className="sticky top-0 z-10 p-6 pb-0 rounded-t-xl"
           style={{ 
-            backgroundColor: isDark ? colors.colors.grey[900] : colors.colors.white
+            backgroundColor: 'transparent'
           }}>
           <div className={`flex items-center justify-between mb-4`}>
             <div>
@@ -146,7 +156,7 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
         {/* Form */}
         <div className="flex-1 overflow-y-auto scrollbar-hide rounded-b-xl"
           style={{
-            backgroundColor: isDark ? colors.colors.grey[900] : colors.colors.white
+            backgroundColor: 'transparent'
           }}>
           <form onSubmit={handleSubmit} className="p-6">
             <div className="space-y-6">
@@ -237,7 +247,7 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
                       backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'white',
                       backdropFilter: isDark ? 'blur(10px)' : 'none'
                     }}
-                    placeholder="311-5230740"
+                    placeholder="555-1234"
                   />
                 </div>
               </div>
@@ -266,7 +276,7 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
                       backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'white',
                       backdropFilter: isDark ? 'blur(10px)' : 'none'
                     }}
-                    placeholder="Sameer"
+                    placeholder="John"
                   />
                 </div>
 
@@ -292,7 +302,7 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
                       backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'white',
                       backdropFilter: isDark ? 'blur(10px)' : 'none'
                     }}
-                    placeholder="Ahmed"
+                    placeholder="Doe"
                   />
                 </div>
               </div>
@@ -375,7 +385,7 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
                       backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'white',
                       backdropFilter: isDark ? 'blur(10px)' : 'none'
                     }}
-                    placeholder="Your city"
+                    placeholder="New York"
                   />
                 </div>
 
@@ -401,7 +411,7 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
                       backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'white',
                       backdropFilter: isDark ? 'blur(10px)' : 'none'
                     }}
-                    placeholder="Your state"
+                    placeholder="New York"
                   />
                 </div>
               </div>
@@ -421,13 +431,13 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
                   onChange={handleInputChange}
                   className={`block w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 ${
                     isDark 
-                      ? 'border-gray-500 text-gray-100 bg-gray-800'
+                      ? 'border-gray-500 text-gray-100'
                       : 'bg-white border-gray-300 text-gray-900'
                   }`}
                   style={{
-                    backgroundColor: isDark ? '#1f2937' : 'white',
+                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'white',
                     color: isDark ? '#f3f4f6' : undefined,
-                    backdropFilter: isDark ? 'blur(6px)' : 'none'
+                    backdropFilter: isDark ? 'blur(10px)' : 'none'
                   }}
                 >
                   <option className={`${isDark ? 'bg-gray-800 text-gray-100' : ''}`} value="">Select a service...</option>
