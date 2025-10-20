@@ -13,6 +13,9 @@ import { useUser } from '../contexts/UserContext';
 import { useToast } from '../contexts/ToastContext';
 import { recordFreeTrialUsage, confirmFreeTrialWithBackend } from '../lib/freeTrialService';
 import colors from '../../colors.json';
+import { Card, CardContent } from './ui/card';
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
 
 interface PricingPlan {
   id: string;
@@ -564,32 +567,32 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium" style={{ color: isDark ? colors.colors.grey[300] : colors.colors.grey[600] }}>Agent ID:</span>
-                            <span className="text-sm font-mono px-2 py-1 rounded" 
-                              style={{ 
-                                backgroundColor: isDark ? colors.colors.grey[700] : colors.colors.grey[200],
-                                color: isDark ? colors.colors.white : colors.colors.dark 
-                              }}>
+                            <Badge variant="secondary" className="font-mono">
                               {userDetails.agent_id}
-                            </span>
-                            <button
+                            </Badge>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 copyToClipboard(userDetails.agent_id, 'Agent ID');
                               }}
-                              className="p-1 rounded transition-colors duration-200 hover:bg-gray-200 dark:hover:bg-gray-700"
-                              style={{ 
-                                color: colors.colors.primary
-                              }}
+                              style={{ color: colors.colors.primary }}
                               title="Copy Agent ID"
                             >
                               <ClipboardDocumentIcon className="w-4 h-4" />
-                            </button>
+                            </Button>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium" style={{ color: isDark ? colors.colors.grey[300] : colors.colors.grey[600] }}>Status:</span>
                             <div className="flex items-center gap-1">
                               <div className={`w-2 h-2 rounded-full animate-pulse ${userDetails.status === 'active' ? 'bg-green-400' : 'bg-red-400'}`}></div>
-                              <span className="text-sm font-semibold capitalize" style={{ color: colors.colors.primary }}>{userDetails.status}</span>
+                              <Badge variant="outline" className="capitalize" style={{ 
+                                borderColor: colors.colors.primary + '40', 
+                                color: colors.colors.primary 
+                              }}>
+                                {userDetails.status}
+                              </Badge>
                             </div>
                           </div>
                         </div>
@@ -600,240 +603,230 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                   {/* 4 Summary Cards Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 h-auto">
                     {/* Total Minutes Card */}
-                    <div className="relative rounded-lg p-4 group cursor-default transition-all duration-300 flex flex-col justify-between overflow-hidden"
-                      style={{
-                        backgroundColor: 'transparent',
-                        background: isDark 
-                          ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
-                          : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
-                        border: isDark
-                          ? `2px solid #4a5568`
-                          : `2px solid #cbd5e0`,
-                        boxShadow: isDark
-                          ? '0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-                          : '0 10px 25px -5px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
-                      }}>
-                      <div className="text-center">
-                        <h4 className="text-2xl font-black mb-2" style={{ color: colors.colors.primary }}>
-                          {userDetails.minutes_allowed.toLocaleString()}
-                        </h4>
-                        <p className="text-xs uppercase tracking-wide mb-1" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>
-                          Total Minutes
-                        </p>
-                        <p className="text-xs opacity-70" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>
-                          Allowed
-                        </p>
-                      </div>
-                    </div>
+                    <Card className="transition-all duration-300 cursor-default" style={{
+                      background: isDark 
+                        ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                        : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                      border: isDark ? '2px solid #4a5568' : '2px solid #cbd5e0',
+                      boxShadow: isDark
+                        ? '0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                        : '0 10px 25px -5px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
+                    }}>
+                      <CardContent className="p-4">
+                        <div className="text-center">
+                          <h4 className="text-2xl font-black mb-2" style={{ color: colors.colors.primary }}>
+                            {userDetails.minutes_allowed.toLocaleString()}
+                          </h4>
+                          <p className="text-xs uppercase tracking-wide mb-1" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>
+                            Total Minutes
+                          </p>
+                          <p className="text-xs opacity-70" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>
+                            Allowed
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
                     
                     {/* Used Minutes Card */}
-                    <div className="relative rounded-lg p-4 group cursor-default transition-all duration-300 flex flex-col justify-between overflow-hidden"
-                      style={{
-                        backgroundColor: 'transparent',
-                        background: isDark 
-                          ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
-                          : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
-                        border: isDark
-                          ? `2px solid #4a5568`
-                          : `2px solid #cbd5e0`,
-                        boxShadow: isDark
-                          ? '0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-                          : '0 10px 25px -5px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
-                      }}>
-                      <div className="text-center">
-                        <h4 className="text-2xl font-black mb-2" style={{ color: colors.colors.primary }}>
-                          {userDetails.minutes_used.toLocaleString()}
-                        </h4>
-                        <p className="text-xs uppercase tracking-wide mb-1" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>
-                          Used Minutes
-                        </p>
-                        <p className="text-xs opacity-70" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>
-                          Consumed
-                        </p>
-                      </div>
-                    </div>
+                    <Card className="transition-all duration-300 cursor-default" style={{
+                      background: isDark 
+                        ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                        : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                      border: isDark ? '2px solid #4a5568' : '2px solid #cbd5e0',
+                      boxShadow: isDark
+                        ? '0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                        : '0 10px 25px -5px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
+                    }}>
+                      <CardContent className="p-4">
+                        <div className="text-center">
+                          <h4 className="text-2xl font-black mb-2" style={{ color: colors.colors.primary }}>
+                            {userDetails.minutes_used.toLocaleString()}
+                          </h4>
+                          <p className="text-xs uppercase tracking-wide mb-1" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>
+                            Used Minutes
+                          </p>
+                          <p className="text-xs opacity-70" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>
+                            Consumed
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
                     
                     {/* Virtual Phone Card */}
-                    <div className="relative rounded-lg p-4 group cursor-default transition-all duration-300 flex flex-col justify-between overflow-hidden"
-                      style={{
-                        backgroundColor: 'transparent',
-                        background: isDark 
-                          ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
-                          : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
-                        border: isDark
-                          ? `2px solid #4a5568`
-                          : `2px solid #cbd5e0`,
-                        boxShadow: isDark
-                          ? '0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-                          : '0 10px 25px -5px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
-                      }}>
-                      <div className="text-center">
-                        <h4 className="text-lg font-black mb-2" style={{ color: colors.colors.primary }}>
-                          {userDetails.twilio_phone_number || 'Not Assigned'}
-                        </h4>
-                        <p className="text-xs uppercase tracking-wide mb-1" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>
-                          Virtual Phone
-                        </p>
-                        <p className="text-xs opacity-70" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>
-                          Twilio Number
-                        </p>
-                      </div>
-                    </div>
+                    <Card className="transition-all duration-300 cursor-default" style={{
+                      background: isDark 
+                        ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                        : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                      border: isDark ? '2px solid #4a5568' : '2px solid #cbd5e0',
+                      boxShadow: isDark
+                        ? '0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                        : '0 10px 25px -5px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
+                    }}>
+                      <CardContent className="p-4">
+                        <div className="text-center">
+                          <h4 className="text-lg font-black mb-2" style={{ color: colors.colors.primary }}>
+                            {userDetails.twilio_phone_number || 'Not Assigned'}
+                          </h4>
+                          <p className="text-xs uppercase tracking-wide mb-1" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>
+                            Virtual Phone
+                          </p>
+                          <p className="text-xs opacity-70" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>
+                            Twilio Number
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
                     
                     {/* Plan Type Card */}
-                    <div className="relative rounded-lg p-4 group cursor-default transition-all duration-300 flex flex-col justify-between overflow-hidden"
-                      style={{
-                        backgroundColor: 'transparent',
-                        background: isDark 
-                          ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
-                          : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
-                        border: isDark
-                          ? `2px solid #4a5568`
-                          : `2px solid #cbd5e0`,
-                        boxShadow: isDark
-                          ? '0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-                          : '0 10px 25px -5px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
-                      }}>
-                      <div className="text-center">
-                        <h4 className="text-2xl font-black mb-2 capitalize" style={{ color: colors.colors.primary }}>
-                          {userDetails.plan}
-                        </h4>
-                        <p className="text-xs uppercase tracking-wide mb-1" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>
-                          Plan Type
-                        </p>
-                        <p className="text-xs opacity-70" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>
-                          Current Plan
-                        </p>
-                      </div>
-                    </div>
+                    <Card className="transition-all duration-300 cursor-default" style={{
+                      background: isDark 
+                        ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                        : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                      border: isDark ? '2px solid #4a5568' : '2px solid #cbd5e0',
+                      boxShadow: isDark
+                        ? '0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                        : '0 10px 25px -5px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
+                    }}>
+                      <CardContent className="p-4">
+                        <div className="text-center">
+                          <h4 className="text-2xl font-black mb-2 capitalize" style={{ color: colors.colors.primary }}>
+                            {userDetails.plan}
+                          </h4>
+                          <p className="text-xs uppercase tracking-wide mb-1" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>
+                            Plan Type
+                          </p>
+                          <p className="text-xs opacity-70" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}>
+                            Current Plan
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
 
                   {/* Menu & Specials Display with Edit Buttons */}
                   <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {/* Left Box - Menu */}
                     <div className="flex flex-col">
-                      <div className="flex-1 rounded-xl p-4 mb-3"
-                        style={{
-                          backgroundColor: 'transparent',
-                          background: isDark 
-                            ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
-                            : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
-                          border: isDark
-                            ? `2px solid #4a5568`
-                            : `2px solid #cbd5e0`,
-                          boxShadow: isDark
-                            ? '0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-                            : '0 10px 25px -5px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
-                        }}>
-                        <div className="mb-3">
-                          <h4 className="text-base font-semibold tracking-tight flex items-center" 
-                            style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            Menu
-                          </h4>
-                        </div>
-                        <div 
-                          className="rounded-lg p-3 text-sm whitespace-pre-wrap max-h-48 overflow-y-auto font-mono leading-6 custom-scrollbar select-none"
-                          style={{
-                            backgroundColor: 'transparent',
-                            color: isDark ? colors.colors.grey[300] : colors.colors.grey[700],
-                            userSelect: 'none',
-                            WebkitUserSelect: 'none',
-                            MozUserSelect: 'none',
-                            msUserSelect: 'none'
-                          }}
-                          onCopy={(e) => {
-                            e.preventDefault();
-                            navigator.clipboard.writeText('Nice Try Diddy');
-                          }}
-                        >
-                          {(userDetails.prompt && String(userDetails.prompt).trim().length > 0) ? (
-                            String(userDetails.prompt)
-                          ) : (
-                            <span className="italic" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[500] }}>
-                              No menu available yet.
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <button
+                      <Card className="flex-1 mb-3" style={{
+                        background: isDark 
+                          ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                          : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                        border: isDark ? '2px solid #4a5568' : '2px solid #cbd5e0',
+                        boxShadow: isDark
+                          ? '0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                          : '0 10px 25px -5px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
+                      }}>
+                        <CardContent className="p-4">
+                          <div className="mb-3">
+                            <h4 className="text-base font-semibold tracking-tight flex items-center" 
+                              style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>
+                              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              Menu
+                            </h4>
+                          </div>
+                          <div 
+                            className="rounded-lg p-3 text-sm whitespace-pre-wrap max-h-48 overflow-y-auto font-mono leading-6 custom-scrollbar select-none"
+                            style={{
+                              backgroundColor: 'transparent',
+                              color: isDark ? colors.colors.grey[300] : colors.colors.grey[700],
+                              userSelect: 'none',
+                              WebkitUserSelect: 'none',
+                              MozUserSelect: 'none',
+                              msUserSelect: 'none'
+                            }}
+                            onCopy={(e) => {
+                              e.preventDefault();
+                              navigator.clipboard.writeText('Nice Try Diddy');
+                            }}
+                          >
+                            {(userDetails.prompt && String(userDetails.prompt).trim().length > 0) ? (
+                              String(userDetails.prompt)
+                            ) : (
+                              <span className="italic" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[500] }}>
+                                No menu available yet.
+                              </span>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                      <Button
                         onClick={() => { 
                           setEditMenuMode('menu');
                           setIsEditMenuOpen(true);
                         }}
-                        className="w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-300 hover:opacity-90"
+                        className="w-full font-semibold transition-all duration-300"
                         style={{ 
                           backgroundColor: colors.colors.primary,
-                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                          color: 'white'
                         }}
+                        size="lg"
                       >
                         Edit Menu
-                      </button>
+                      </Button>
                     </div>
 
                     {/* Right Box - Daily Specials */}
                     <div className="flex flex-col">
-                      <div className="flex-1 rounded-xl p-4 mb-3"
-                        style={{
-                          backgroundColor: 'transparent',
-                          background: isDark 
-                            ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
-                            : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
-                          border: isDark
-                            ? `2px solid #4a5568`
-                            : `2px solid #cbd5e0`,
-                          boxShadow: isDark
-                            ? '0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-                            : '0 10px 25px -5px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
-                        }}>
-                        <div className="mb-3">
-                          <h4 className="text-base font-semibold tracking-tight flex items-center" 
-                            style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
-                            </svg>
-                            Daily Specials
-                          </h4>
-                        </div>
-                        <div 
-                          className="rounded-lg p-3 text-sm whitespace-pre-wrap max-h-48 overflow-y-auto font-mono leading-6 custom-scrollbar select-none"
-                          style={{
-                            backgroundColor: 'transparent',
-                            color: isDark ? colors.colors.grey[300] : colors.colors.grey[700],
-                            userSelect: 'none',
-                            WebkitUserSelect: 'none',
-                            MozUserSelect: 'none',
-                            msUserSelect: 'none'
-                          }}
-                          onCopy={(e) => {
-                            e.preventDefault();
-                            navigator.clipboard.writeText('Nice Try Diddy');
-                          }}
-                        >
-                          {(userDetails.prompt && String(userDetails.prompt).trim().length > 0) ? (
-                            String(userDetails.prompt)
-                          ) : (
-                            <span className="italic" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[500] }}>
-                              No daily specials available yet.
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <button
+                      <Card className="flex-1 mb-3" style={{
+                        background: isDark 
+                          ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                          : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                        border: isDark ? '2px solid #4a5568' : '2px solid #cbd5e0',
+                        boxShadow: isDark
+                          ? '0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                          : '0 10px 25px -5px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
+                      }}>
+                        <CardContent className="p-4">
+                          <div className="mb-3">
+                            <h4 className="text-base font-semibold tracking-tight flex items-center" 
+                              style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>
+                              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                              </svg>
+                              Daily Specials
+                            </h4>
+                          </div>
+                          <div 
+                            className="rounded-lg p-3 text-sm whitespace-pre-wrap max-h-48 overflow-y-auto font-mono leading-6 custom-scrollbar select-none"
+                            style={{
+                              backgroundColor: 'transparent',
+                              color: isDark ? colors.colors.grey[300] : colors.colors.grey[700],
+                              userSelect: 'none',
+                              WebkitUserSelect: 'none',
+                              MozUserSelect: 'none',
+                              msUserSelect: 'none'
+                            }}
+                            onCopy={(e) => {
+                              e.preventDefault();
+                              navigator.clipboard.writeText('Nice Try Diddy');
+                            }}
+                          >
+                            {(userDetails.prompt && String(userDetails.prompt).trim().length > 0) ? (
+                              String(userDetails.prompt)
+                            ) : (
+                              <span className="italic" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[500] }}>
+                                No daily specials available yet.
+                              </span>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                      <Button
                         onClick={() => { 
                           setEditMenuMode('specials');
                           setIsEditMenuOpen(true);
                         }}
-                        className="w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-300 hover:opacity-90"
+                        className="w-full font-semibold transition-all duration-300"
                         style={{ 
                           backgroundColor: colors.colors.primary,
-                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                          color: 'white'
                         }}
+                        size="lg"
                       >
                         Edit Daily Specials
-                      </button>
+                      </Button>
                     </div>
                   </div>
                   </div>
