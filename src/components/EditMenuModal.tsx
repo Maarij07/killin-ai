@@ -218,129 +218,125 @@ export default function EditMenuModal({ isOpen, onClose, mode, userId }: EditMen
       return;
     }
 
+    // Update all images to processing state
+    setUploadedImages(prev => prev.map(img => ({ ...img, isProcessing: true })));
     setIsProcessing(true);
     
     try {
-      // Create FormData to send all images in a batch
-      const formData = new FormData();
+      let allExtractedText = '';
+      let hasErrors = false;
       
-      // Append all images to the same FormData - using the same key as single upload
-      uploadedImages.forEach((image, index) => {
-        formData.append('menu_image', image.file); // Use the same key as single upload
-      });
-      
-      // Send all images in a single request to the same endpoint
-      const response = await fetch(`${API_BASE_URL}/api/upload/menu-image`, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json'
-        },
-        body: formData
-      });
-      
-      if (response.ok) {
-        const responseData = await response.json();
-        console.log('✅ Batch image processing successful:', responseData);
-        
-        // Extract the actual data from the response
-        const data = responseData?.data || responseData;
-        
-        let allExtractedText = '';
-        
-        // Handle different response formats
-        if (data.menu_text || data.menu_items || data.items || data.extracted_text) {
-          // Check if menu_text is specifically "No." - this indicates an error
-          if (data.menu_text === "No." || data.menu_text === "No") {
-            // Update all images with error status
-            setUploadedImages(prev => prev.map(img => ({
-              ...img,
-              isProcessing: false,
-              error: 'No menu items could be extracted'
-            })));
+      // Process each image individually
+      for (const image of uploadedImages) {
+        try {
+          const formData = new FormData();
+          formData.append('menu_image', image.file);
+          
+          const response = await fetch(`${API_BASE_URL}/api/upload/menu-image`, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json'
+            },
+            body: formData
+          });
+          
+          if (response.ok) {
+            const responseData = await response.json();
+            console.log(`✅ Image ${image.file.name} processing successful:`, responseData);
             
-            showError('Error extracting menu item');
-            setIsProcessing(false);
-            return;
-          }
-          
-          // Single result format (most likely for batch)
-          let extractedMenuItems = '';
-          if (data.menu_text) {
-            extractedMenuItems = data.menu_text;
-          } else if (data.menu_items) {
-            if (typeof data.menu_items === 'string') {
-              extractedMenuItems = data.menu_items;
-            } else if (Array.isArray(data.menu_items)) {
-              extractedMenuItems = data.menu_items.join('\n');
-            } else if (data.menu_items.items) {
-              extractedMenuItems = Array.isArray(data.menu_items.items) 
-                ? data.menu_items.items.join('\n')
-                : data.menu_items.items.toString();
+            // Extract the actual data from the response
+            const data = responseData?.data || responseData;
+            
+            // Handle different response formats
+            let extractedMenuItems = '';
+            if (data.menu_text) {
+              extractedMenuItems = data.menu_text;
+            } else if (data.menu_items) {
+              if (typeof data.menu_items === 'string') {
+                extractedMenuItems = data.menu_items;
+              } else if (Array.isArray(data.menu_items)) {
+                extractedMenuItems = data.menu_items.join('\n');
+              } else if (data.menu_items.items) {
+                extractedMenuItems = Array.isArray(data.menu_items.items) 
+                  ? data.menu_items.items.join('\n')
+                  : data.menu_items.items.toString();
+              }
+            } else if (data.items) {
+              extractedMenuItems = Array.isArray(data.items) 
+                ? data.items.join('\n')
+                : data.items.toString();
+            } else if (data.extracted_text) {
+              extractedMenuItems = data.extracted_text;
             }
-          } else if (data.items) {
-            extractedMenuItems = Array.isArray(data.items) 
-              ? data.items.join('\n')
-              : data.items.toString();
-          } else if (data.extracted_text) {
-            extractedMenuItems = data.extracted_text;
+            
+            // Check if menu_text is specifically "No." - this indicates an error
+            if (data.menu_text === "No." || data.menu_text === "No") {
+              setUploadedImages(prev => prev.map(img => 
+                img.id === image.id ? { ...img, isProcessing: false, error: 'No menu items could be extracted' } : img
+              ));
+              hasErrors = true;
+              continue;
+            }
+            
+            // Update image with processed text
+            setUploadedImages(prev => prev.map(img => 
+              img.id === image.id ? { ...img, isProcessing: false, processedText: extractedMenuItems } : img
+            ));
+            
+            if (extractedMenuItems) {
+              allExtractedText += extractedMenuItems + '\n\n';
+            }
+          } else {
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            console.error(`❌ Image ${image.file.name} processing failed:`, response.status, errorData);
+            
+            setUploadedImages(prev => prev.map(img => 
+              img.id === image.id ? { 
+                ...img, 
+                isProcessing: false, 
+                error: errorData.message || errorData.error || 'Processing failed' 
+              } : img
+            ));
+            hasErrors = true;
           }
+        } catch (error) {
+          console.error(`❌ Error processing image ${image.file.name}:`, error);
           
-          // Update all images with the same extracted text and mark as complete
-          setUploadedImages(prev => prev.map(img => ({
-            ...img,
-            isProcessing: false,
-            processedText: extractedMenuItems
-          })));
-          
-          if (extractedMenuItems) {
-            allExtractedText += extractedMenuItems + '\n\n';
-          }
+          setUploadedImages(prev => prev.map(img => 
+            img.id === image.id ? { 
+              ...img, 
+              isProcessing: false, 
+              error: error instanceof Error ? error.message : 'Network error' 
+            } : img
+          ));
+          hasErrors = true;
         }
+      }
+      
+      // Set the combined extracted text to the menu text
+      if (allExtractedText) {
+        setMenuText(prev => prev ? prev + '\n\n' + allExtractedText : allExtractedText);
         
-        // Set the combined extracted text to the menu text
-        if (allExtractedText) {
-          setMenuText(prev => prev ? prev + '\n\n' + allExtractedText : allExtractedText);
-          
-          // Automatically call edit_menu API since we have valid content
-          await autoSaveMenuContent(allExtractedText);
-          
-          // Show appropriate success message based on mode
-          const successMessage = mode === 'menu' ? 'Menu items added' : 'Specials added';
-          showSuccess(successMessage);
-        } else {
-          // Update all images with error status
-          setUploadedImages(prev => prev.map(img => ({
-            ...img,
-            isProcessing: false,
-            error: 'No menu items could be extracted'
-          })));
-          
-          showError('Error extracting menu item');
-        }
+        // Automatically call edit_menu API since we have valid content
+        await autoSaveMenuContent(allExtractedText);
+        
+        // Show appropriate success message based on mode
+        const successMessage = mode === 'menu' ? 'Menu items added' : 'Specials added';
+        showSuccess(successMessage);
+        
+        // Close the modal after successful processing
+        setTimeout(() => {
+          handleClose();
+        }, 1500);
+      } else if (!hasErrors) {
+        // Only show error if there were no individual errors but also no content
+        showError('No menu items could be extracted from any images');
       } else {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        console.error('❌ Batch image processing failed:', response.status, errorData);
-        
-        // Update all images with error status
-        setUploadedImages(prev => prev.map(img => ({
-          ...img,
-          isProcessing: false,
-          error: errorData.message || errorData.error || 'Processing failed'
-        })));
-        
-        showError('Error extracting menu item');
+        showError('Some images failed to process. Check individual results.');
       }
     } catch (error) {
       console.error('❌ Error processing images:', error);
-      
-      // Update all images with error status
-      setUploadedImages(prev => prev.map(img => ({
-        ...img,
-        isProcessing: false,
-        error: error instanceof Error ? error.message : 'Network error'
-      })));
-      
-      showError('Error extracting menu item');
+      showError('Error processing images');
     } finally {
       setIsProcessing(false);
     }
