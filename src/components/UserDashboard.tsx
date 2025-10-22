@@ -34,6 +34,7 @@ export default function UserDashboard() {
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(true);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [accountDeleted, setAccountDeleted] = useState(false);
 
   // Fetch user details from /api/auth/users
   useEffect(() => {
@@ -52,51 +53,38 @@ export default function UserDashboard() {
           const data = await response.json();
           console.log('All users data:', data);
           
-          // Find current user by ID
-          const currentUserDetails = data.users?.find((u: UserDetails) => u.id === parseInt(user.id)) || data.find((u: UserDetails) => u.id === parseInt(user.id));
+          // Find current user by ID - handle different response formats
+          let currentUserDetails = null;
+          if (data.users && Array.isArray(data.users)) {
+            currentUserDetails = data.users.find((u: UserDetails) => u.id === parseInt(user.id));
+          } else if (Array.isArray(data)) {
+            currentUserDetails = data.find((u: UserDetails) => u.id === parseInt(user.id));
+          }
           
           if (currentUserDetails) {
             setUserDetails(currentUserDetails);
             console.log('Current user details:', currentUserDetails);
           } else {
-            console.log('User not found in users list');
-            // Create a basic UserDetails object from context user data
-            setUserDetails({
-              id: parseInt(user.id),
-              name: user.name,
-              email: user.email,
-              plan: 'Unknown',
-              status: 'active',
-              minutes_allowed: 0,
-              minutes_used: 0
-            });
+            console.log('User not found in users list - account may have been deleted');
+            setAccountDeleted(true);
           }
+        } else if (response.status === 404 || response.status === 401) {
+          // User not found or unauthorized - account deleted
+          console.error('User account not found or unauthorized');
+          setAccountDeleted(true);
         } else {
           console.error('Failed to fetch users:', response.status);
-          // Create a basic UserDetails object from context user data
-          setUserDetails({
-            id: parseInt(user.id),
-            name: user.name,
-            email: user.email,
-            plan: 'Unknown',
-            status: 'active',
-            minutes_allowed: 0,
-            minutes_used: 0
-          });
+          showError('Failed to load user details');
         }
       } catch (error) {
         console.error('Error fetching user details:', error);
-        showError('Failed to load user details');
-        // Create a basic UserDetails object from context user data
-        setUserDetails({
-          id: parseInt(user.id),
-          name: user.name,
-          email: user.email,
-          plan: 'Unknown',
-          status: 'active',
-          minutes_allowed: 0,
-          minutes_used: 0
-        });
+        // Check if it's a data.find is not a function error
+        if (error instanceof TypeError && error.message.includes('find')) {
+          console.log('Account data format issue - account may be deleted');
+          setAccountDeleted(true);
+        } else {
+          showError('Failed to load user details');
+        }
       } finally {
         setIsLoadingDetails(false);
       }
@@ -118,6 +106,46 @@ export default function UserDashboard() {
   const handleLogoutCancel = () => {
     setShowLogoutModal(false);
   };
+
+  // Account deleted state
+  if (accountDeleted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" 
+        style={{
+          background: isDark 
+            ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+            : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+          border: isDark ? '1px solid #4a5568' : '1px solid #cbd5e0',
+          boxShadow: isDark
+            ? 'inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+            : 'inset 0 1px 0 rgba(255, 255, 255, 0.8)'
+        }}>
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="mb-6">
+            <svg className="mx-auto h-16 w-16 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className={`text-2xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            Your Account Has Been Deleted
+          </h2>
+          <p className={`text-base mb-6 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+            We couldn&apos;t find your account in our system. Your account may have been deleted by an administrator.
+          </p>
+          <button
+            onClick={() => {
+              logout();
+              window.location.href = '/';
+            }}
+            className="px-6 py-3 rounded-lg text-white font-medium transition-all duration-200"
+            style={{ backgroundColor: colors.colors.primary }}
+          >
+            Return to Sign In
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Loading state for user details
   if (isLoadingDetails) {

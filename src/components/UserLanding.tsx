@@ -181,6 +181,18 @@ export default function UserLanding() {
                 </div>
               </div>
 
+              {/* Forgot password link - above sign in button, aligned right */}
+              <div className="text-right">
+                <a
+                  href="/forgot-password"
+                  className={`text-sm transition-colors hover:underline ${
+                    isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-700'
+                  }`}
+                >
+                  Forgot your password?
+                </a>
+              </div>
+
               {/* Sign in button */}
               <div>
                 <button
@@ -197,7 +209,7 @@ export default function UserLanding() {
             </form>
 
             {/* Signup link */}
-            <div className="mt-6 text-center">
+            <div className="mt-4 text-center">
               <a
                 href="/signup"
                 className={`text-sm transition-colors hover:underline ${

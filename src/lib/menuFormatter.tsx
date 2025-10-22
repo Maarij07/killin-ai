@@ -1,8 +1,40 @@
 /**
  * Format menu text with proper styling for headings, items, prices, and descriptions
+ * Also handles **bold** text formatting
  * @param text The raw menu text from the API
  * @returns Formatted JSX elements
  */
+
+// Helper function to parse bold text (**text**)
+const parseBoldText = (text: string) => {
+  const parts: (string | React.ReactNode)[] = [];
+  const regex = /\*\*(.*?)\*\*/g;
+  let lastIndex = 0;
+  let match;
+  let keyCounter = 0;
+
+  while ((match = regex.exec(text)) !== null) {
+    // Add text before the bold part
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+    // Add bold text
+    parts.push(
+      <strong key={`bold-${keyCounter++}`} className="font-bold">
+        {match[1]}
+      </strong>
+    );
+    lastIndex = regex.lastIndex;
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : text;
+};
+
 export const formatMenuText = (text: string) => {
   if (!text) return null;
 
@@ -12,7 +44,7 @@ export const formatMenuText = (text: string) => {
       const heading = line.substring(2).trim();
       return (
         <h3 key={index} className="font-bold text-lg mt-4 mb-2">
-          {heading}
+          {parseBoldText(heading)}
         </h3>
       );
     }
@@ -25,9 +57,9 @@ export const formatMenuText = (text: string) => {
         return (
           <div key={index} className="flex items-start mb-1">
             <span className="mr-2">•</span>
-            <span className="font-medium">{item}</span>
+            <span className="font-medium">{parseBoldText(item)}</span>
             <span className="font-bold mx-2">${price}</span>
-            <span className="italic text-sm opacity-80">{description}</span>
+            <span className="italic text-sm opacity-80">{parseBoldText(description)}</span>
           </div>
         );
       }
@@ -37,7 +69,7 @@ export const formatMenuText = (text: string) => {
       return (
         <div key={index} className="flex items-start mb-1">
           <span className="mr-2">•</span>
-          <span>{simpleItem}</span>
+          <span>{parseBoldText(simpleItem)}</span>
         </div>
       );
     }
@@ -50,7 +82,7 @@ export const formatMenuText = (text: string) => {
     // Handle regular text
     return (
       <div key={index} className="mb-1">
-        {line}
+        {parseBoldText(line)}
       </div>
     );
   });

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import { useTheme } from '../contexts/ThemeContext';
-import { CheckIcon, MicrophoneIcon, BuildingStorefrontIcon, CogIcon, PhoneIcon, ClipboardDocumentIcon } from '@heroicons/react/24/solid';
+import {  MicrophoneIcon, BuildingStorefrontIcon, CogIcon, PhoneIcon, ClipboardDocumentIcon } from '@heroicons/react/24/solid';
 import { useEmbeddedPayment } from '../hooks/useEmbeddedPayment';
 import PaymentModal from './PaymentModal';
 import ContactSalesModal from './ContactSalesModal';
@@ -94,7 +94,7 @@ interface UserPricingProps {
 export default function UserPricing({ userPlan }: UserPricingProps) {
   const { isDark } = useTheme();
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
-  const [loading] = useState(false);
+  // const [loading] = useState(false);
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [contactService, setContactService] = useState<string | undefined>(undefined);
   const [isEditMenuOpen, setIsEditMenuOpen] = useState(false);

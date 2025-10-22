@@ -100,7 +100,7 @@ export default function ManageAssistants() {
       await navigator.clipboard.writeText(systemPrompt || '');
       showSuccess('Prompt copied to clipboard');
     } catch (e) {
-      showError('Failed to copy prompt');
+      showError('Failed to copy prompt: ${e}');
     }
   };
 
