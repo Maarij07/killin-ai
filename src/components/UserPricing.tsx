@@ -12,6 +12,7 @@ import { useSearchParams } from 'next/navigation';
 import { useUser } from '../contexts/UserContext';
 import { useToast } from '../contexts/ToastContext';
 import { recordFreeTrialUsage, confirmFreeTrialWithBackend } from '../lib/freeTrialService';
+import { formatMenuText } from '../lib/menuFormatter';
 import colors from '../../colors.json';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
@@ -776,7 +777,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                             </h4>
                           </div>
                           <div 
-                            className="rounded-lg p-3 text-sm whitespace-pre-wrap max-h-48 overflow-y-auto font-mono leading-6 custom-scrollbar select-none"
+                            className="rounded-lg p-3 text-sm whitespace-pre-wrap max-h-48 overflow-y-auto leading-6 custom-scrollbar select-none"
                             style={{
                               backgroundColor: 'transparent',
                               color: isDark ? colors.colors.grey[300] : colors.colors.grey[700],
@@ -795,7 +796,9 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                                 Loading menu content...
                               </span>
                             ) : menuContent?.menu_text ? (
-                              menuContent.menu_text
+                              <div className="whitespace-normal">
+                                {formatMenuText(menuContent.menu_text)}
+                              </div>
                             ) : (
                               <span className="italic" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[500] }}>
                                 No menu available yet.
@@ -809,7 +812,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                           setEditMenuMode('menu');
                           setIsEditMenuOpen(true);
                         }}
-                        className="w-full font-semibold transition-all duration-300"
+                        className="w-full font-semibold transition-all duration-300 cursor-pointer"
                         style={{ 
                           backgroundColor: colors.colors.primary,
                           color: 'white'
@@ -842,7 +845,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                             </h4>
                           </div>
                           <div 
-                            className="rounded-lg p-3 text-sm whitespace-pre-wrap max-h-48 overflow-y-auto font-mono leading-6 custom-scrollbar select-none"
+                            className="rounded-lg p-3 text-sm whitespace-pre-wrap max-h-48 overflow-y-auto leading-6 custom-scrollbar select-none"
                             style={{
                               backgroundColor: 'transparent',
                               color: isDark ? colors.colors.grey[300] : colors.colors.grey[700],
@@ -861,7 +864,9 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                                 Loading specials content...
                               </span>
                             ) : menuContent?.specials_text ? (
-                              menuContent.specials_text
+                              <div className="whitespace-normal">
+                                {formatMenuText(menuContent.specials_text)}
+                              </div>
                             ) : (
                               <span className="italic" style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[500] }}>
                                 No daily specials available yet.
@@ -875,7 +880,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                           setEditMenuMode('specials');
                           setIsEditMenuOpen(true);
                         }}
-                        className="w-full font-semibold transition-all duration-300"
+                        className="w-full font-semibold transition-all duration-300 cursor-pointer"
                         style={{ 
                           backgroundColor: colors.colors.primary,
                           color: 'white'
@@ -1087,7 +1092,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   {/* Restaurant Branding */}
-                  <div className="relative rounded-2xl p-6 group cursor-pointer hover:scale-[1.02] transition-all duration-300"
+                  <div className="relative rounded-2xl p-6 group hover:scale-[1.02] transition-all duration-300"
                     style={{
                       backgroundColor: 'transparent',
                       background: isDark 
@@ -1112,7 +1117,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                       </div>
                       <div className="text-center">
                         <button onClick={() => { setContactService('Restaurant Branding'); setIsContactOpen(true); }}
-                          className="w-full py-2 px-4 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90"
+                          className="w-full py-2 px-4 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90 cursor-pointer"
                           style={{ background: `linear-gradient(135deg, ${colors.colors.primary} 0%, ${colors.colors.primary}dd 100%)` }}>
                           Contact Sales
                         </button>
@@ -1121,7 +1126,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                   </div>
 
                   {/* Add Custom Options */}
-                  <div className="relative rounded-2xl p-6 group cursor-pointer hover:scale-[1.02] transition-all duration-300"
+                  <div className="relative rounded-2xl p-6 group hover:scale-[1.02] transition-all duration-300"
                     style={{
                       backgroundColor: 'transparent',
                       background: isDark 
@@ -1146,7 +1151,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                       </div>
                       <div className="text-center">
                         <button onClick={() => { setContactService('Custom Integration'); setIsContactOpen(true); }}
-                          className="w-full py-2 px-4 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90"
+                          className="w-full py-2 px-4 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90 cursor-pointer"
                           style={{ background: `linear-gradient(135deg, ${colors.colors.primary} 0%, ${colors.colors.primary}dd 100%)` }}>
                           Contact Sales
                         </button>
@@ -1155,7 +1160,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                   </div>
 
                   {/* AI Voice */}
-                  <div className="relative rounded-2xl p-6 group cursor-pointer hover:scale-[1.02] transition-all duration-300"
+                  <div className="relative rounded-2xl p-6 group hover:scale-[1.02] transition-all duration-300"
                     style={{
                       backgroundColor: 'transparent',
                       background: isDark 
@@ -1180,7 +1185,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                       </div>
                       <div className="text-center">
                         <button onClick={() => { setContactService('AI Voice Assistant'); setIsContactOpen(true); }}
-                          className="w-full py-2 px-4 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90"
+                          className="w-full py-2 px-4 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90 cursor-pointer"
                           style={{ background: `linear-gradient(135deg, ${colors.colors.primary} 0%, ${colors.colors.primary}dd 100%)` }}>
                           Contact Sales
                         </button>
@@ -1228,7 +1233,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                         />
                         <button
                           onClick={() => { setContactService('Custom Minutes'); setIsContactOpen(true); }}
-                          className="w-full py-2 px-4 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90"
+                          className="w-full py-2 px-4 rounded-xl font-bold text-white text-sm uppercase tracking-wide transition-all duration-300 hover:opacity-90 cursor-pointer"
                           style={{ background: `linear-gradient(135deg, ${colors.colors.primary} 0%, ${colors.colors.primary}dd 100%)` }}
                         >
                           Contact Sales
@@ -1242,7 +1247,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
               <div className="lg:w-[30%] flex flex-col gap-6 lg:mt-[4%]">
                 
                 {/* Future-ready Card */}
-                <div className="relative rounded-2xl p-6 group cursor-pointer hover:scale-[1.01] transition-all duration-300 overflow-hidden h-[240px]"
+                <div className="relative rounded-2xl p-6 group hover:scale-[1.01] transition-all duration-300 overflow-hidden h-[255px]"
                   style={{
                     backgroundColor: 'transparent',
                     background: isDark 
@@ -1274,7 +1279,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                 </div>
                 
                 {/* Never Miss A Call Again Card */}
-                <div className="relative rounded-2xl p-6 group cursor-pointer hover:scale-[1.01] transition-all duration-300 h-[540px] overflow-hidden"
+                <div className="relative rounded-2xl p-6 group hover:scale-[1.01] transition-all duration-300 h-[285px] overflow-hidden"
                   style={{
                     backgroundColor: isDark ? colors.colors.grey[800] : colors.colors.white,
                     border: isDark ? `1px solid ${colors.colors.grey[700]}` : `1px solid ${colors.colors.grey[200]}`
@@ -1336,6 +1341,7 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
         isOpen={isContactOpen}
         onClose={() => setIsContactOpen(false)}
         defaultService={contactService}
+        customMinutes={customMinutes}
       />
 
       {/* Edit Menu Modal */}

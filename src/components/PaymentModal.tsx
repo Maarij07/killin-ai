@@ -181,7 +181,7 @@ export default function PaymentModal({
             </h2>
             <button
               onClick={handleClose}
-              className="p-2 rounded-xl transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="p-2 rounded-xl transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
               style={{ 
                 color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] 
               }}

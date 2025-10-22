@@ -122,7 +122,16 @@ export default function UserDashboard() {
   // Loading state for user details
   if (isLoadingDetails) {
     return (
-      <div className={`min-h-screen ${isDark ? 'dark bg-gray-900' : 'bg-gray-50'} flex items-center justify-center`}>
+      <div className="min-h-screen flex items-center justify-center" 
+        style={{
+          background: isDark 
+            ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+            : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+          border: isDark ? '1px solid #4a5568' : '1px solid #cbd5e0',
+          boxShadow: isDark
+            ? 'inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+            : 'inset 0 1px 0 rgba(255, 255, 255, 0.8)'
+        }}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
           <p className={`text-lg ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Loading user details...</p>
@@ -286,16 +295,27 @@ export default function UserDashboard() {
                 className="p-3 rounded-lg transition-all duration-200"
                 style={{
                   color: isDark ? '#F3F4F6' : '#6B7280',
-                  backgroundColor: 'transparent'
+                  backgroundColor: 'transparent',
+                  background: isDark 
+                    ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                    : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                  border: isDark
+                    ? '1px solid #4a5568'
+                    : '1px solid #cbd5e0',
+                  boxShadow: isDark
+                    ? '0 4px 6px -1px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                    : '0 4px 6px -1px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = isDark 
-                    ? 'rgba(20, 20, 20, 0.6)' 
-                    : 'rgba(243, 244, 246, 0.6)';
+                  e.currentTarget.style.background = isDark 
+                    ? 'linear-gradient(135deg, #3a3a3a 0%, #2a2a2a 25%, #3d3d3d 50%, #2f2f2f 75%, #3a3a3a 100%)'
+                    : 'linear-gradient(135deg, #ffffff 0%, #f9fafb 25%, #ffffff 50%, #f9f9f9 75%, #ffffff 100%)';
                   e.currentTarget.style.color = isDark ? '#FFFFFF' : '#374151';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.background = isDark 
+                    ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                    : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)';
                   e.currentTarget.style.color = isDark ? '#F3F4F6' : '#6B7280';
                 }}
                 title="Sign out"

@@ -56,7 +56,7 @@ export default function EditMenuModal({ isOpen, onClose, mode, userId }: EditMen
       if (response.ok) {
         const responseData = await response.json();
         console.log('✅ Fetched existing content:', responseData);
-        
+      
         // Extract the actual data from the response
         const data = responseData?.data || responseData;
         
@@ -513,7 +513,7 @@ export default function EditMenuModal({ isOpen, onClose, mode, userId }: EditMen
           </h2>
           <button
             onClick={handleClose}
-            className="p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
             style={{ color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] }}
           >
             <XMarkIcon className="w-6 h-6" />
@@ -623,7 +623,7 @@ export default function EditMenuModal({ isOpen, onClose, mode, userId }: EditMen
                 </h3>
                 <button
                   onClick={() => multiFileInputRef.current?.click()}
-                  className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
                   style={{
                     backgroundColor: colors.colors.primary,
                     color: 'white'
@@ -684,7 +684,7 @@ export default function EditMenuModal({ isOpen, onClose, mode, userId }: EditMen
                         setEditMode(null);
                         setUploadedImages([]);
                       }}
-                      className="flex-1 py-3 px-4 rounded-lg font-semibold transition-colors"
+                      className="flex-1 py-3 px-4 rounded-lg font-semibold transition-colors cursor-pointer"
                       style={{
                         backgroundColor: isDark ? colors.colors.grey[700] : colors.colors.grey[200],
                         color: isDark ? colors.colors.grey[300] : colors.colors.grey[700]
@@ -695,7 +695,7 @@ export default function EditMenuModal({ isOpen, onClose, mode, userId }: EditMen
                     <button
                       onClick={processAllImages}
                       disabled={isProcessing || uploadedImages.some(img => img.isProcessing)}
-                      className="flex-1 py-3 px-4 rounded-lg font-semibold text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                      className="flex-1 py-3 px-4 rounded-lg font-semibold text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer"
                       style={{ backgroundColor: colors.colors.primary }}
                     >
                       {isProcessing ? (
@@ -722,7 +722,7 @@ export default function EditMenuModal({ isOpen, onClose, mode, userId }: EditMen
                   <p className="text-lg font-medium mb-2">No images selected</p>
                   <p className="text-sm mb-4">Click to add images or drag and drop</p>
                   <button
-                    className="px-4 py-2 rounded-lg text-sm font-medium"
+                    className="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer"
                     style={{
                       backgroundColor: colors.colors.primary,
                       color: 'white'
@@ -772,7 +772,7 @@ export default function EditMenuModal({ isOpen, onClose, mode, userId }: EditMen
                     setEditMode(null);
                     setMenuText('');
                   }}
-                  className="flex-1 py-3 px-4 rounded-lg font-semibold transition-colors"
+                  className="flex-1 py-3 px-4 rounded-lg font-semibold transition-colors cursor-pointer"
                   style={{
                     backgroundColor: isDark ? colors.colors.grey[700] : colors.colors.grey[200],
                     color: isDark ? colors.colors.grey[300] : colors.colors.grey[700]
@@ -783,7 +783,7 @@ export default function EditMenuModal({ isOpen, onClose, mode, userId }: EditMen
                 <button
                   onClick={handleSubmit}
                   disabled={isSubmitting || !menuText.trim()}
-                  className="flex-1 py-3 px-4 rounded-lg font-semibold text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 py-3 px-4 rounded-lg font-semibold text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   style={{ backgroundColor: colors.colors.primary }}
                 >
                   {isSubmitting ? 'Saving...' : 'Save Changes'}

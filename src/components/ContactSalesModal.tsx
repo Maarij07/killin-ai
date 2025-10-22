@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { XMarkIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { useTheme } from '../contexts/ThemeContext';
+import { useToast } from '../contexts/ToastContext'; // Added toast import
 import colors from '../../colors.json';
 
 // Country codes data
@@ -29,10 +30,12 @@ interface ContactSalesModalProps {
   isOpen: boolean;
   onClose: () => void;
   defaultService?: string;
+  customMinutes?: string;
 }
 
-export default function ContactSalesModal({ isOpen, onClose, defaultService }: ContactSalesModalProps) {
+export default function ContactSalesModal({ isOpen, onClose, defaultService, customMinutes = '' }: ContactSalesModalProps) {
   const { isDark } = useTheme();
+  const { showSuccess, showError } = useToast(); // Added toast hooks
   const [formData, setFormData] = useState({
     phoneNumber: '',
     firstName: '',
@@ -59,13 +62,29 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
     e.preventDefault();
     setIsSubmitting(true);
     
-    // TODO: Integrate SMTP later
-    console.log('Contact Sales Form Data:', formData);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
-      // TODO: Show success toast
+    try {
+      // Include custom minutes in form data if service is Custom Minutes
+      const formDataToSend = {
+        ...formData,
+        customMinutes: formData.services === 'Custom Minutes' ? customMinutes : undefined
+      };
+      
+      const response = await fetch('/api/contact-sales', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formDataToSend),
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to submit contact form');
+      }
+      
+      console.log('Contact Sales Form submitted successfully');
+      showSuccess('Contact form submitted successfully! We will get back to you soon.');
       onClose();
       // Reset form
       setFormData({
@@ -78,7 +97,12 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
         state: '',
         services: defaultService || ''
       });
-    }, 1500);
+    } catch (error) {
+      console.error('Error submitting contact form:', error);
+      showError('Failed to submit contact form. Please try again later.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Pre-fill default service when opening or when the trigger sets it
@@ -139,7 +163,7 @@ export default function ContactSalesModal({ isOpen, onClose, defaultService }: C
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-xl transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="p-2 rounded-xl transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
               style={{ 
                 color: isDark ? colors.colors.grey[400] : colors.colors.grey[600] 
               }}

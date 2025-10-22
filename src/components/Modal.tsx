@@ -88,9 +88,16 @@ export default function Modal({
       
       {/* Modal */}
       <div 
-        className={`relative w-full ${customContent ? 'max-w-4xl' : 'max-w-md'} mx-auto ${
-          isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-        } rounded-2xl border shadow-2xl`}
+        className={`relative w-full ${customContent ? 'max-w-4xl' : 'max-w-md'} mx-auto rounded-2xl border shadow-2xl`}
+        style={{
+          background: isDark 
+            ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+            : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+          border: isDark ? '1px solid #4a5568' : '1px solid #cbd5e0',
+          boxShadow: isDark
+            ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+            : '0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.1)'
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Content */}
