@@ -1290,14 +1290,14 @@ export default function UserPricing({ userPlan }: UserPricingProps) {
                     alt="24/7 Phone Support"
                     fill
                     className="object-cover opacity-20" />
-                  <div className="flex flex-col justify-center h-full">
-                    <div className="text-center mb-6">
-                      <div className="w-20 h-20 rounded-2xl mx-auto mb-6 flex items-center justify-center"
+                  <div className="relative z-10 flex flex-col justify-center h-full">
+                    <div className="text-center pt-4">
+                      <div className="w-20 h-20 rounded-2xl mx-auto mb-4 flex items-center justify-center"
                         style={{ backgroundColor: `${colors.colors.primary}20` }}>
                         <PhoneIcon className="w-12 h-12" style={{ color: colors.colors.primary }} />
                       </div>
-                      <h4 className="text-2xl font-bold mb-4" style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>Never Miss A Call Again</h4>
-                      <p className="text-base opacity-80 mb-6" style={{ color: isDark ? colors.colors.grey[300] : colors.colors.grey[600] }}>
+                      <h4 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: isDark ? colors.colors.white : colors.colors.dark }}>Never Miss A Call Again</h4>
+                      <p className="text-sm sm:text-base opacity-80" style={{ color: isDark ? colors.colors.grey[300] : colors.colors.grey[600] }}>
                         AI assistant never sleeps, handles calls anytime, ensuring every customer reaches you 24/7.
                       </p>
                     </div>

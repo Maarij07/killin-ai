@@ -18,9 +18,11 @@ interface SignupData {
   restaurant_name: string;
   contact_no: string;
   location: string;
+  service_type: string;
   restaurant_description: string;
   menu_text: string;
   menu_image?: File;
+  logo?: File;
 }
 
 interface UploadedImage {
@@ -48,6 +50,7 @@ export default function UserSignup() {
     restaurant_name: '',
     contact_no: '',
     location: '',
+    service_type: '',
     restaurant_description: '',
     menu_text: ''
   });
@@ -58,7 +61,9 @@ export default function UserSignup() {
   const { showError, showSuccess } = useToast();
   const { isDark, toggleTheme } = useTheme();
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const multiFileInputRef = useRef<HTMLInputElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api` : 'https://server.kallin.ai/api';
 
@@ -373,8 +378,46 @@ export default function UserSignup() {
       newErrors.location = 'Location is required';
     }
     
+    if (!signupData.service_type) {
+      newErrors.service_type = 'Service type is required';
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      showError('Please select a valid image file');
+      return;
+    }
+
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      showError('Logo size must be less than 5MB');
+      return;
+    }
+
+    // Create preview
+    const previewUrl = URL.createObjectURL(file);
+    setLogoPreview(previewUrl);
+    updateSignupData('logo', file);
+    showSuccess('Logo uploaded successfully');
+  };
+
+  const removeLogo = () => {
+    if (logoPreview) {
+      URL.revokeObjectURL(logoPreview);
+    }
+    setLogoPreview(null);
+    updateSignupData('logo', '');
+    if (logoInputRef.current) {
+      logoInputRef.current.value = '';
+    }
   };
 
   // Send email verification
@@ -694,7 +737,7 @@ export default function UserSignup() {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded transition-colors ${
+                      className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded transition-colors cursor-pointer ${
                         isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-600'
                       }`}
                     >
@@ -734,7 +777,7 @@ export default function UserSignup() {
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded transition-colors ${
+                      className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded transition-colors cursor-pointer ${
                         isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-600'
                       }`}
                     >
@@ -810,7 +853,7 @@ export default function UserSignup() {
                       type="button"
                       onClick={resendVerificationEmail}
                       disabled={isSubmitting}
-                      className={`font-medium transition-colors ${
+                      className={`font-medium transition-colors cursor-pointer ${
                         isSubmitting 
                           ? 'opacity-50 cursor-not-allowed'
                           : 'hover:underline'
@@ -902,6 +945,105 @@ export default function UserSignup() {
                 <p className="mt-1 text-sm text-red-600">{errors.location}</p>
               )}
             </div>
+
+            {/* Fourth row: Logo Upload and Service Type */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* Upload Logo */}
+              <div>
+                <label className={`block text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'} mb-2`}>
+                  Upload Logo
+                </label>
+                {!logoPreview ? (
+                  <div
+                    onClick={() => logoInputRef.current?.click()}
+                    className={`cursor-pointer border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-center transition-colors h-[48px] ${
+                      isDark
+                        ? 'border-gray-600 hover:border-gray-500 bg-gray-800'
+                        : 'border-gray-300 hover:border-gray-400 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <svg
+                        className={`h-5 w-5 ${isDark ? 'text-gray-400' : 'text-gray-400'}`}
+                        stroke="currentColor"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                      <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                        Click to upload logo
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative h-[48px]">
+                    <div className="border rounded-lg px-3 h-full flex items-center gap-3" style={{
+                      backgroundColor: isDark ? 'rgba(42, 42, 42, 0.5)' : '#f9fafb',
+                      border: isDark ? '1px solid #4a5568' : '1px solid #cbd5e0'
+                    }}>
+                      <img
+                        src={logoPreview}
+                        alt="Logo preview"
+                        className="h-8 w-8 object-contain rounded"
+                      />
+                      <span className={`text-xs flex-1 truncate ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Logo uploaded
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={removeLogo}
+                      className="absolute top-1/2 -translate-y-1/2 right-2 p-1 rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors cursor-pointer"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="hidden"
+                />
+              </div>
+
+              {/* Service Type */}
+              <div>
+                <label htmlFor="service_type" className={`block text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'} mb-2`}>
+                  Service Type
+                </label>
+                <select
+                  id="service_type"
+                  required
+                  className={`appearance-none relative block w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:z-10 text-sm ${
+                    errors.service_type
+                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                      : isDark
+                        ? 'border-gray-600 focus:ring-orange-500 focus:border-orange-500 bg-gray-800 text-white'
+                        : 'border-gray-300 focus:ring-orange-500 focus:border-orange-500 bg-white text-gray-900'
+                  }`}
+                  value={signupData.service_type}
+                  onChange={(e) => updateSignupData('service_type', e.target.value)}
+                >
+                  <option value="">Select service type</option>
+                  <option value="pickup">Pickup</option>
+                  <option value="delivery">Delivery</option>
+                  <option value="both">Both (Pickup & Delivery)</option>
+                </select>
+                {errors.service_type && (
+                  <p className="mt-1 text-sm text-red-600">{errors.service_type}</p>
+                )}
+              </div>
+            </div>
           </div>
         );
       case 3:
@@ -961,7 +1103,7 @@ export default function UserSignup() {
                 type="button"
                 onClick={() => multiFileInputRef.current?.click()}
                 disabled={isProcessingImage}
-                className={`w-full py-3 px-4 border rounded-lg text-sm font-medium transition-colors ${
+                className={`w-full py-3 px-4 border rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                   isProcessingImage 
                     ? 'opacity-50 cursor-not-allowed' 
                     : isDark
@@ -1021,7 +1163,7 @@ export default function UserSignup() {
                       <button
                         type="button"
                         onClick={() => removeImage(image.id)}
-                        className="ml-2 p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+                        className="ml-2 p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer"
                         disabled={image.isProcessing}
                       >
                         <svg className="w-4 h-4" style={{ color: isDark ? '#9ca3af' : '#6b7280' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1036,7 +1178,7 @@ export default function UserSignup() {
                     type="button"
                     onClick={processAllImages}
                     disabled={isProcessingImage || uploadedImages.some(img => img.isProcessing)}
-                    className={`w-full py-2 px-4 rounded-lg text-sm font-medium text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center ${
+                    className={`w-full py-2 px-4 rounded-lg text-sm font-medium text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer ${
                       isProcessingImage ? 'cursor-not-allowed' : 'hover:opacity-90'
                     }`}
                     style={{ backgroundColor: colors.colors.primary }}
@@ -1104,7 +1246,7 @@ export default function UserSignup() {
         <div className="flex sm:hidden">
           <button
             onClick={toggleTheme}
-            className={`p-2 rounded-lg transition-all duration-200 ${
+            className={`p-2 rounded-lg transition-all duration-200 cursor-pointer ${
               isDark 
                 ? 'text-yellow-400 hover:bg-gray-800' 
                 : 'text-gray-600 hover:bg-gray-100'
@@ -1119,7 +1261,7 @@ export default function UserSignup() {
           {/* Light mode box */}
           <button
             onClick={() => isDark && toggleTheme()}
-            className={`flex items-center justify-center px-2 py-1.5 rounded text-xs font-medium transition-all duration-200 ${
+            className={`flex items-center justify-center px-2 py-1.5 rounded text-xs font-medium transition-all duration-200 cursor-pointer ${
               !isDark 
                 ? 'bg-white text-gray-900 shadow-sm border border-gray-200' 
                 : 'text-gray-400 hover:text-gray-300'
@@ -1132,7 +1274,7 @@ export default function UserSignup() {
           {/* Dark mode box */}
           <button
             onClick={() => !isDark && toggleTheme()}
-            className={`flex items-center justify-center px-2 py-1.5 rounded text-xs font-medium transition-all duration-200 ${
+            className={`flex items-center justify-center px-2 py-1.5 rounded text-xs font-medium transition-all duration-200 cursor-pointer ${
               isDark 
                 ? 'bg-gray-700 text-white shadow-sm border border-gray-600' 
                 : 'text-gray-600 hover:text-gray-800'
@@ -1160,7 +1302,7 @@ export default function UserSignup() {
 
         {/* Right side - Signup wizard (INVERTED) */}
         <div className="flex-1 flex items-center justify-center px-4 sm:px-6 md:px-8 lg:px-12 py-8 lg:py-6">
-          <div className="max-w-md sm:max-w-lg w-full">
+          <div className="max-w-md sm:max-w-lg w-full pt-16 sm:pt-0">
             {/* Step indicator */}
             <div className="mb-8">
               <div className="flex items-center justify-center space-x-4 mb-6">
@@ -1209,7 +1351,7 @@ export default function UserSignup() {
                   <button
                     type="button"
                     onClick={() => setCurrentStep(currentStep - 1)}
-                    className={`flex-1 py-3 px-4 border border-gray-300 text-sm font-medium rounded-lg transition-colors ${
+                    className={`flex-1 py-3 px-4 border border-gray-300 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
                       isDark 
                         ? 'text-gray-300 hover:bg-gray-700 border-gray-600' 
                         : 'text-gray-700 hover:bg-gray-50'
@@ -1222,7 +1364,7 @@ export default function UserSignup() {
                   type="button"
                   onClick={currentStep === 1 ? handleStep1 : currentStep === 2 ? handleStep2 : handleStep3}
                   disabled={isSubmitting || isVerifyingEmail || (currentStep === 3 && isProcessingImage)}
-                  className={`${currentStep === 1 ? 'w-full' : 'flex-1'} py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white transition-opacity disabled:opacity-50 disabled:cursor-not-allowed`}
+                  className={`${currentStep === 1 ? 'w-full' : 'flex-1'} py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white transition-opacity disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer`}
                   style={{ backgroundColor: colors.colors.primary }}
                 >
                   {isSubmitting 

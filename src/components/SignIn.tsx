@@ -88,7 +88,7 @@ export default function SignIn() {
         <div className="flex sm:hidden">
           <button
             onClick={toggleTheme}
-            className={`p-2 rounded-lg transition-all duration-200 ${
+            className={`p-2 rounded-lg transition-all duration-200 cursor-pointer ${
               isDark 
                 ? 'text-yellow-400 hover:bg-gray-800' 
                 : 'text-gray-600 hover:bg-gray-100'
@@ -103,7 +103,7 @@ export default function SignIn() {
           {/* Light mode box */}
           <button
             onClick={() => isDark && toggleTheme()}
-            className={`flex items-center justify-center px-2 py-1.5 rounded text-xs font-medium transition-all duration-200 ${
+            className={`flex items-center justify-center px-2 py-1.5 rounded text-xs font-medium transition-all duration-200 cursor-pointer ${
               !isDark 
                 ? 'bg-white text-gray-900 shadow-sm border border-gray-200' 
                 : 'text-gray-400 hover:text-gray-300'
@@ -116,7 +116,7 @@ export default function SignIn() {
           {/* Dark mode box */}
           <button
             onClick={() => !isDark && toggleTheme()}
-            className={`flex items-center justify-center px-2 py-1.5 rounded text-xs font-medium transition-all duration-200 ${
+            className={`flex items-center justify-center px-2 py-1.5 rounded text-xs font-medium transition-all duration-200 cursor-pointer ${
               isDark 
                 ? 'bg-gray-700 text-white shadow-sm border border-gray-600' 
                 : 'text-gray-600 hover:text-gray-800'
@@ -220,7 +220,7 @@ export default function SignIn() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`group relative w-full flex justify-center py-3 sm:py-4 px-4 border border-transparent text-sm sm:text-base font-medium rounded-lg text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity ${
+                  className={`group relative w-full flex justify-center py-3 sm:py-4 px-4 border border-transparent text-sm sm:text-base font-medium rounded-lg text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity cursor-pointer ${
                     isDark ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'
                   }`}
                   style={{ backgroundColor: colors.colors.primary }}

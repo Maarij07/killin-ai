@@ -4,11 +4,12 @@ import Image from 'next/image';
 import { useUser } from '../contexts/UserContext';
 import { useToast } from '../contexts/ToastContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { PowerIcon, SunIcon, MoonIcon } from '@heroicons/react/24/outline';
+import { PowerIcon, SunIcon, MoonIcon, EllipsisVerticalIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 import UserPricing from './UserPricing';
 import Modal from './Modal';
 import StripeErrorBoundary from './StripeErrorBoundary';
-import { useState, useEffect } from 'react';
+import ChangePasswordModal from './ChangePasswordModal';
+import { useState, useEffect, useRef } from 'react';
 import colors from '../../colors.json';
 
 interface UserDetails {
@@ -34,7 +35,10 @@ export default function UserDashboard() {
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(true);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
   const [accountDeleted, setAccountDeleted] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Fetch user details from /api/auth/users
   useEffect(() => {
@@ -106,6 +110,28 @@ export default function UserDashboard() {
   const handleLogoutCancel = () => {
     setShowLogoutModal(false);
   };
+
+  const handleChangePasswordClick = () => {
+    setShowDropdown(false);
+    setShowChangePasswordModal(true);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDropdown]);
 
   // Account deleted state
   if (accountDeleted) {
@@ -317,39 +343,111 @@ export default function UserDashboard() {
                 )}
               </button>
 
-              {/* Logout Button */}
-              <button
-                onClick={handleLogoutClick}
-                className="p-3 rounded-lg transition-all duration-200"
-                style={{
-                  color: isDark ? '#F3F4F6' : '#6B7280',
-                  backgroundColor: 'transparent',
-                  background: isDark 
-                    ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
-                    : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
-                  border: isDark
-                    ? '1px solid #4a5568'
-                    : '1px solid #cbd5e0',
-                  boxShadow: isDark
-                    ? '0 4px 6px -1px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-                    : '0 4px 6px -1px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = isDark 
-                    ? 'linear-gradient(135deg, #3a3a3a 0%, #2a2a2a 25%, #3d3d3d 50%, #2f2f2f 75%, #3a3a3a 100%)'
-                    : 'linear-gradient(135deg, #ffffff 0%, #f9fafb 25%, #ffffff 50%, #f9f9f9 75%, #ffffff 100%)';
-                  e.currentTarget.style.color = isDark ? '#FFFFFF' : '#374151';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = isDark 
-                    ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
-                    : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)';
-                  e.currentTarget.style.color = isDark ? '#F3F4F6' : '#6B7280';
-                }}
-                title="Sign out"
-              >
-                <PowerIcon className="h-6 w-6" />
-              </button>
+              {/* Three-dot Menu */}
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setShowDropdown(!showDropdown)}
+                  className="p-3 rounded-lg transition-all duration-200"
+                  style={{
+                    color: isDark ? '#F3F4F6' : '#6B7280',
+                    backgroundColor: 'transparent',
+                    background: isDark 
+                      ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                      : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                    border: isDark
+                      ? '1px solid #4a5568'
+                      : '1px solid #cbd5e0',
+                    boxShadow: isDark
+                      ? '0 4px 6px -1px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                      : '0 4px 6px -1px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = isDark 
+                      ? 'linear-gradient(135deg, #3a3a3a 0%, #2a2a2a 25%, #3d3d3d 50%, #2f2f2f 75%, #3a3a3a 100%)'
+                      : 'linear-gradient(135deg, #ffffff 0%, #f9fafb 25%, #ffffff 50%, #f9f9f9 75%, #ffffff 100%)';
+                    e.currentTarget.style.color = isDark ? '#FFFFFF' : '#374151';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = isDark 
+                      ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                      : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)';
+                    e.currentTarget.style.color = isDark ? '#F3F4F6' : '#6B7280';
+                  }}
+                  title="Menu"
+                >
+                  <EllipsisVerticalIcon className="h-6 w-6" />
+                </button>
+
+                {/* Dropdown Menu */}
+                {showDropdown && (
+                  <div
+                    className="absolute right-0 mt-2 w-56 rounded-lg shadow-lg border z-50"
+                    style={{
+                      backgroundColor: 'transparent',
+                      background: isDark 
+                        ? 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #2d2d2d 50%, #1f1f1f 75%, #2a2a2a 100%)'
+                        : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f1f3f4 50%, #e8eaed 75%, #f8f9fa 100%)',
+                      border: isDark
+                        ? '1px solid #4a5568'
+                        : '1px solid #cbd5e0',
+                      boxShadow: isDark
+                        ? '0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                        : '0 10px 25px -5px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
+                    }}
+                  >
+                    {/* Change Password Option */}
+                    <button
+                      onClick={handleChangePasswordClick}
+                      className="w-full flex items-center px-4 py-3 text-sm transition-all duration-200 rounded-t-lg"
+                      style={{
+                        color: isDark ? '#F3F4F6' : '#374151'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = isDark 
+                          ? 'rgba(255, 255, 255, 0.05)'
+                          : 'rgba(0, 0, 0, 0.05)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent';
+                      }}
+                    >
+                      <LockClosedIcon className="h-5 w-5 mr-3" />
+                      Change Password
+                    </button>
+
+                    {/* Divider */}
+                    <div 
+                      className="h-px my-1"
+                      style={{
+                        backgroundColor: isDark ? '#4a5568' : '#cbd5e0'
+                      }}
+                    />
+
+                    {/* Logout Option */}
+                    <button
+                      onClick={() => {
+                        setShowDropdown(false);
+                        handleLogoutClick();
+                      }}
+                      className="w-full flex items-center px-4 py-3 text-sm transition-all duration-200 rounded-b-lg"
+                      style={{
+                        color: isDark ? '#F3F4F6' : '#374151'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = isDark 
+                          ? 'rgba(255, 255, 255, 0.05)'
+                          : 'rgba(0, 0, 0, 0.05)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent';
+                      }}
+                    >
+                      <PowerIcon className="h-5 w-5 mr-3" />
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -378,6 +476,12 @@ export default function UserDashboard() {
           text: 'Cancel',
           onClick: handleLogoutCancel
         }}
+      />
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={showChangePasswordModal}
+        onClose={() => setShowChangePasswordModal(false)}
       />
     </div>
   );
