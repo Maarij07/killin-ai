@@ -34,6 +34,18 @@ interface UploadedImage {
   error?: string;
 }
 
+interface Step2Payload {
+  restaurant_name: string;
+  contact_no: string;
+  location: string;
+  service_type: string;
+  profile_pic_base64?: string;
+  profile_picture_base64?: string;
+  logo_base64?: string;
+  profile_pic_name?: string;
+  profile_pic_mime?: string;
+}
+
 export default function UserSignup() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,6 +76,8 @@ export default function UserSignup() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const multiFileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  // Saved reference (URL or ID) returned by step 2 after uploading profile picture
+  const [profilePicRef, setProfilePicRef] = useState<string | null>(null);
   
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api` : 'https://server.kallin.ai/api';
 
@@ -93,6 +107,16 @@ export default function UserSignup() {
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
+  };
+
+  // Helper to convert a File to a base64 data URL
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = (e) => reject(e);
+      reader.readAsDataURL(file);
+    });
   };
 
   // Process menu image and extract menu items (single image - kept for backward compatibility)
@@ -572,19 +596,49 @@ export default function UserSignup() {
     
     setIsSubmitting(true);
     try {
+      // Always send JSON (server expects application/json)
+      const payload: Step2Payload = {
+        restaurant_name: signupData.restaurant_name,
+        contact_no: signupData.contact_no,
+        location: signupData.location,
+        service_type: signupData.service_type,
+      };
+
+      if (signupData.logo instanceof File) {
+        try {
+          const dataUrl = await fileToBase64(signupData.logo);
+          // Include multiple common keys for compatibility; backend can pick what it supports
+          payload.profile_pic_base64 = dataUrl;
+          payload.profile_picture_base64 = dataUrl;
+          payload.logo_base64 = dataUrl;
+          payload.profile_pic_name = signupData.logo.name;
+          payload.profile_pic_mime = signupData.logo.type;
+        } catch (e) {
+          console.warn('Failed to convert profile picture to base64, proceeding without it', e);
+        }
+      }
+
       const response = await fetch(`${API_BASE_URL}/auth/signup/step2`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          restaurant_name: signupData.restaurant_name,
-          contact_no: signupData.contact_no,
-          location: signupData.location
-        })
+        body: JSON.stringify(payload)
       });
       
       const data = await response.json();
       
       if (response.ok && data.success) {
+        // Capture any profile picture reference returned by the backend to pass to step 3
+        const ref =
+          data.profile_pic_url ||
+          data.profile_picture_url ||
+          data.logo_url ||
+          data.profile_pic ||
+          data.fileUrl ||
+          data.file_id ||
+          data.fileId ||
+          (data.data && (data.data.url || data.data.id || data.data.path));
+        if (ref) setProfilePicRef(String(ref));
+
         setCurrentStep(3);
         showSuccess('Step 2 completed! Restaurant information validated.');
       } else {
@@ -614,7 +668,9 @@ export default function UserSignup() {
           contact_no: signupData.contact_no,
           location: signupData.location,
           restaurant_description: signupData.restaurant_description,
-          menu_text: signupData.menu_text
+          menu_text: signupData.menu_text,
+          // Pass the saved profile picture reference from step 2 if available
+          ...(profilePicRef ? { profile_pic: profilePicRef, profile_pic_url: profilePicRef } : {})
         })
       });
       
@@ -951,7 +1007,7 @@ export default function UserSignup() {
               {/* Upload Logo */}
               <div>
                 <label className={`block text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'} mb-2`}>
-                  Upload Logo
+                  Upload Profile Picture (Logo)
                 </label>
                 {!logoPreview ? (
                   <div

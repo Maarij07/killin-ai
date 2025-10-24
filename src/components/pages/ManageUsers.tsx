@@ -33,6 +33,7 @@ interface User {
   join_date: string;
   agent_id: string | null;
   prompt: string | null;
+  profile_picture?: string | null; // base64 (may already include data URI)
   assistant_status?: 'synced' | 'out_of_sync' | 'no_assistant' | 'error';
   last_synced?: string;
 }
@@ -1276,10 +1277,18 @@ export default function ManageUsers() {
                     </td>
                     <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="flex-shrink-0 h-8 w-8 hidden sm:block">
-                          <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: `${colors.colors.primary}20` }}>
-                            <UserCircleIcon className="h-5 w-5" style={{ color: colors.colors.primary }} />
-                          </div>
+<div className="flex-shrink-0 h-8 w-8 hidden sm:block">
+                          {user.profile_picture ? (
+                            <img
+                              src={user.profile_picture.startsWith('data:') ? user.profile_picture : `data:image/*;base64,${user.profile_picture}`}
+                              alt={`${user.name} avatar`}
+                              className="h-8 w-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: `${colors.colors.primary}20` }}>
+                              <UserCircleIcon className="h-5 w-5" style={{ color: colors.colors.primary }} />
+                            </div>
+                          )}
                         </div>
                         <div className="sm:ml-3">
                           <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -1433,9 +1442,17 @@ export default function ManageUsers() {
               {/* Header Row */}
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-3">
+{user.profile_picture ? (
+                  <img
+                    src={user.profile_picture.startsWith('data:') ? user.profile_picture : `data:image/*;base64,${user.profile_picture}`}
+                    alt={`${user.name} avatar`}
+                    className="h-10 w-10 rounded-full object-cover flex-shrink-0"
+                  />
+                ) : (
                   <div className="h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${colors.colors.primary}20` }}>
                     <UserCircleIcon className="h-6 w-6" style={{ color: colors.colors.primary }} />
                   </div>
+                )}
                   <div className="min-w-0">
                     <p className={`text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
                       {user.name}
@@ -1764,6 +1781,8 @@ export default function ManageUsers() {
         isOpen={vapiModal.isOpen}
         onClose={handleCancelVapi}
         title="VAPI Configuration"
+        showCloseIcon
+        hideFooter
         customContent={
           <div className="space-y-6">
             {/* Header with Edit Controls */}
@@ -2032,10 +2051,6 @@ export default function ManageUsers() {
             )}
           </div>
         }
-        secondaryButton={{
-          text: 'Close',
-          onClick: handleCancelVapi
-        }}
       />
       </>
       )}
