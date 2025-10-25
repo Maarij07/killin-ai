@@ -1596,12 +1596,22 @@ export default function ManageUsers() {
               {/* User Info Section */}
               <div className="flex items-center space-x-4 pb-3 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex-shrink-0">
-                  <div 
-                    className="h-10 w-10 rounded-full flex items-center justify-center text-white font-semibold text-sm"
-                    style={{ backgroundColor: colors.colors.primary }}
-                  >
-                    LOGO
-                  </div>
+                  {manageModal.user.profile_picture ? (
+                    <img
+                      src={manageModal.user.profile_picture.startsWith('data:') 
+                        ? manageModal.user.profile_picture 
+                        : `data:image/*;base64,${manageModal.user.profile_picture}`}
+                      alt={`${manageModal.user.name} avatar`}
+                      className="h-10 w-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div 
+                      className="h-10 w-10 rounded-full flex items-center justify-center"
+                      style={{ backgroundColor: `${colors.colors.primary}20` }}
+                    >
+                      <UserCircleIcon className="h-6 w-6" style={{ color: colors.colors.primary }} />
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1">
                   <div className="flex justify-between items-start">
