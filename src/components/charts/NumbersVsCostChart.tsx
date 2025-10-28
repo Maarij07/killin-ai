@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Area, Line, ComposedChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { useTheme } from '../../contexts/ThemeContext';
-import { fetchVAPIAnalytics, generateTimeSeriesData } from '../../lib/analytics';
+import { fetchVAPIAnalytics } from '../../lib/analytics';
 import colors from '../../../colors.json';
 
 interface CustomTooltipProps {
@@ -55,36 +55,38 @@ const CustomLegend = () => {
   );
 };
 
+// Helper function to generate inbound/web call time series - NO random variation, consistent data
+function generateCallsTypeSeries(inboundTotal: number, webTotal: number, days: number = 7): Array<{ date: string; inbound: number; web: number }> {
+  const result: Array<{ date: string; inbound: number; web: number }> = [];
+  const today = new Date();
+  const avgInbound = Math.round(inboundTotal / days);
+  const avgWeb = Math.round(webTotal / days);
+  
+  for (let i = days - 1; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - i);
+    const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    
+    // Use consistent average - no random variation
+    result.push({ date: dateStr, inbound: avgInbound, web: avgWeb });
+  }
+  
+  return result;
+}
+
 export default function NumbersVsCostChart() {
   const { isDark } = useTheme();
-  const [data, setData] = useState([
-    { month: 'Apr', numbers: 0, cost: 0 },
-    { month: 'May', numbers: 0, cost: 0 },
-    { month: 'Jun', numbers: 0, cost: 0 },
-    { month: 'Jul', numbers: 0, cost: 0 },
-    { month: 'Aug', numbers: 0, cost: 0 },
-    { month: 'Sep', numbers: 0, cost: 0 },
-    { month: 'Oct', numbers: 0, cost: 0 }
-  ]);
+  const [data, setData] = useState<Array<{ date: string; inbound: number; web: number }>>([]);
   const [, setLoading] = useState(true);
 
   useEffect(() => {
     const loadAnalytics = async () => {
       try {
         const analytics = await fetchVAPIAnalytics();
-        const inboundCalls = analytics.callsByType.inbound;
-        const webCalls = analytics.callsByType.web;
         
-        const inboundTimeSeries = generateTimeSeriesData(inboundCalls, 7);
-        const webTimeSeries = generateTimeSeriesData(webCalls, 7);
-        
-        const formattedData = inboundTimeSeries.map((item, index) => ({
-          month: item.month,
-          numbers: item.value,
-          cost: webTimeSeries[index]?.value || 0
-        }));
-        
-        setData(formattedData);
+        // Generate time series from aggregate data
+        const timeSeries = generateCallsTypeSeries(analytics.callsByType.inbound, analytics.callsByType.web, 7);
+        setData(timeSeries);
       } catch (error) {
         console.error('Failed to load analytics:', error);
       } finally {
@@ -126,7 +128,7 @@ export default function NumbersVsCostChart() {
               stroke={isDark ? '#374151' : '#E5E7EB'} 
             />
             <XAxis 
-              dataKey="month" 
+              dataKey="date" 
               axisLine={false}
               tickLine={false}
               tick={{ fontSize: 12, fill: isDark ? '#9CA3AF' : '#6B7280' }}
@@ -143,13 +145,12 @@ export default function NumbersVsCostChart() {
               axisLine={false}
               tickLine={false}
               tick={{ fontSize: 12, fill: isDark ? '#9CA3AF' : '#6B7280' }}
-              tickFormatter={(value) => `$${value}`}
             />
             <Tooltip content={<CustomTooltip />} />
             <Area
               yAxisId="left"
               type="monotone"
-              dataKey="numbers"
+              dataKey="inbound"
               stroke={colors.colors.primary}
               strokeWidth={2}
               fillOpacity={1}
@@ -159,7 +160,7 @@ export default function NumbersVsCostChart() {
             <Line 
               yAxisId="right"
               type="monotone" 
-              dataKey="cost" 
+              dataKey="web" 
               stroke={isDark ? '#9CA3AF' : '#6B7280'} 
               strokeWidth={2}
               dot={{ r: 4, fill: isDark ? '#9CA3AF' : '#6B7280' }}

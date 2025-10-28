@@ -106,13 +106,10 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-6">
 
-      {/* Top row: Total Users chart */}
-      <TotalUsersChart />
-
-      {/* Bottom row: Two comparison charts */}
+      {/* Analytics Overview - Real API Data Only */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TotalUsersChart />
         <MinutesVsBudgetChart />
-        <NumbersVsCostChart />
       </div>
 
       {/* User Data Table */}

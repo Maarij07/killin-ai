@@ -204,20 +204,3 @@ export async function fetchVAPIAnalytics(): Promise<DashboardAnalytics> {
     };
   }
 }
-
-// Helper function to generate time series data for charts
-export function generateTimeSeriesData(totalValue: number, periods: number = 12): Array<{ month: string; value: number }> {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const currentMonth = new Date().getMonth();
-  
-  return Array.from({ length: periods }, (_, i) => {
-    const monthIndex = (currentMonth - periods + 1 + i + 12) % 12;
-    const variation = 0.7 + Math.random() * 0.6; // Random variation between 70-130%
-    const value = Math.round((totalValue / periods) * variation);
-    
-    return {
-      month: months[monthIndex],
-      value: Math.max(0, value)
-    };
-  });
-}
